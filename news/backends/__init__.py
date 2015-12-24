@@ -15,7 +15,7 @@ from ..exceptions import (
 
 STORE_COLUMN_TYPES = {
     'site_url': str,
-    'src_url': (str, None)
+    'src_url': (str, None),
     'url' : str,
     'content': str,
 }

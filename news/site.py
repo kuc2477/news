@@ -24,10 +24,12 @@ class Site(object):
 
     """
 
-    def __init__(self, url, backend, ranker):
+    def __init__(self, url, backend, ranker,
+                 blacklist=['png', 'jpg', 'gif', 'pdf', 'svg']):
         self.url = url
         self.backend = backend
         self.ranker = ranker
+        self.blacklist = blacklist
 
     async def fetch_pages(self):
         # Initialize temporary url store for fetching pages.
@@ -40,7 +42,10 @@ class Site(object):
 
         """
         async with aiohttp.get(self.url) as response:
-            root = Page(self, None, self.url, await response.text())
+            # Initialize temporary url store to check fetch progress.
+            self.fetched_urls = [self.url]
+
+            root = Page(self, self.url, await response.text(), None)
             return [root] + await root.fetch_linked_pages()
 
     @property

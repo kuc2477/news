@@ -4,12 +4,16 @@
 Provides page utility functions and :class:`~news.page.Page` class.
 
 """
+import os.path
+
+from itertools import chain
 from urllib.parse import urlparse
 
+from bs4 import BeautifulSoup
 from asyncio import gather
 import aiohttp
 
-from bs4 import BeautifulSoup
+
 
 
 class Page(object):
@@ -29,11 +33,11 @@ class Page(object):
 
     """
 
-    def __init__(self, site, src, url, content):
+    def __init__(self, site, url, content, src):
         self.site = site
-        self.src = src
         self.url = url
         self.content = content
+        self.src = src
 
     def __eq__(self, other):
         return isinstance(other, Page) and self.url == other.url
@@ -50,27 +54,50 @@ class Page(object):
         :rtype: :class:`list`
 
         """
-        urls = [self.build_url(l) for l in self.links if
-                self.build_url(l) not in
-                self.site.urls + self.site.fetched_urls]
 
-        # Return an empty list if no new urls exist in the page.
-        if not urls:
-            return []
-        # Otherwise accumulate to fetched urls.
-        else:
-            self.site.fetched_urls += urls
+        # gather only valid responses
+        valid_response_urls = []
+        valid_responses = []
+        for url in self.unreached_urls:
+            try :
+                response = await aiohttp.get(url)
+            except Exception:
+                print(url + ' invalid response!')
+                continue
+            else:
+                print(url + ' valid response!')
+                valid_response_urls.append(url)
+                valid_responses.append(response)
 
-        responses = await gather(*[aiohttp.get(url) for url in urls])
-        contents = await gather(*[response.text() for response in responses])
-        pages = [Page(self.site, self, url, content) for
-                 (url, content) in zip(urls, contents)]
+        # gather only valid contents
+        valid_content_urls = []
+        valid_contents = []
+        for url, response in zip(valid_response_urls, valid_responses):
+            try:
+                content = await response.text()
+            except UnicodeError:
+                print(url + ' invalid content!')
+                continue
+            else:
+                print(url + ' valid content!')
+                valid_content_urls.append(url)
+                valid_contents.append(content)
 
+        # Initialize temporary url store if not initialized yet and acuumulate
+        # fetched urls.
+        self.site.fetched_urls = getattr(self.site, 'fetched_urls', [])
+        self.site.fetched_urls += valid_content_urls
 
-        # Recursively fetch and return linked pages.
-        return [linked_page for linked_pages in
-                await page.fetch_linked_pages() for page in pages]
+        # pages of the page
+        pages = [Page(self.site, url, content, self) for
+                 url, content in zip(valid_content_urls, valid_contents)]
 
+        # linked pages of the pages from the page
+        linked_page_sets = await gather(*[
+            page.fetch_linked_pages() for page in pages
+        ])
+
+        return pages + list(chain(linked_page_sets))
 
     def to_json(self):
         return {
@@ -79,29 +106,6 @@ class Page(object):
             'url': self.url,
             'content': self.content
         }
-
-
-    # ===============
-    # Utility methods
-    # ===============
-
-    def build_url(self, url):
-        parsed = urlparse(url)
-        return '%s://%s%s' % (
-            self.site.scheme,
-            self.site.hostname,
-            parsed.geturl()
-        ) if _ispath(url) else parsed.geturl()
-
-    def hassamehost(self, url):
-        """Tests if given url is resides in same domain of the page.
-
-        :return: whether given url resides in the same domain or not.
-        :rtype: :class:`bool`
-
-        """
-        parsed = urlparse(url)
-        return _ispath(url) or self.site.hostname == parsed.hostname
 
 
     # ==========
@@ -122,12 +126,52 @@ class Page(object):
     def links(self):
         """Returns all linked urls in the page.
 
-        :return: parsed urls of the anchor tags with the same domain.
-        :rtype: :class:`list`
+        :return: links of the anchor tags with the same domain.
+        :rtype: :class:`set`
 
         """
         anchors = BeautifulSoup(self.content)('a')
-        return [a['href'] for a in anchors if self.hassamehost(a['href'])]
+        return {a['href'] for a in anchors if
+                 a.has_attr('href') and self.hassamehost(a['href'])}
+
+    @property
+    def urls(self):
+        """Returns full urls of linked urls in the page
+
+        :return: full urls of the anchor tags with the same domain.
+        :rtype: :class:`set`
+
+        """
+        return {self.build_url(l) for l in self.links if
+                os.path.splitext(l)[1][1:] not in self.site.blacklist}
+
+    @property
+    def unreached_urls(self):
+        return [url for url in self.urls if url not in
+                self.site.urls + getattr(self.site, 'fetched_urls', [])]
+
+
+    # ===============
+    # Utility methods
+    # ===============
+
+    def build_url(self, url):
+        parsed = urlparse(url)
+        return '%s://%s/%s' % (
+            self.site.scheme,
+            self.site.hostname,
+            parsed.path
+        ) if _ispath(url) else parsed.geturl()
+
+    def hassamehost(self, url):
+        """Tests if given url is resides in same domain of the page.
+
+        :return: whether given url resides in the same domain or not.
+        :rtype: :class:`bool`
+
+        """
+        parsed = urlparse(url)
+        return _ispath(url) or self.site.hostname == parsed.hostname
 
 
 def _ispath(url):
