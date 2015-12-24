@@ -1,13 +1,16 @@
 import asyncio
 from news.site import Site
 from news.backends.json import JSONBackend
+from news.schedule import Schedule
 backend = JSONBackend('STORE.json')
+
 url = 'http://aiohttp.readthedocs.org'
 url2 = 'https://haskell.kr'
 url3 = 'http://kuc2477.github.io'
 url4 = 'http://www.naver.com'
 url5 = 'http://pypi.python.org'
 url6 = 'https://medium.com'
-site = Site(url6, backend, None)
-loop = asyncio.get_event_loop()
-result = loop.run_until_complete(site.fetch_pages())
+
+site = Site(url, backend, None)
+schedule = Schedule(site, 1)
+schedule.run()

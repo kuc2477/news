@@ -29,7 +29,7 @@ def text_content():
 
 @pytest.fixture(params=[
     '<a href="/path/to/other/page">response with local link</a>',
-    '<a href="http://www.naver.com/path/">response with local link</a>',
+    '<a href="http://httpbin.org">response with local link</a>',
 ])
 def local_link_content(request):
     return request.param

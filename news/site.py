@@ -31,6 +31,10 @@ class Site(object):
         self.ranker = ranker
         self.blacklist = blacklist
 
+    async def update_pages(self):
+        new_pages =  await self.fetch_pages()
+        self.backend.add_pages(*new_pages)
+
     async def fetch_pages(self):
         # Initialize temporary url store for fetching pages.
         self.fetched_urls = []

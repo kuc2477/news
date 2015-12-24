@@ -5,6 +5,7 @@ Provides page utility functions and :class:`~news.page.Page` class.
 
 """
 import os.path
+import logging
 
 from itertools import chain
 from urllib.parse import urlparse
@@ -13,7 +14,7 @@ from bs4 import BeautifulSoup
 from asyncio import gather
 import aiohttp
 
-
+from .cli import logger
 
 
 class Page(object):
@@ -62,10 +63,10 @@ class Page(object):
             try :
                 response = await aiohttp.get(url)
             except Exception:
-                print(url + ' invalid response!')
+                logger.warning(url + ' invalid response!')
                 continue
             else:
-                print(url + ' valid response!')
+                logger.info(url + ' valid response!')
                 valid_response_urls.append(url)
                 valid_responses.append(response)
 
@@ -76,10 +77,10 @@ class Page(object):
             try:
                 content = await response.text()
             except UnicodeError:
-                print(url + ' invalid content!')
+                logger.warning(url + ' invalid content!')
                 continue
             else:
-                print(url + ' valid content!')
+                logger.info(url + ' valid content!')
                 valid_content_urls.append(url)
                 valid_contents.append(content)
 
@@ -97,7 +98,7 @@ class Page(object):
             page.fetch_linked_pages() for page in pages
         ])
 
-        return pages + list(chain(linked_page_sets))
+        return pages + list(chain(*linked_page_sets))
 
     def to_json(self):
         return {
@@ -136,9 +137,9 @@ class Page(object):
 
     @property
     def urls(self):
-        """Returns full urls of linked urls in the page
+        """Returns full urls of valid linked urls in the page.
 
-        :return: full urls of the anchor tags with the same domain.
+        :return: full urls of the anchor tags in the same domain.
         :rtype: :class:`set`
 
         """
