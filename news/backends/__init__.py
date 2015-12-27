@@ -6,6 +6,7 @@ Provides common interface for multiple page backend implementations.
 """
 import abc
 from functools import wraps
+from functools import partial
 
 from ..exceptions import (
     StoreDoesNotExistError,
@@ -13,27 +14,40 @@ from ..exceptions import (
 )
 
 
+STORE_TABLE_NAME = 'news_page'
 STORE_COLUMN_TYPES = {
-    'site_url': str,
-    'src_url': (str, None),
+    'site': str,
+    'src': (str, None),
     'url' : str,
     'content': str,
 }
 
 
-def should_store_exist(f):
+def should_store_exist(f=None, default=None, error=True):
+    if f is None:
+        return partial(should_store_exist, default=default, error=error)
+
     @wraps(f)
     def wrapper(self, *args, **kwargs):
         if not self.store_exists:
-            raise StoreDoesNotExistError
+            if error:
+                raise StoreDoesNotExistError
+            else:
+                return default
         return f(self, *args, **kwargs)
     return wrapper
 
-def should_store_valid(f):
+def should_store_valid(f=None, default=None, error=True):
+    if f is None:
+        return partial(should_store_valid, default=default, error=error)
+
     @wraps(f)
     def wrapper(self, *args, **kwargs):
         if not self.store_valid:
-            raise InvalidStoreSchema
+            if default is None:
+                raise InvalidStoreSchemaError
+            else:
+                return default
         return f(self, *args, **kwargs)
     return wrapper
 
@@ -54,11 +68,11 @@ class BackendBase(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractproperty
-    def store_empty(self):
+    def store_valid(self):
         return NotImplemented
 
     @abc.abstractproperty
-    def store_valid(self):
+    def store_empty(self):
         return NotImplemented
 
     @abc.abstractmethod
@@ -104,12 +118,37 @@ class BackendBase(metaclass=abc.ABCMeta):
         """
         return NotImplemented
 
-    @property
-    def urls(self):
-        """Returns urls of the stored pages.
+    @abc.abstractmethod
+    def get_page(self, url):
+        """Returns a stored page.
 
-        :return: urls of the stored pages.
+        :param url: The url of the page.
+        :type url: :class:`str`
+        :return: stored page.
+        :rtype: :class:`news.page.Page`
+
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    def get_pages(self, site=None):
+        """Returns stored pages of the site.
+
+        :param site: Site or site url of the pages.
+        :type site: :class:`news.site.Site` or :class:`str`
+        :return: pages of the site.
         :rtype: :class:`list`
 
         """
-        return [page.url for page in self.pages]
+        return NotImplemented
+
+    def get_urls(self, site=None):
+        """Returns stored urls of the site.
+
+        :param site: Site or site url of the pages.
+        :type site: :class:`news.site.Site` or :class:`str`
+        :return: urls of the site pages.
+        :rtype: :class:`list`
+
+        """
+        return [page.url for page in self.get_pages(site)]

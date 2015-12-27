@@ -1,3 +1,4 @@
+import json
 import pytest
 
 from ..site import Site
@@ -12,6 +13,11 @@ from ..backends.json import JSONBackend
 @pytest.fixture
 def url():
     return 'http://httpbin.org'
+
+@pytest.fixture
+def valid_store_json(page):
+    store = {page.url: page.to_json()}
+    return json.dumps(store)
 
 @pytest.fixture(params=[
     'text only response',
@@ -60,8 +66,8 @@ def backend(path):
     return JSONBackend(str(path))
 
 @pytest.fixture
-def site(url, backend, ranker):
-    return Site(url, backend, ranker)
+def site(url, backend):
+    return Site(url, backend)
 
 @pytest.fixture
 def page(site, url, content):

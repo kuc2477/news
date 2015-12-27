@@ -13,22 +13,19 @@ from .page import Page
 
 
 class Site(object):
-    """"Site to be scrapped, ranked and stored periodically.
+    """"Site to be scrapped stored periodically.
 
     :param url: The url of the site.
     :type url: :class:`str`
-    :param ranker: The ranker to use for filter out meaningless pages.
-    :type ranker: :class:`news.ranker.BaseRanker`
     :param backend: The backend to use for page storage.
     :type backend: :class:`news.backend.BackendBase`
 
     """
 
-    def __init__(self, url, backend, ranker,
+    def __init__(self, url, backend,
                  blacklist=['png', 'jpg', 'gif', 'pdf', 'svg']):
         self.url = url
         self.backend = backend
-        self.ranker = ranker
         self.blacklist = blacklist
 
     async def update_pages(self):
@@ -39,7 +36,7 @@ class Site(object):
         # Initialize temporary url store for fetching pages.
         self.fetched_urls = []
 
-        """Fetch meaningful pages from the site based on the ranker.
+        """Fetch new pages from the site.
 
         :return: `page`s of the site.
         :rtype: :class:`list`
@@ -52,9 +49,10 @@ class Site(object):
             root = Page(self, self.url, await response.text(), None)
             return [root] + await root.fetch_linked_pages()
 
+
     @property
     def urls(self):
-        return self.backend.urls
+        return self.backend.get_urls(self)
 
     @property
     def scheme(self):

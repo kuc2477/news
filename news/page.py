@@ -14,7 +14,8 @@ from bs4 import BeautifulSoup
 from asyncio import gather
 import aiohttp
 
-from .cli import logger
+from .utils import logger
+from .utils import fillurl, ext, issuburl
 
 
 class Page(object):
@@ -102,8 +103,8 @@ class Page(object):
 
     def to_json(self):
         return {
-            'site_url': self.site.url,
-            'src_url': self.src.url if self.src is not None else None,
+            'site': self.site.url,
+            'src': self.src.url if self.src is not None else None,
             'url': self.url,
             'content': self.content
         }
@@ -124,18 +125,6 @@ class Page(object):
         return self if self.src is None else self.src.root
 
     @property
-    def links(self):
-        """Returns all linked urls in the page.
-
-        :return: links of the anchor tags with the same domain.
-        :rtype: :class:`set`
-
-        """
-        anchors = BeautifulSoup(self.content)('a')
-        return {a['href'] for a in anchors if
-                 a.has_attr('href') and self.hassamehost(a['href'])}
-
-    @property
     def urls(self):
         """Returns full urls of valid linked urls in the page.
 
@@ -143,8 +132,10 @@ class Page(object):
         :rtype: :class:`set`
 
         """
-        return {self.build_url(l) for l in self.links if
-                os.path.splitext(l)[1][1:] not in self.site.blacklist}
+        anchors = BeautifulSoup(self.content, 'html.parser')('a')
+
+        return {fillurl(self.site.url, a['href']) for a in anchors if
+                is_anchor_valid_for_site(self.site, a)}
 
     @property
     def unreached_urls(self):
@@ -152,29 +143,6 @@ class Page(object):
                 self.site.urls + getattr(self.site, 'fetched_urls', [])]
 
 
-    # ===============
-    # Utility methods
-    # ===============
-
-    def build_url(self, url):
-        parsed = urlparse(url)
-        return '%s://%s/%s' % (
-            self.site.scheme,
-            self.site.hostname,
-            parsed.path
-        ) if _ispath(url) else parsed.geturl()
-
-    def hassamehost(self, url):
-        """Tests if given url is resides in same domain of the page.
-
-        :return: whether given url resides in the same domain or not.
-        :rtype: :class:`bool`
-
-        """
-        parsed = urlparse(url)
-        return _ispath(url) or self.site.hostname == parsed.hostname
-
-
-def _ispath(url):
-    parsed = urlparse(url)
-    return not parsed.scheme and not parsed.hostname
+def is_anchor_valid_for_site(site, a):
+    return a.has_attr('href') and issuburl(site.url, a['href']) and \
+        ext(a['href']) not in site.blacklist
