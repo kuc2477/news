@@ -4,8 +4,8 @@ from bs4 import BeautifulSoup
 import asyncio
 import pytest
 
-from .fixtures import *
-from ..page import is_anchor_valid_for_site
+from fixtures import *
+from news.page import is_anchor_valid_for_site
 
 
 def test_text_page_urls(text_page):

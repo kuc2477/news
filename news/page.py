@@ -64,10 +64,10 @@ class Page(object):
             try :
                 response = await aiohttp.get(url)
             except Exception:
-                logger.warning(url + ' invalid response!')
+                logger.warning('{}: invalid response!' % url)
                 continue
             else:
-                logger.info(url + ' valid response!')
+                logger.info('{}: valid response!' % url)
                 valid_response_urls.append(url)
                 valid_responses.append(response)
 
@@ -78,10 +78,10 @@ class Page(object):
             try:
                 content = await response.text()
             except UnicodeError:
-                logger.warning(url + ' invalid content!')
+                logger.warning('{}: invalid content!' % url)
                 continue
             else:
-                logger.info(url + ' valid content!')
+                logger.info('{}: valid content!' % url)
                 valid_content_urls.append(url)
                 valid_contents.append(content)
 

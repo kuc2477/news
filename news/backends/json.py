@@ -12,6 +12,7 @@ from . import (
     BackendBase,
     should_store_exist,
     should_store_valid,
+    STORE_PATH,
     STORE_COLUMN_TYPES
 )
 
@@ -21,7 +22,7 @@ from ..exceptions import InvalidStoreSchemaError
 
 
 class JSONBackend(BackendBase):
-    def __init__(self, path, *args, **kwargs):
+    def __init__(self, path=STORE_PATH, *args, **kwargs):
         self.path = path
 
     @property
@@ -117,8 +118,9 @@ class JSONBackend(BackendBase):
             store = json.load(store_json)
 
             if site is not None:
-                store = {u: p for u, p in store.items() if
-                         p['site'] == site.url}
+                store = {u: p for u, p in store.items() if (
+                         p['site'] == site.url if isinstance(site, Site) else
+                         p['site'] == site)}
 
             return [self.get_page(u) for u, p in store.items()]
 

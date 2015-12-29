@@ -1,7 +1,7 @@
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
-    from distutils.core import setup
+    from distutils.core import setup, find_packages
 
 from news import VERSION
 
@@ -24,30 +24,41 @@ else:
             self.test_suite = True
 
         def run_tests(self):
-            errno = main(self.test_args)
             from pytest import main
+            errno = main(self.test_args)
             raise SystemExit(errno)
     cmdclass = {'test': pytest}
 
 
 setup(
     name='news',
-    packages=['news'],
+    packages=find_packages(exclude=['tests']),
+    entry_points = '''
+        [console_scripts]
+        news = news.cli:main
+    ''',
     data_files=[('', ['README.rst', 'CHANGES.rst'])],
     version=VERSION,
-    description='web readable scrapper and scheduluer automated',
+    description='Scheduled web post scrapper automated',
     long_description=long_description,
     license='MIT License',
     author='Ha Junsoo',
     author_email='kuc2477@gmail.com',
+    maintainer='Ha Junsoo',
+    maintainer_email='kuc2477@gmail.com',
     url='https://github.com/kuc2477/news',
-    install_requires=['aiohttp>=0.19.0', 'beautifulsouip4>=4.4.1'],
+    install_requires=[
+        'aiohttp>=0.19.0',
+        'beautifulsoup4>=4.4.1',
+        'click'
+    ],
+    test_suite='tests',
     tests_require=['pytest>=2.8.5'],
+    cmdclass=cmdclass,
     classifiers=[
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3.5'
     ],
-    cmdclass=cmdclass
 )

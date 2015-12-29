@@ -60,3 +60,4 @@ target/
 .env
 *.sw*
 .ipynb_checkpoints
+*.json

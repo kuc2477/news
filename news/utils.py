@@ -50,16 +50,17 @@ __NEWS_LOG_STREAM_HANDLER__.setFormatter(__NEWS_LOG_FORMATTER__)
 __NEWS_LOGGER__ = logging.getLogger('NEWS')
 __NEWS_LOGGER__.addHandler(__NEWS_LOG_STREAM_HANDLER__)
 
-def _enable():
+def _enable_logger():
+    __NEWS_LOGGER__.propagate = True
     __NEWS_LOGGER__.setLevel(logging.DEBUG)
 
-def _disable():
+def _disable_logger():
     __NEWS_LOGGER__.propagate = False
 
 # Export logger alias
 logger = __NEWS_LOGGER__
-logger.enable = _enable
-logger.disable = _disable
+logger.enable = _enable_logger
+logger.disable = _disable_logger
 
 # Defaults to logging disabled
-logger.disable()
+#logger.disable()

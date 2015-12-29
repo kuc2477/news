@@ -1,13 +1,12 @@
-import json
 from functools import wraps
+import json
 
-import pytest
-
-from .fixtures import *
-from ..exceptions import (
+from news.exceptions import (
     StoreDoesNotExistError,
     InvalidStoreSchemaError
 )
+
+from fixtures import *
 
 
 def test_store_exists(path, backend):

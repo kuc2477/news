@@ -14,6 +14,7 @@ from ..exceptions import (
 )
 
 
+STORE_PATH = '.NEWS_STORE.json'
 STORE_TABLE_NAME = 'news_page'
 STORE_COLUMN_TYPES = {
     'site': str,

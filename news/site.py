@@ -29,7 +29,7 @@ class Site(object):
         self.blacklist = blacklist
 
     async def update_pages(self):
-        new_pages =  await self.fetch_pages()
+        new_pages = await self.fetch_pages()
         self.backend.add_pages(*new_pages)
 
     async def fetch_pages(self):

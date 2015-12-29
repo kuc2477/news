@@ -32,9 +32,9 @@ class Schedule(object):
 
     def run(self):
         """Run news updating schedule."""
-        # define news updating job
+        # define job
         def job():
-            self.loop.run_until_complete(self.site.update_pages())
+            self.run_once()
 
         # set news updating cycle term for the job
         worker.every(self.term).seconds.do(job)
@@ -42,3 +42,7 @@ class Schedule(object):
         # run schedule
         while True:
             worker.run_pending()
+
+    def run_once(self):
+        """Run news update once."""
+        self.loop.run_until_complete(self.site.update_pages())

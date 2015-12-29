@@ -1,9 +1,9 @@
 import json
 import pytest
 
-from ..site import Site
-from ..page import Page
-from ..backends.json import JSONBackend
+from news.site import Site
+from news.page import Page
+from news.backends.json import JSONBackend
 
 
 # =======
@@ -13,6 +13,10 @@ from ..backends.json import JSONBackend
 @pytest.fixture
 def url():
     return 'http://httpbin.org'
+
+@pytest.fixture
+def path(tmpdir):
+    return tmpdir.mkdir('t').join('STORE.json')
 
 @pytest.fixture
 def valid_store_json(page):
@@ -56,10 +60,6 @@ def hash_link_content():
 @pytest.fixture
 def ranker():
     return None
-
-@pytest.fixture
-def path(tmpdir):
-    return tmpdir.mkdir('t').join('STORE.json')
 
 @pytest.fixture
 def backend(path):
