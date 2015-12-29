@@ -53,7 +53,10 @@ setup(
         'click'
     ],
     test_suite='tests',
-    tests_require=['pytest>=2.8.5'],
+    tests_require=[
+        'pytest>=2.8.5',
+        'pytest-asyncio>=0.3.0',
+    ],
     cmdclass=cmdclass,
     classifiers=[
         'Intended Audience :: Developers',

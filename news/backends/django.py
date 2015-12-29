@@ -24,7 +24,7 @@ URL_MAX_LENGTH = 300
 
 class DjangoBackend(BackendBase):
     def __init__(self, settings):
-        pass
+        self.settings = settings
 
     @property
     def store_exists(self):
@@ -34,6 +34,7 @@ class DjangoBackend(BackendBase):
 
 class Site(models.Model):
     url = models.CharField(max_length=URL_MAX_LENGTH)
+
 
 class Page(models.Model):
     url = models.CharField(max_length=URL_MAX_LENGTH)
