@@ -4,14 +4,15 @@
 Provides command line based interface to news scheduling.
 
 """
+import os
+
 import click
 
-from .backends import (
-    STORE_TABLE_NAME,
-    STORE_PATH
-)
 from .utils import logger
-from .backends.json import JSONBackend
+from .backends.json import (
+    STORE_PATH,
+    JSONBackend,
+)
 from .site import Site
 from .schedule import Schedule
 
@@ -19,10 +20,10 @@ from .schedule import Schedule
 def require_url(f):
     return click.argument('url')(f)
 
-def optional_term(f):
+def optional_cycle(f):
     return click.option(
-        '-t', '--term', type=int, default=180,
-        help='cycle term in seconds for scrapping site'
+        '-c', '--cycle', type=int, default=180,
+        help='cycle in seconds for updating site pages'
     )(f)
 
 def optional_backend_type(f):
@@ -37,49 +38,35 @@ def optional_path(f):
         help='path to news store backend'
     )(f)
 
-def optional_table(f):
-    return click.option(
-        '--table', type=str, default=STORE_TABLE_NAME,
-        help='table name of page in news store backend database'
-    )(f)
-
-def optional_username(f):
-    return click.option(
-        '-u', '--username', type=str, default=None,
-        help='news store backend database username'
-    )(f)
-
-def optional_password(f):
-    return click.option(
-        '-p', '--password', type=str, default=None,
-        help='news store backend database password'
-    )(f)
-
 def optional_logging(f):
-    return click.option('-s', '--silent', is_flag=True)(f)
+    return click.option(
+        '-s', '--silent', is_flag=True, help='make logging silent'
+    )(f)
 
-def get_backend(backend_type, username=None, password=None,
-                table=STORE_TABLE_NAME, path=STORE_PATH):
+def get_backend(backend_type, path=STORE_PATH):
     if backend_type == 'json':
         return JSONBackend(path)
-    else:
-        raise click.BadOptionUsage
 
-@click.group(help='Scheduled web post scrapper automated')
+    elif backend_type == 'django':
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', path)
+        # Do lazy import after django settings module path set to avoid
+        # `~django.core.exceptions.ImproperlyConfigured` error on import time.
+        from .backends.django import DjangoBackend
+        return DjangoBackend()
+
+
+@click.group(help='Schedulable web probe automated')
 def main():
     pass
 
-@click.command('schedule', help='Make news schedule')
+@click.command('schedule', help='Register and run news schedule')
 @require_url
 @optional_backend_type
-@optional_username
-@optional_password
-@optional_table
 @optional_path
-@optional_term
+@optional_cycle
 @optional_logging
-def schedule(url, backend, username, password, table, path, term, silent):
-    backend = get_backend(backend, username, password, table, path)
+def schedule(url, backend, path, cycle, silent):
+    backend = get_backend(backend, path)
     site = Site(url, backend)
 
     if not silent:
@@ -87,19 +74,16 @@ def schedule(url, backend, username, password, table, path, term, silent):
     else:
         logger.disable()
 
-    schedule = Schedule(site, term)
+    schedule = Schedule(site, cycle)
     schedule.run()
 
 @click.command('update', help='Update news')
 @require_url
 @optional_backend_type
-@optional_username
-@optional_password
-@optional_table
 @optional_path
 @optional_logging
-def update(url, backend, username, password, table, path, silent):
-    backend = get_backend(backend, username, password, table, path)
+def update(url, backend, path, silent):
+    backend = get_backend(backend, path)
     site = Site(url, backend)
 
     if not silent:
@@ -113,12 +97,9 @@ def update(url, backend, username, password, table, path, silent):
 @click.command('delete', help='Delete site pages from the store')
 @require_url
 @optional_backend_type
-@optional_username
-@optional_password
-@optional_table
 @optional_path
-def delete(url, backend, username, password, table, path):
-    backend = get_backend(backend, username, password, table, path)
+def delete(url, backend, path):
+    backend = get_backend(backend, path)
     backend.delete_pages(*backend.get_pages(url))
 
 

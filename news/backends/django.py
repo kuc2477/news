@@ -22,12 +22,10 @@ class DjangoBackend(BackendBase):
         return cls._instance
 
     def add_pages(self, *pages):
-        ps = [_to_model(page) for page in pages]
-        PageModel.objects.bulk_create(ps)
+        PageModel.objects.bulk_create([_to_model(page) for page in pages])
 
     def delete_pages(self, *pages):
-        ps = PageModel.objects.filter(url__in=[page.url for page in pages])
-        ps.delete()
+        PageModel.objects.filter(url__in=[page.url for page in pages]).delete()
 
     def page_exists(self, page):
         # Page should be either url itself or `~news.page.Page` instance.
@@ -38,9 +36,7 @@ class DjangoBackend(BackendBase):
 
     def get_page(self, url):
         try:
-            p = PageModel.objects.get(url=url)
-            return _from_model(self, p)
-
+            return _from_model(self, PageModel.objects.get(url=url))
         except PageModel.DoesNotExist:
             return None
 
@@ -51,17 +47,20 @@ class DjangoBackend(BackendBase):
 
         if site is not None:
             ps = ps.filter(site__url=(
-                site.url if isinstance(site, Site) else site
-            ))
+                site.url if isinstance(site, Site) else site))
 
         return [_from_model(self, p) for p in ps]
 
 
 def _from_model(backend, p):
-    site = Site(p.site, backend)
-    return Page(site, p.url, p.content, getattr(p.src, 'url', None))
+    return Page(
+        Site(p.site, backend),
+        p.url, p.content, getattr(p.src, 'url', None)
+    )
 
 def _to_model(page):
     return PageModel(
         url=page.url, site=page.site.url,
-        src=getattr(page.src, 'url', None), content=page.content)
+        src=getattr(page.src, 'url', None),
+        content=page.content
+    )
