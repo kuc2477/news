@@ -14,43 +14,6 @@ from ..exceptions import (
 )
 
 
-STORE_PATH = '.NEWS_STORE.json'
-STORE_TABLE_NAME = 'news_page'
-STORE_COLUMN_TYPES = {
-    'site': str,
-    'src': (str, None),
-    'url' : str,
-    'content': str,
-}
-
-
-def should_store_exist(f=None, default=None, error=True):
-    if f is None:
-        return partial(should_store_exist, default=default, error=error)
-
-    @wraps(f)
-    def wrapper(self, *args, **kwargs):
-        if not self.store_exists:
-            if error:
-                raise StoreDoesNotExistError
-            else:
-                return default
-        return f(self, *args, **kwargs)
-    return wrapper
-
-def should_store_valid(f=None, default=None, error=True):
-    if f is None:
-        return partial(should_store_valid, default=default, error=error)
-
-    @wraps(f)
-    def wrapper(self, *args, **kwargs):
-        if not self.store_valid:
-            if default is None:
-                raise InvalidStoreSchemaError
-            else:
-                return default
-        return f(self, *args, **kwargs)
-    return wrapper
 
 
 class BackendBase(metaclass=abc.ABCMeta):
@@ -64,26 +27,6 @@ class BackendBase(metaclass=abc.ABCMeta):
 
     """
 
-    @abc.abstractproperty
-    def store_exists(self):
-        return NotImplemented
-
-    @abc.abstractproperty
-    def store_valid(self):
-        return NotImplemented
-
-    @abc.abstractproperty
-    def store_empty(self):
-        return NotImplemented
-
-    @abc.abstractmethod
-    def create_store(self):
-        return NotImplemented
-
-    @abc.abstractmethod
-    def destroy_store(self):
-        return NotImplemented
-
     @abc.abstractmethod
     def add_pages(self, *pages):
         """Adds a page to the backend's store
@@ -95,7 +38,7 @@ class BackendBase(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def delete_pages(self, pages):
+    def delete_pages(self, *pages):
         """Deletes a page from the backend's store
 
         :param page: The page to delete.
@@ -111,8 +54,8 @@ class BackendBase(metaclass=abc.ABCMeta):
     def page_exists(self, page):
         """Check existance of the page from the import backend's store
 
-        :param page: The page to test existance.
-        :type page: :class:`news.page.Page`
+        :param page: Page or url to test existance.
+        :type page: :class:`news.page.Page` or :class:`str`
         :return: Whether the page exists in the page storage.
         :rtype: :class:`bool`
 

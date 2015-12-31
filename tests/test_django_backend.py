@@ -1,21 +1,43 @@
-from django.conf import settings
-import django
 import pytest
 
-if not settings.configured:
-    settings_dict = dict(
-        INSTALLED_APPS=('news',),
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-            },
-        }
-    )
+from news.backends.django import DjangoBackend
 
-    # configure django settings
-    settings.configure(**settings_dict)
-    if django.VERSION >= (1, 7):
-        django.setup()
+from fixtures import *
 
-def test_setup():
-    pass
+
+@pytest.mark.django_db
+def test_add_pages(django_backend, page):
+    assert(not django_backend.page_exists(page))
+    django_backend.add_pages(page)
+    assert(django_backend.page_exists(page))
+
+@pytest.mark.django_db
+def test_delete_pages(django_backend, page):
+    django_backend.add_pages(page)
+    assert(django_backend.page_exists(page))
+    django_backend.delete_pages(page)
+    assert(not django_backend.page_exists(page))
+
+@pytest.mark.django_db
+def test_page_exists(django_backend, page):
+    assert(not django_backend.page_exists(page))
+    django_backend.add_pages(page)
+    assert(django_backend.page_exists(page))
+    django_backend.delete_pages(page)
+    assert(not django_backend.page_exists(page))
+
+@pytest.mark.django_db
+def test_get_page(django_backend, page):
+    django_backend.add_pages(page)
+    assert(page == django_backend.get_page(page.url))
+
+@pytest.mark.django_db
+def test_get_pages(django_backend, page):
+    django_backend.add_pages(page)
+    assert(page in django_backend.get_pages())
+
+@pytest.mark.django_db
+def test_get_urls(django_backend, page):
+    django_backend.add_pages(page)
+    assert(page.url in django_backend.get_urls())
+    assert(len(django_backend.get_urls()) == 1)

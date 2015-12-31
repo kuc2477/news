@@ -4,6 +4,7 @@ import pytest
 from news.site import Site
 from news.page import Page
 from news.backends.json import JSONBackend
+from news.backends.django import DjangoBackend
 
 
 # =======
@@ -62,8 +63,16 @@ def ranker():
     return None
 
 @pytest.fixture
-def backend(path):
+def json_backend(path):
     return JSONBackend(str(path))
+
+@pytest.fixture
+def django_backend():
+    return DjangoBackend()
+
+@pytest.fixture
+def backend(json_backend):
+    return json_backend
 
 @pytest.fixture
 def site(url, backend):

@@ -3,42 +3,65 @@
 Django ORM page store backend for news.
 
 """
-from django.db import connection
-from django.db import models
+import django
+from django.conf import settings
 
-from . import (
-    BackendBase,
-    should_store_exist,
-    should_store_valid,
-    STORE_COLUMN_TYPES,
-    STORE_TABLE_NAME
-)
-
+from . import BackendBase
 from ..page import Page
 from ..site import Site
+from ..models.django import Page as PageModel
 from ..exceptions import InvalidStoreSchemaError
 
 
-URL_MAX_LENGTH = 300
-
-
 class DjangoBackend(BackendBase):
-    def __init__(self, settings):
-        self.settings = settings
+    _instance = None
 
-    @property
-    def store_exists(self):
-        cursor = connection.cursor()
-        return self.table in connection.introspection.get_table_list(cursor)
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super().__new__(cls, *args, **kwargs)
+        return cls._instance
+
+    def add_pages(self, *pages):
+        ps = [_to_model(page) for page in pages]
+        PageModel.objects.bulk_create(ps)
+
+    def delete_pages(self, *pages):
+        ps = PageModel.objects.filter(url__in=[page.url for page in pages])
+        ps.delete()
+
+    def page_exists(self, page):
+        # Page should be either url itself or `~news.page.Page` instance.
+        assert(isinstance(page, (str, Page)))
+        return PageModel.objects.filter(
+            url=(page.url if isinstance(page, Page) else page)
+        ).exists()
+
+    def get_page(self, url):
+        try:
+            p = PageModel.objects.get(url=url)
+            return _from_model(self, p)
+
+        except PageModel.DoesNotExist:
+            return None
+
+    def get_pages(self, site=None):
+        # Site should be either url itself or `~news.site.Site` instance.
+        assert(isinstance(site, (str, Site)) or site is None)
+        ps = PageModel.objects.all()
+
+        if site is not None:
+            ps = ps.filter(site__url=(
+                site.url if isinstance(site, Site) else site
+            ))
+
+        return [_from_model(self, p) for p in ps]
 
 
-class Site(models.Model):
-    url = models.CharField(max_length=URL_MAX_LENGTH)
+def _from_model(backend, p):
+    site = Site(p.site, backend)
+    return Page(site, p.url, p.content, getattr(p.src, 'url', None))
 
-
-class Page(models.Model):
-    url = models.CharField(max_length=URL_MAX_LENGTH)
-    site = models.ForeignKey(Site, related_name='pages', db_index=True)
-    src = models.ForeignKey('self', null=True, blank=True,
-                            related_name='children', db_index=True)
-    content = models.TextField()
+def _to_model(page):
+    return PageModel(
+        url=page.url, site=page.site.url,
+        src=getattr(page.src, 'url', None), content=page.content)

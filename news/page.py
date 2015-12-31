@@ -64,7 +64,7 @@ class Page(object):
             try :
                 response = await aiohttp.get(url)
             except Exception:
-                logger.warning('{}: invalid response!' % url)
+                logger.warning('{} invalid response!' % url)
                 continue
             else:
                 logger.info('{}: valid response!' % url)

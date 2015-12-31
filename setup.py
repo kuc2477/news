@@ -56,6 +56,7 @@ setup(
     tests_require=[
         'pytest>=2.8.5',
         'pytest-asyncio>=0.3.0',
+        'pytest-django>=2.9.1'
     ],
     cmdclass=cmdclass,
     classifiers=[
