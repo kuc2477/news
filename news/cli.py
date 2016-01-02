@@ -26,15 +26,21 @@ def optional_cycle(f):
         help='cycle in seconds for updating site pages'
     )(f)
 
+def optional_brother(f):
+    return click.option(
+        '-b', '--brother', multiple=True,
+        help='brother url of the site'
+    )(f)
+
 def optional_backend_type(f):
     return click.option(
-        '-b', '--backend', type=click.Choice(['json', 'django']),
+        '--backend', type=click.Choice(['json', 'django']),
         default='json', help='backend type to use'
     )(f)
 
 def optional_path(f):
     return click.option(
-        '--path', type=str, default=STORE_PATH,
+        '-p', '--path', type=str, default=STORE_PATH,
         help='path to news store backend'
     )(f)
 
@@ -55,19 +61,28 @@ def get_backend(backend_type, path=STORE_PATH):
         return DjangoBackend()
 
 
-@click.group(help='Schedulable web probe automated')
+@click.group(help='Schedulable web scrapper automated')
 def main():
     pass
 
+@click.command('show', help='show list of urls of stored news in the backend')
+@optional_backend_type
+@optional_path
+def show(backend, path):
+    backend = get_backend(backend, path)
+    for url in backend.get_urls():
+        print(url)
+
 @click.command('schedule', help='Register and run news schedule')
 @require_url
+@optional_brother
 @optional_backend_type
 @optional_path
 @optional_cycle
 @optional_logging
-def schedule(url, backend, path, cycle, silent):
+def schedule(url, brother, backend, path, cycle, silent):
     backend = get_backend(backend, path)
-    site = Site(url, backend)
+    site = Site(url, backend, brothers=list(brother))
 
     if not silent:
         logger.enable()
@@ -79,12 +94,16 @@ def schedule(url, backend, path, cycle, silent):
 
 @click.command('update', help='Update news')
 @require_url
+@optional_brother
 @optional_backend_type
 @optional_path
 @optional_logging
-def update(url, backend, path, silent):
+def update(url, brother, backend, path, silent):
+    print(url)
+    print(brother)
+    print(backend)
     backend = get_backend(backend, path)
-    site = Site(url, backend)
+    site = Site(url, backend, brothers=list(brother))
 
     if not silent:
         logger.enable()
@@ -94,7 +113,7 @@ def update(url, backend, path, silent):
     schedule = Schedule(site)
     schedule.run_once()
 
-@click.command('delete', help='Delete site pages from the store')
+@click.command('delete', help='Delete news from the store')
 @require_url
 @optional_backend_type
 @optional_path
@@ -103,6 +122,7 @@ def delete(url, backend, path):
     backend.delete_pages(*backend.get_pages(url))
 
 
+main.add_command(show)
 main.add_command(schedule)
 main.add_command(update)
 main.add_command(delete)

@@ -1,12 +1,18 @@
+import re
 import os.path
 import logging
-from colorlog import ColoredFormatter
 from urllib.parse import urlparse
+
+from colorlog import ColoredFormatter
 
 
 def ispath(url):
     parsed = urlparse(url)
     return not parsed.scheme and not parsed.hostname
+
+def isabspath(url):
+    parsed = urlparse(url)
+    return ispath(url) and url.startswith('/')
 
 def issamehost(index, url):
     return ispath(url) or urlparse(index).hostname == urlparse(url).hostname
@@ -22,14 +28,32 @@ def ext(url):
 def fillurl(index, url):
     parsedi = urlparse(index)
     parsedu = urlparse(url)
-    return '%s://%s/%s' % (parsedi.scheme, parsedi.hostname, parsedu.path) if \
-        ispath(url) else parsedu.geturl()
 
+    if not ispath(url):
+        return parsedu.geturl()
+
+    elif isabspath(url):
+        return '%s://%s/%s%s' % (
+            parsedi.scheme, parsedi.hostname, parsedu.path,
+            '?' + parsedu.query if parsedu.query else ''
+        )
+
+    else:
+        return '%s/%s' % (parsedi.geturl(), url)
+
+def normalize(url):
+    parsed = urlparse(url)
+    normpath = re.sub(r'\/+', '/', os.path.normpath('/' + parsed.path))
+    normpath = '' if normpath == '/' else normpath
+    query = '?' + parsed.query if parsed.query else ''
+    return '%s://%s%s%s' % (
+        parsed.scheme, parsed.hostname, normpath, query
+    )
 
 # Logging handler and formatter
 __NEWS_LOG_STREAM_HANDLER__ = logging.StreamHandler()
 __NEWS_LOG_FORMATTER__ = ColoredFormatter(
-    '%(asctime)s %(name)-4s %(levelname)-4s %(log_color)s%(message)s',
+    '%(asctime)s %(name)-4s %(log_color)s%(message)s',
     datefmt=None,
     reset=True,
     log_colors={
@@ -61,6 +85,3 @@ def _disable_logger():
 logger = __NEWS_LOGGER__
 logger.enable = _enable_logger
 logger.disable = _disable_logger
-
-# Defaults to logging disabled
-#logger.disable()

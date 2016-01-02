@@ -5,7 +5,7 @@ import asyncio
 import pytest
 
 from fixtures import *
-from news.page import is_anchor_valid_for_site
+from news.page import is_anchor_valid
 
 
 def test_text_page_urls(text_page):
@@ -23,6 +23,6 @@ def test_hash_link_page_urls(hash_link_page):
 def test_json_serialization(page):
     json.dumps(page.to_json())
 
-def test_is_anchor_valid_for_site(site, external_link_content):
+def test_is_anchor_valid(site, external_link_content):
     anchors = BeautifulSoup(external_link_content)('a')
-    assert(not is_anchor_valid_for_site(site, anchors[0]))
+    assert(not is_anchor_valid(site, anchors[0]))

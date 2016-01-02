@@ -9,6 +9,8 @@ from urllib.parse import urlparse
 import asyncio
 import aiohttp
 
+from .utils import logger
+from .utils import normalize
 from .page import Page
 
 
@@ -19,23 +21,46 @@ class Site(object):
     :type url: :class:`str`
     :param backend: The backend to use for page storage.
     :type backend: :class:`news.backend.BackendBase`
+    :param brothers: The urls that pages under them also will be considered as
+        an subpage of the site.
+    :type brothers: :class:`list`
+    :param blacklist: The blacklist file extensions to avoid fetching.
+    :type blacklist: :class:`list`
 
     """
 
-    def __init__(self, url, backend,
+    def __init__(self, url, backend, brothers=[],
                  blacklist=['png', 'jpg', 'gif', 'pdf', 'svg']):
-        self.url = url
+        self.url = normalize(url)
         self.backend = backend
+        self.brothers = brothers
         self.blacklist = blacklist
 
-    async def update_pages(self):
-        new_pages = await self.fetch_pages()
-        self.backend.add_pages(*new_pages)
+    def __eq__(self, other):
+        return self.url == other.url
+
+    async def update_pages(self, *callbacks):
+        # logging
+        logger.debug('%s: News update start' % self.url)
+
+        fetched = await self.fetch_pages()
+        new = [p for p in fetched if not self.backend.page_exists(p)]
+
+        # fire callbacks
+        if callbacks and new:
+            for callback in callbacks:
+                callback(new)
+
+        # add new pages
+        self.backend.add_pages(*new)
+
+        # notify that we have updated pages for the site.
+        logger.debug(
+            '%d pages fetched / %d pages updated' %
+            (len(fetched), len(new))
+        )
 
     async def fetch_pages(self):
-        # Initialize temporary url store for fetching pages.
-        self.fetched_urls = []
-
         """Fetch new pages from the site.
 
         :return: `page`s of the site.
@@ -43,11 +68,11 @@ class Site(object):
 
         """
         async with aiohttp.get(self.url) as response:
-            # Initialize temporary url store to check fetch progress.
-            self.fetched_urls = [self.url]
+            # Initialize url set to check if links has been fetched or not.
+            self.reached_urls= {self.url}
 
             root = Page(self, self.url, await response.text(), None)
-            return [root] + await root.fetch_linked_pages()
+            return {root}.union(await root.fetch_linked_pages())
 
 
     @property

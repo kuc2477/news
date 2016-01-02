@@ -15,7 +15,7 @@ from asyncio import gather
 import aiohttp
 
 from .utils import logger
-from .utils import fillurl, ext, issuburl
+from .utils import fillurl, ext, issuburl, normalize
 
 
 class Page(object):
@@ -37,12 +37,17 @@ class Page(object):
 
     def __init__(self, site, url, content, src):
         self.site = site
-        self.url = url
+        self.url = normalize(url)
         self.content = content
         self.src = src
 
     def __eq__(self, other):
-        return isinstance(other, Page) and self.url == other.url
+        return (isinstance(other, Page) and
+                self.url == other.url and
+                self.site.url == other.site.url)
+
+    def __hash__(self):
+        return hash(self.url) ^ hash(self.site.url)
 
 
     # ============
@@ -52,54 +57,46 @@ class Page(object):
     async def fetch_linked_pages(self):
         """Recursively fetch linked pages from the page.
 
-        :return: `page`s of the site.
+        :param reached_urls: Set of reached urls before the method call.
+        :type reached_urls: :class:`list`
+        :return: List of linked `page`s of the page
         :rtype: :class:`list`
 
         """
+        unreached = [u for u in self.urls if u not in self.site.reached_urls]
 
-        # gather only valid responses
-        valid_response_urls = []
-        valid_responses = []
-        for url in self.unreached_urls:
-            try :
-                response = await aiohttp.get(url)
-            except Exception:
-                logger.warning('%s invalid response!' % url)
-                continue
-            else:
-                logger.info('%s: valid response!' % url)
-                valid_response_urls.append(url)
-                valid_responses.append(response)
+        # update reached urls
+        self.site.reached_urls = self.site.reached_urls.union(set(unreached))
 
-        # gather only valid contents
-        valid_content_urls = []
-        valid_contents = []
-        for url, response in zip(valid_response_urls, valid_responses):
-            try:
-                content = await response.text()
-            except UnicodeError:
-                logger.warning('%s invalid content!' % url)
-                continue
-            else:
-                logger.info('%s valid content!' % url)
-                valid_content_urls.append(url)
-                valid_contents.append(content)
+        # logging
+        for u in unreached:
+            logger.warning('[REQUEST] %s' % u)
 
-        # Initialize temporary url store if not initialized yet and acuumulate
-        # fetched urls.
-        self.site.fetched_urls = getattr(self.site, 'fetched_urls', [])
-        self.site.fetched_urls += valid_content_urls
+        responses = [(r, u) for r, u in zip(await gather(
+            *[aiohttp.get(u) for u in unreached],
+            return_exceptions=True), unreached
+        ) if not isinstance(r, Exception)]
 
-        # pages of the page
-        pages = [Page(self.site, url, content, self) for
-                 url, content in zip(valid_content_urls, valid_contents)]
+        contents = [(c, u) for c, u in zip(await gather(
+            *[r.text() for r, u in responses],
+            return_exceptions=True), [u for r, u in responses]
+        ) if not isinstance(c, Exception)]
 
-        # linked pages of the pages from the page
+        # logging
+        for u in [u for c, u in contents]:
+            logger.info('[RESPONSE] %s responded with valid contents' % u)
+        for u in [u for u in unreached if u not in [u for c, u in contents]]:
+            logger.error('[INVALID] %s responded with invalid contents' % u)
+
+        # linked pages of the page.
+        pages = {Page(self.site, u, c, self) for c, u in contents}
+
+        # linked page sets from the linked pages.
         linked_page_sets = await gather(*[
             page.fetch_linked_pages() for page in pages
-        ])
+       ])
 
-        return pages + list(chain(*linked_page_sets))
+        return pages.union(set(chain(*linked_page_sets)))
 
     def to_json(self):
         return {
@@ -134,15 +131,15 @@ class Page(object):
         """
         anchors = BeautifulSoup(self.content, 'html.parser')('a')
 
-        return {fillurl(self.site.url, a['href']) for a in anchors if
-                is_anchor_valid_for_site(self.site, a)}
-
-    @property
-    def unreached_urls(self):
-        return [url for url in self.urls if url not in
-                self.site.urls + getattr(self.site, 'fetched_urls', [])]
+        return {normalize(fillurl(self.site.url, a['href']))
+                for a in anchors if is_anchor_valid(self.site, a)}
 
 
-def is_anchor_valid_for_site(site, a):
-    return a.has_attr('href') and issuburl(site.url, a['href']) and \
-        ext(a['href']) not in site.blacklist
+def is_anchor_valid(site, a):
+    return (
+        a.has_attr('href') and
+        any(
+            [issuburl(site.url, a['href'])] +
+            [issuburl(u, a['href']) for u in site.brothers]
+        ) and ext(a['href']) not in site.blacklist
+    )
