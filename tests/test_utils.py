@@ -91,7 +91,8 @@ def test_fillurl(index, relpath, abspath):
     parsedu = urlparse(abspath)
     assert(
         utils.fillurl(index, abspath) ==
-        '%s://%s/%s%s' % (parsedi.scheme, parsedi.hostname, parsedu.path,
+        '%s://%s/%s%s' % (parsedi.scheme, parsedi.hostname,
+                          parsedu.path.lstrip('/'),
                           '?' + parsedu.query if parsedu.query else '')
     )
 
@@ -104,3 +105,14 @@ def test_normalize():
         utils.normalize('http://www.naver.com///') ==
         'http://www.naver.com'
     )
+
+def test_depth():
+    assert(utils.depth('http://www.naver.com/a/',
+                       'http://www.naver.com/a/b/c') == 2)
+    assert(utils.depth('http://www.naver.com/a/',
+                       'http://www.naver.com/a') == 0)
+    assert(utils.depth('http://www.naver.com/a/b',
+                       'http://www.naver.com/a/b//c') == 1)
+    assert(utils.depth('http://www.naver.com/a/b/c', '/a/b/c/d/../d') == 1)
+    assert(utils.depth('http://www.naver.com/a/b', '/b/c/d/') == -1)
+    assert(utils.depth('http://www.naver.com/a/b', 'c/d') == 2)

@@ -15,7 +15,10 @@ from asyncio import gather
 import aiohttp
 
 from .utils import logger
-from .utils import fillurl, ext, issuburl, normalize
+from .utils import (
+    fillurl, ext, issuburl,
+    normalize, depth
+)
 
 
 class Page(object):
@@ -137,9 +140,14 @@ class Page(object):
 
 def is_anchor_valid(site, a):
     return (
-        a.has_attr('href') and
-        any(
-            [issuburl(site.url, a['href'])] +
-            [issuburl(u, a['href']) for u in site.brothers]
+        a.has_attr('href') and any([
+            # links to suburl of the site with depth smaller than maximum are
+            # valid.
+            issuburl(site.url, a['href']) and
+            (depth(site.url, a['href']) <= site.maxdepth if
+            site.maxdepth is not None else True)
+            # links to brother urls are valid
+        ] + [issuburl(u, a['href']) for u in site.brothers]
+            # links file extensions on blacklist are not valid
         ) and ext(a['href']) not in site.blacklist
     )

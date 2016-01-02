@@ -14,13 +14,21 @@ def isabspath(url):
     parsed = urlparse(url)
     return ispath(url) and url.startswith('/')
 
+def isrelpath(url):
+    parsed = urlparse(url)
+    return ispath(url) and not url.startswith('/')
+
 def issamehost(index, url):
     return ispath(url) or urlparse(index).hostname == urlparse(url).hostname
 
 def issuburl(index, url):
     parsedi = urlparse(index)
     parsedu = urlparse(url)
-    return issamehost(index, url) and parsedu.path.startswith(parsedi.path)
+    return issamehost(index, url) and  (
+        isrelpath(url) or
+        parsedu.path.rstrip('/').startswith(
+        parsedi.path.rstrip('/'))
+    )
 
 def ext(url):
     return os.path.splitext(url)[1][1:]
@@ -34,7 +42,7 @@ def fillurl(index, url):
 
     elif isabspath(url):
         return '%s://%s/%s%s' % (
-            parsedi.scheme, parsedi.hostname, parsedu.path,
+            parsedi.scheme, parsedi.hostname, parsedu.path.lstrip('/'),
             '?' + parsedu.query if parsedu.query else ''
         )
 
@@ -49,6 +57,21 @@ def normalize(url):
     return '%s://%s%s%s' % (
         parsed.scheme, parsed.hostname, normpath, query
     )
+
+def depth(index, url):
+    if not issuburl(index, url):
+        return -1
+
+    nindex = normalize(index)
+    nurl = normalize(fillurl(index, url))
+
+    fragments = nurl.replace(nindex, '').split('/')
+
+    if '' in fragments:
+        fragments.remove('')
+
+    return len(fragments)
+
 
 # Logging handler and formatter
 __NEWS_LOG_STREAM_HANDLER__ = logging.StreamHandler()

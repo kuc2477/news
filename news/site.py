@@ -24,25 +24,27 @@ class Site(object):
     :param brothers: The urls that pages under them also will be considered as
         an subpage of the site.
     :type brothers: :class:`list`
+    :param depth: The maximum distance to allow from the site url to the pages.
+    :type depth: :class:`int` or `None`
     :param blacklist: The blacklist file extensions to avoid fetching.
     :type blacklist: :class:`list`
 
     """
 
-    def __init__(self, url, backend, brothers=[],
+    def __init__(self, url, backend, brothers=[], maxdepth=None,
                  blacklist=['png', 'jpg', 'gif', 'pdf', 'svg']):
+        # TODO: `brothers`, `maxdepth`, `blacklist` should be moved to
+        #       `~news.page.Page.fetch_linked_pages`.
         self.url = normalize(url)
         self.backend = backend
-        self.brothers = brothers
+        self.brothers = map(lambda x: normalize(x), brothers)
+        self.maxdepth = maxdepth
         self.blacklist = blacklist
 
     def __eq__(self, other):
         return self.url == other.url
 
     async def update_pages(self, *callbacks):
-        # logging
-        logger.debug('%s: News update start' % self.url)
-
         fetched = await self.fetch_pages()
         new = [p for p in fetched if not self.backend.page_exists(p)]
 

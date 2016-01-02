@@ -32,6 +32,12 @@ def optional_brother(f):
         help='brother url of the site'
     )(f)
 
+def optional_maxdepth(f):
+    return click.option(
+        '-d', '--depth', type=int, default=None,
+        help='maximum depth to allow from the site url to pages'
+    )(f)
+
 def optional_backend_type(f):
     return click.option(
         '--backend', type=click.Choice(['json', 'django']),
@@ -76,13 +82,14 @@ def show(backend, path):
 @click.command('schedule', help='Register and run news schedule')
 @require_url
 @optional_brother
+@optional_maxdepth
 @optional_backend_type
 @optional_path
 @optional_cycle
 @optional_logging
-def schedule(url, brother, backend, path, cycle, silent):
+def schedule(url, brother, depth, backend, path, cycle, silent):
     backend = get_backend(backend, path)
-    site = Site(url, backend, brothers=list(brother))
+    site = Site(url, backend, brothers=list(brother), maxdepth=depth)
 
     if not silent:
         logger.enable()
@@ -95,15 +102,13 @@ def schedule(url, brother, backend, path, cycle, silent):
 @click.command('update', help='Update news')
 @require_url
 @optional_brother
+@optional_maxdepth
 @optional_backend_type
 @optional_path
 @optional_logging
-def update(url, brother, backend, path, silent):
-    print(url)
-    print(brother)
-    print(backend)
+def update(url, brother, depth, backend, path, silent):
     backend = get_backend(backend, path)
-    site = Site(url, backend, brothers=list(brother))
+    site = Site(url, backend, brothers=list(brother), maxdepth=depth)
 
     if not silent:
         logger.enable()
