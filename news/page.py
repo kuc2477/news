@@ -126,6 +126,10 @@ class Page(object):
         return self if self.src is None else self.src.root
 
     @property
+    def depth(self):
+        return depth(self.site.url, self.url)
+
+    @property
     def distance(self):
         """Returns distance from the root page.
 
@@ -135,9 +139,11 @@ class Page(object):
         """
         return 0 if self.src is None else self.src.distance + 1
 
+    #TODO: distance option from cli seems not working properly
+    #TODO: depth option from cli seems not working properly
     def worth_visit(self, url, maxdepth=None, maxdist=None,
                     blacklist=['png', 'jpg', 'gif', 'pdf', 'svg']):
-        """Returns boolean value whether the url is worth to explore.
+        """Returns boolean value whether the url is worth to explore or not.
 
         :param url: The url to test if it is worth to visit.
         :type url: :class:`str`
@@ -152,7 +158,7 @@ class Page(object):
         is_child = issuburl(self.site.url, url)
         is_relative = any([issuburl(b.url, url) for b in self.site.brothers])
         depth_ok = depth(self.site.url, url) <= maxdepth if maxdepth is not None else True
-        distance_ok = self.distance <= maxdist if maxdist is not None else True
+        distance_ok = self.distance < maxdist if maxdist is not None else True
         blacklist_ok = ext(url) not in blacklist
 
         return ((is_child and depth_ok) or is_relative) and distance_ok and blacklist

@@ -2,6 +2,8 @@ import re
 import os.path
 import logging
 
+from timeit import default_timer
+from contextlib import contextmanager
 from functools import partial
 from urllib.parse import urlparse
 
@@ -76,6 +78,15 @@ def depth(index, url):
 
     return len(fragments)
 
+
+# Execution time measuring context manager for logging purpose
+@contextmanager
+def elapsed_timer():
+    start = default_timer()
+    elapser = lambda: default_timer() - start
+    yield lambda: elapser()
+    end = default_timer()
+    elapser = lambda: end - start
 
 # Logging handler and formatter
 __NEWS_LOG_STREAM_HANDLER__ = logging.StreamHandler()
