@@ -20,6 +20,9 @@ from .utils import (
     normalize, depth
 )
 
+ITERATION = 0
+CHANGED = False
+
 
 class Page(object):
     """Scrapped page containing various page meta information.
@@ -97,7 +100,7 @@ class Page(object):
 
         # linked page sets from the linked pages of the page.
         linked_page_sets = await gather(*[
-            page.fetch_linked_pages() for page in pages
+            page.fetch_linked_pages(**kwargs) for page in pages
        ])
 
         return pages.union(set(chain(*linked_page_sets)))
@@ -139,10 +142,8 @@ class Page(object):
         """
         return 0 if self.src is None else self.src.distance + 1
 
-    #TODO: distance option from cli seems not working properly
-    #TODO: depth option from cli seems not working properly
     def worth_visit(self, url, maxdepth=None, maxdist=None,
-                    blacklist=['png', 'jpg', 'gif', 'pdf', 'svg']):
+                    blacklist=['png', 'jpg', 'gif', 'pdf', 'svg', 'zip']):
         """Returns boolean value whether the url is worth to explore or not.
 
         :param url: The url to test if it is worth to visit.
@@ -155,6 +156,7 @@ class Page(object):
         :type blacklist: :class:`list`
 
         """
+
         is_child = issuburl(self.site.url, url)
         is_relative = any([issuburl(b.url, url) for b in self.site.brothers])
         depth_ok = depth(self.site.url, url) <= maxdepth if maxdepth is not None else True
