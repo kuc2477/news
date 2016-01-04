@@ -75,25 +75,25 @@ def backend(json_backend):
     return json_backend
 
 @pytest.fixture
-def site(url, backend):
-    return Site(url, backend)
+def site(url):
+    return Site(url)
 
 @pytest.fixture
 def page(site, url, content):
-    return Page(site, url, content, None)
+    return Page(site, None, url, content)
 
 @pytest.fixture
 def text_page(site, url, text_content):
-    return Page(site, url, text_content, None)
+    return Page(site, None, url, text_content)
 
 @pytest.fixture
 def local_link_page(site, url, local_link_content):
-    return Page(site, url, local_link_content, None)
+    return Page(site, None, url, local_link_content)
 
 @pytest.fixture
 def external_link_page(site, url, external_link_content):
-    return Page(site, url, external_link_content, None)
+    return Page(site, None, url, external_link_content)
 
 @pytest.fixture
 def hash_link_page(site, url, hash_link_content):
-    return Page(site, url, hash_link_content, None)
+    return Page(site, None, url, hash_link_content)

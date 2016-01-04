@@ -14,8 +14,6 @@ from ..exceptions import (
 )
 
 
-
-
 class BackendBase(metaclass=abc.ABCMeta):
     """Abstract base class for page store backends.
 

@@ -19,50 +19,17 @@ class Site(object):
 
     :param url: The url of the site.
     :type url: :class:`str`
-    :param backend: The backend to use for page storage.
-    :type backend: :class:`news.backend.BackendBase`
-    :param brothers: The urls that pages under them also will be considered as
-        an subpage of the site.
-    :type brothers: :class:`list`
-    :param depth: The maximum distance to allow from the site url to the pages.
-    :type depth: :class:`int` or `None`
-    :param blacklist: The blacklist file extensions to avoid fetching.
-    :type blacklist: :class:`list`
 
     """
 
-    def __init__(self, url, backend, brothers=[], maxdepth=None,
-                 blacklist=['png', 'jpg', 'gif', 'pdf', 'svg']):
-        # TODO: `brothers`, `maxdepth`, `blacklist` should be moved to
-        #       `~news.page.Page.fetch_linked_pages`.
+    def __init__(self, url, brothers=[]):
         self.url = normalize(url)
-        self.backend = backend
-        self.brothers = map(lambda x: normalize(x), brothers)
-        self.maxdepth = maxdepth
-        self.blacklist = blacklist
+        self.brothers = brothers
 
     def __eq__(self, other):
         return self.url == other.url
 
-    async def update_pages(self, *callbacks):
-        fetched = await self.fetch_pages()
-        new = [p for p in fetched if not self.backend.page_exists(p)]
-
-        # fire callbacks
-        if callbacks and new:
-            for callback in callbacks:
-                callback(new)
-
-        # add new pages
-        self.backend.add_pages(*new)
-
-        # notify that we have updated pages for the site.
-        logger.debug(
-            '%d pages fetched / %d pages updated' %
-            (len(fetched), len(new))
-        )
-
-    async def fetch_pages(self):
+    async def fetch_pages(self, **kwargs):
         """Fetch new pages from the site.
 
         :return: `page`s of the site.
@@ -72,14 +39,8 @@ class Site(object):
         async with aiohttp.get(self.url) as response:
             # Initialize url set to check if links has been fetched or not.
             self.reached_urls= {self.url}
-
-            root = Page(self, self.url, await response.text(), None)
-            return {root}.union(await root.fetch_linked_pages())
-
-
-    @property
-    def urls(self):
-        return self.backend.get_urls(self)
+            root = Page(self, None, self.url, await response.text())
+            return {root}.union(await root.fetch_linked_pages(**kwargs))
 
     @property
     def scheme(self):

@@ -38,11 +38,11 @@ class Page(object):
 
     """
 
-    def __init__(self, site, url, content, src):
+    def __init__(self, site, src, url, content):
         self.site = site
+        self.src = src
         self.url = normalize(url)
         self.content = content
-        self.src = src
 
     def __eq__(self, other):
         return (isinstance(other, Page) and
@@ -57,7 +57,7 @@ class Page(object):
     # Main methods
     # ============
 
-    async def fetch_linked_pages(self):
+    async def fetch_linked_pages(self, **kwargs):
         """Recursively fetch linked pages from the page.
 
         :param reached_urls: Set of reached urls before the method call.
@@ -66,7 +66,8 @@ class Page(object):
         :rtype: :class:`list`
 
         """
-        unreached = [u for u in self.urls if u not in self.site.reached_urls]
+        worthy = self.get_worthy_urls(**kwargs)
+        unreached = [u for u in worthy if u not in self.site.reached_urls]
 
         # update reached urls
         self.site.reached_urls = self.site.reached_urls.union(set(unreached))
@@ -92,9 +93,9 @@ class Page(object):
             logger.error('[INVALID] %s responded with invalid contents' % u)
 
         # linked pages of the page.
-        pages = {Page(self.site, u, c, self) for c, u in contents}
+        pages = {Page(self.site, self, u, c) for c, u in contents}
 
-        # linked page sets from the linked pages.
+        # linked page sets from the linked pages of the page.
         linked_page_sets = await gather(*[
             page.fetch_linked_pages() for page in pages
        ])
@@ -125,29 +126,46 @@ class Page(object):
         return self if self.src is None else self.src.root
 
     @property
-    def urls(self):
-        """Returns full urls of valid linked urls in the page.
+    def distance(self):
+        """Returns distance from the root page.
 
-        :return: full urls of the anchor tags in the same domain.
+        :return: Distance from the root page.
+        :rtype: :class:`int`
+
+        """
+        return 0 if self.src is None else self.src.distance + 1
+
+    def worth_visit(self, url, maxdepth=None, maxdist=None,
+                    blacklist=['png', 'jpg', 'gif', 'pdf', 'svg']):
+        """Returns boolean value whether the url is worth to explore.
+
+        :param url: The url to test if it is worth to visit.
+        :type url: :class:`str`
+        :param maxdepth: Maximum depth allowed for linked pages.
+        :type maxdepth: :class:`int` or `None`
+        :param maxdist: Maximum distance allowed for linked pages.
+        :type maxdist: :class:`int` or `None`
+        :param blacklist: The extname blacklist for linked pages.
+        :type blacklist: :class:`list`
+
+        """
+        is_child = issuburl(self.site.url, url)
+        is_relative = any([issuburl(b.url, url) for b in self.site.brothers])
+        depth_ok = depth(self.site.url, url) <= maxdepth if maxdepth is not None else True
+        distance_ok = self.distance <= maxdist if maxdist is not None else True
+        blacklist_ok = ext(url) not in blacklist
+
+        return ((is_child and depth_ok) or is_relative) and distance_ok and blacklist
+
+    def get_worthy_urls(self, **kwargs):
+        """Returns full urls of linked urls worth to visit from the page.
+
+        :return: Full urls of the anchor tags worth to visit.
         :rtype: :class:`set`
 
         """
         anchors = BeautifulSoup(self.content, 'html.parser')('a')
+        urls = [a['href'] for a in anchors if a.has_attr('href')]
 
-        return {normalize(fillurl(self.site.url, a['href']))
-                for a in anchors if is_anchor_valid(self.site, a)}
-
-
-def is_anchor_valid(site, a):
-    return (
-        a.has_attr('href') and any([
-            # links to suburl of the site with depth smaller than maximum are
-            # valid.
-            issuburl(site.url, a['href']) and
-            (depth(site.url, a['href']) <= site.maxdepth if
-            site.maxdepth is not None else True)
-            # links to brother urls are valid
-        ] + [issuburl(u, a['href']) for u in site.brothers]
-            # links file extensions on blacklist are not valid
-        ) and ext(a['href']) not in site.blacklist
-    )
+        return {fillurl(self.site.url, u) for u in urls if
+                self.worth_visit(u, **kwargs)}

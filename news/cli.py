@@ -17,7 +17,11 @@ from .site import Site
 from .schedule import Schedule
 
 
-def require_url(f):
+# =================
+# Option decorators
+# =================
+
+def required_url(f):
     return click.argument('url')(f)
 
 def optional_cycle(f):
@@ -34,8 +38,14 @@ def optional_brother(f):
 
 def optional_maxdepth(f):
     return click.option(
-        '-d', '--depth', type=int, default=None,
-        help='maximum depth to allow from the site url to pages'
+        '--depth', type=int, default=None,
+        help='maximum depth to allow from the site to pages'
+    )(f)
+
+def optional_maxdist(f):
+    return click.option(
+        '--distance', type=int, default=None,
+        help='maximum distance to allow from the site to pages'
     )(f)
 
 def optional_backend_type(f):
@@ -52,8 +62,13 @@ def optional_path(f):
 
 def optional_logging(f):
     return click.option(
-        '-s', '--silent', is_flag=True, help='make logging silent'
+        '-s', '--silent', is_flag=True, help='make logger silent'
     )(f)
+
+
+# ===========
+# Aux methods
+# ===========
 
 def get_backend(backend_type, path=STORE_PATH):
     if backend_type == 'json':
@@ -66,12 +81,19 @@ def get_backend(backend_type, path=STORE_PATH):
         from .backends.django import DjangoBackend
         return DjangoBackend()
 
+def get_site(url, brothers):
+    return Site(url, brothers=list(brothers))
+
+
+# ========
+# Commands
+# ========
 
 @click.group(help='Schedulable web scrapper automated')
 def main():
     pass
 
-@click.command('show', help='show list of urls of stored news in the backend')
+@click.command('show', help='Show list of stored urls')
 @optional_backend_type
 @optional_path
 def show(backend, path):
@@ -79,47 +101,42 @@ def show(backend, path):
     for url in backend.get_urls():
         print(url)
 
-@click.command('schedule', help='Register and run news schedule')
-@require_url
-@optional_brother
-@optional_maxdepth
-@optional_backend_type
+@click.command('schedule', help='Run news schedule')
+@required_url
 @optional_path
+@optional_backend_type
+@optional_maxdepth
+@optional_maxdist
+@optional_brother
 @optional_cycle
 @optional_logging
-def schedule(url, brother, depth, backend, path, cycle, silent):
+def schedule(url, path, backend, depth, distance, brother, cycle, silent):
+    site = get_site(url, brother)
     backend = get_backend(backend, path)
-    site = Site(url, backend, brothers=list(brother), maxdepth=depth)
 
-    if not silent:
-        logger.enable()
-    else:
-        logger.disable()
-
-    schedule = Schedule(site, cycle)
+    logger.set_mode(silent)
+    schedule = Schedule(site, backend, cycle=cycle,
+                        maxdepth=depth, maxdist=distance)
     schedule.run()
 
 @click.command('update', help='Update news')
-@require_url
-@optional_brother
-@optional_maxdepth
-@optional_backend_type
+@required_url
 @optional_path
+@optional_backend_type
+@optional_maxdepth
+@optional_maxdist
+@optional_brother
 @optional_logging
-def update(url, brother, depth, backend, path, silent):
+def update(url, path, backend, depth, distance, brother, silent):
+    site = get_site(url, brother)
     backend = get_backend(backend, path)
-    site = Site(url, backend, brothers=list(brother), maxdepth=depth)
 
-    if not silent:
-        logger.enable()
-    else:
-        logger.disable()
-
-    schedule = Schedule(site)
+    logger.set_mode(silent)
+    schedule = Schedule(site, backend, maxdepth=depth, maxdist=distance)
     schedule.run_once()
 
-@click.command('delete', help='Delete news from the store')
-@require_url
+@click.command('delete', help='Delete news')
+@required_url
 @optional_backend_type
 @optional_path
 def delete(url, backend, path):

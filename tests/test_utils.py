@@ -85,15 +85,16 @@ def test_issuburl(index, suburl, nonsuburl):
     assert(not utils.issuburl(index, nonsuburl))
 
 def test_fillurl(index, relpath, abspath):
-    assert(utils.fillurl(index, relpath) == index + '/' + relpath)
+    assert(utils.fillurl(index, relpath) ==
+           utils.normalize(index + '/' + relpath))
 
     parsedi = urlparse(index)
     parsedu = urlparse(abspath)
     assert(
         utils.fillurl(index, abspath) ==
-        '%s://%s/%s%s' % (parsedi.scheme, parsedi.hostname,
+        utils.normalize('%s://%s/%s%s' % (parsedi.scheme, parsedi.hostname,
                           parsedu.path.lstrip('/'),
-                          '?' + parsedu.query if parsedu.query else '')
+                          '?' + parsedu.query if parsedu.query else ''))
     )
 
 def test_normalize():

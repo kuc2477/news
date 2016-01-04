@@ -53,10 +53,7 @@ class DjangoBackend(BackendBase):
 
 
 def _from_model(backend, p):
-    return Page(
-        Site(p.site, backend),
-        p.url, p.content, getattr(p.src, 'url', None)
-    )
+    return Page(Site(p.site), getattr(p.src, 'url', None), p.url, p.content, )
 
 def _to_model(page):
     return PageModel(

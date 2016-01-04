@@ -145,10 +145,10 @@ class JSONBackend(BackendBase):
                 return None
 
             p = json.load(store_json)[url]
-            site = Site(p['site'], self)
+            site = Site(p['site'])
             src = self.get_page(p['src'])
 
-            return Page(site, p['url'], p['content'], src)
+            return Page(site, src, p['url'], p['content'])
 
     @should_store_exist(default=[], error=False)
     @should_store_valid

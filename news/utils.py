@@ -1,6 +1,8 @@
 import re
 import os.path
 import logging
+
+from functools import partial
 from urllib.parse import urlparse
 
 from colorlog import ColoredFormatter
@@ -38,16 +40,18 @@ def fillurl(index, url):
     parsedu = urlparse(url)
 
     if not ispath(url):
-        return parsedu.geturl()
+        filled = parsedu.geturl()
 
     elif isabspath(url):
-        return '%s://%s/%s%s' % (
+        filled = '%s://%s/%s%s' % (
             parsedi.scheme, parsedi.hostname, parsedu.path.lstrip('/'),
             '?' + parsedu.query if parsedu.query else ''
         )
 
     else:
-        return '%s/%s' % (parsedi.geturl(), url)
+        filled = '%s/%s' % (parsedi.geturl(), url)
+
+    return normalize(filled)
 
 def normalize(url):
     parsed = urlparse(url)
@@ -97,14 +101,13 @@ __NEWS_LOG_STREAM_HANDLER__.setFormatter(__NEWS_LOG_FORMATTER__)
 __NEWS_LOGGER__ = logging.getLogger('NEWS')
 __NEWS_LOGGER__.addHandler(__NEWS_LOG_STREAM_HANDLER__)
 
-def _enable_logger():
-    __NEWS_LOGGER__.propagate = True
-    __NEWS_LOGGER__.setLevel(logging.DEBUG)
-
-def _disable_logger():
-    __NEWS_LOGGER__.propagate = False
+def _set_mode(self, silent):
+    if not silent:
+        self.propagate = True
+        self.setLevel(logging.DEBUG)
+    else:
+        self.propagate = False
 
 # Export logger alias
 logger = __NEWS_LOGGER__
-logger.enable = _enable_logger
-logger.disable = _disable_logger
+logger.set_mode = partial(_set_mode, logger)
