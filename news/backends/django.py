@@ -9,7 +9,10 @@ from django.conf import settings
 from . import BackendBase
 from ..page import Page
 from ..site import Site
-from ..models.django import Page as PageModel
+from ..models.django import (
+    Page as PageModel,
+    Site as SiteModel
+)
 from ..exceptions import InvalidStoreSchemaError
 
 
@@ -21,8 +24,24 @@ class DjangoBackend(BackendBase):
             cls._instance = super().__new__(cls, *args, **kwargs)
         return cls._instance
 
+    def add_site(self, site):
+        SiteModel.objects.create(url=site.url)
+
+    def delete_site(self, site):
+        try :
+            SiteModel.objects.get(pk=site.url).delete()
+        except SiteModel.DoesNotExist:
+            pass
+
+    def get_site(self, url):
+        return Site(url) if SiteModel.objects.filter(pk=url).exists() else None
+
     def add_pages(self, *pages):
-        PageModel.objects.bulk_create([_to_model(page) for page in pages])
+        # add site if the site of page doesn't exist in the store
+        for site in {page.site for page in pages if not self.site_exists(page.site)}:
+            self.add_site(site)
+
+        PageModel.objects.bulk_create([_model_from_page(page) for page in pages])
 
     def delete_pages(self, *pages):
         PageModel.objects.filter(url__in=[page.url for page in pages]).delete()
@@ -36,7 +55,7 @@ class DjangoBackend(BackendBase):
 
     def get_page(self, url):
         try:
-            return _from_model(self, PageModel.objects.get(url=url))
+            return _page_from_model(PageModel.objects.get(url=url))
         except PageModel.DoesNotExist:
             return None
 
@@ -49,15 +68,20 @@ class DjangoBackend(BackendBase):
             ps = ps.filter(site__url=(
                 site.url if isinstance(site, Site) else site))
 
-        return [_from_model(self, p) for p in ps]
+        return [_page_from_model(p) for p in ps]
 
 
-def _from_model(backend, p):
-    return Page(Site(p.site), getattr(p.src, 'url', None), p.url, p.content, )
+def _page_from_model(p):
+    return Page(Site(p.site.url), getattr(p.src, 'url', None), p.url, p.content)
 
-def _to_model(page):
+def _model_from_page(page):
+    try:
+        site = SiteModel.objects.get(pk=page.site.url)
+    except SiteModel.DoesNotExist:
+        site = None
+
     return PageModel(
-        url=page.url, site=page.site.url,
+        url=page.url, site=site,
         src=getattr(page.src, 'url', None),
         content=page.content
     )

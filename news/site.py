@@ -19,6 +19,8 @@ class Site(object):
 
     :param url: The url of the site.
     :type url: :class:`str`
+    :param brothers: Brother sites of the site.
+    :type brothers: :class:`list`
 
     """
 
@@ -28,6 +30,9 @@ class Site(object):
 
     def __eq__(self, other):
         return self.url == other.url
+
+    def __hash__(self):
+        return hash(self.url)
 
     async def fetch_pages(self, **kwargs):
         """Fetch new pages from the site.
@@ -39,6 +44,7 @@ class Site(object):
         async with aiohttp.get(self.url) as response:
             # Initialize url set to check if links has been fetched or not.
             self.reached_urls= {self.url}
+
             root = Page(self, None, self.url, await response.text())
             return {root}.union(await root.fetch_linked_pages(**kwargs))
 
@@ -49,3 +55,6 @@ class Site(object):
     @property
     def hostname(self):
         return urlparse(self.url).hostname
+
+    def to_json(self):
+        return {'url': self.url}

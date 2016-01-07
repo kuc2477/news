@@ -8,6 +8,8 @@ import abc
 from functools import wraps
 from functools import partial
 
+from ..site import Site
+from ..page import Page
 from ..exceptions import (
     StoreDoesNotExistError,
     InvalidStoreSchemaError
@@ -26,11 +28,56 @@ class BackendBase(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
+    def add_site(self, site):
+        """Adds a site to the backend's store
+
+        Note that won't be added if site already exists in the store.
+
+        :param site: The site to add
+        :type site: :class:`news.site.Site`
+
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    def delete_site(self, site):
+        """Deletes a site from the backend's store along with it's pages.
+
+        :param site: The site to delete
+        :type site: :class:`news.site.Site`
+
+        """
+        return NotImplemented
+
+
+    @abc.abstractmethod
+    def get_site(self, url):
+        """Returns a stored site.
+
+        :param url: The url of the site.
+        :type url: :class:`str`
+
+        """
+        return NotImplemented
+
+    def site_exists(self, site):
+        """Check existance of the site from the import backend's store.
+
+        :param site: Site or url to test existance.
+        :type site: :class:`news.site.Site` or :class:`str`
+        :return: Site's existance
+        :rtype: :class:`bool`
+
+        """
+        return self.get_site(
+            site.url if isinstance(site, Site) else site
+        ) is not None
+
+    @abc.abstractmethod
     def add_pages(self, *pages):
         """Adds a page to the backend's store
 
-        Note that won't be added if page already exists in the store. Page
-        existance will be tested by :attr:`~news.page.Page.url` equality.
+        Note that won't be added if page already exists in the store.
 
         """
         return NotImplemented
@@ -49,18 +96,6 @@ class BackendBase(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def page_exists(self, page):
-        """Check existance of the page from the import backend's store
-
-        :param page: Page or url to test existance.
-        :type page: :class:`news.page.Page` or :class:`str`
-        :return: Whether the page exists in the page storage.
-        :rtype: :class:`bool`
-
-        """
-        return NotImplemented
-
-    @abc.abstractmethod
     def get_page(self, url):
         """Returns a stored page.
 
@@ -71,6 +106,19 @@ class BackendBase(metaclass=abc.ABCMeta):
 
         """
         return NotImplemented
+
+    def page_exists(self, page):
+        """Check existance of the page from the backend's store
+
+        :param page: Page or url to test existance.
+        :type page: :class:`news.page.Page` or :class:`str`
+        :return: Whether the page exists in the page storage.
+        :rtype: :class:`bool`
+
+        """
+        return self.get_page(
+            page.url if isinstance(page, Page) else page
+        ) is not None
 
     @abc.abstractmethod
     def get_pages(self, site=None):

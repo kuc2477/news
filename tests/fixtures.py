@@ -21,7 +21,10 @@ def path(tmpdir):
 
 @pytest.fixture
 def valid_store_json(page):
-    store = {page.url: page.to_json()}
+    store = {
+        'site': {1: page.site.to_json()},
+        'page': {1: page.to_json()}
+    }
     return json.dumps(store)
 
 @pytest.fixture(params=[
@@ -57,10 +60,6 @@ def hash_link_content():
 # ====================
 # News related objects
 # ====================
-
-@pytest.fixture
-def ranker():
-    return None
 
 @pytest.fixture
 def json_backend(path):

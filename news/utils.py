@@ -88,6 +88,7 @@ def elapsed_timer():
     end = default_timer()
     elapser = lambda: end - start
 
+
 # Logging handler and formatter
 __NEWS_LOG_STREAM_HANDLER__ = logging.StreamHandler()
 __NEWS_LOG_FORMATTER__ = ColoredFormatter(

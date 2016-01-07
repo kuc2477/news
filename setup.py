@@ -50,7 +50,9 @@ setup(
     install_requires=[
         'aiohttp>=0.19.0',
         'beautifulsoup4>=4.4.1',
-        'click'
+        'click',
+        'django',
+        'tinydb'
     ],
     test_suite='tests',
     tests_require=[

@@ -14,9 +14,8 @@ from bs4 import BeautifulSoup
 from asyncio import gather
 import aiohttp
 
-from .utils import logger
 from .utils import (
-    fillurl, ext, issuburl,
+    logger, fillurl, ext, issuburl,
     normalize, depth
 )
 
@@ -105,14 +104,6 @@ class Page(object):
 
         return pages.union(set(chain(*linked_page_sets)))
 
-    def to_json(self):
-        return {
-            'site': self.site.url,
-            'src': self.src.url if self.src is not None else None,
-            'url': self.url,
-            'content': self.content
-        }
-
 
     # ==========
     # Properties
@@ -177,3 +168,11 @@ class Page(object):
 
         return {fillurl(self.site.url, u) for u in urls if
                 self.worth_visit(u, **kwargs)}
+
+    def to_json(self):
+        return {
+            'site': self.site.url,
+            'src': self.src.url if self.src is not None else None,
+            'url': self.url,
+            'content': self.content
+        }

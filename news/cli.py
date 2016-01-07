@@ -38,13 +38,13 @@ def optional_brother(f):
 
 def optional_maxdepth(f):
     return click.option(
-        '--depth', type=int, default=None,
+        '--max-depth', type=int, default=None,
         help='maximum depth to allow from the site to pages'
     )(f)
 
 def optional_maxdist(f):
     return click.option(
-        '--distance', type=int, default=None,
+        '--max-distance', type=int, default=None,
         help='maximum distance to allow from the site to pages'
     )(f)
 
@@ -82,7 +82,7 @@ def get_backend(backend_type, path=STORE_PATH):
         return DjangoBackend()
 
 def get_site(url, brothers):
-    return Site(url, brothers=list(brothers))
+    return Site(url, brothers=[Site(u) for u in brothers])
 
 
 # ========
@@ -110,13 +110,17 @@ def show(backend, path):
 @optional_brother
 @optional_cycle
 @optional_logging
-def schedule(url, path, backend, depth, distance, brother, cycle, silent):
+def schedule(
+        url, path, backend, max_depth, max_distance,
+        brother, cycle, silent):
     site = get_site(url, brother)
     backend = get_backend(backend, path)
 
     logger.set_mode(silent)
-    schedule = Schedule(site, backend, cycle=cycle,
-                        maxdepth=depth, maxdist=distance)
+    schedule = Schedule(
+        site, backend, cycle=cycle,
+        maxdepth=max_depth, maxdist=max_dist
+    )
     schedule.run()
 
 @click.command('update', help='Update news')
@@ -127,12 +131,12 @@ def schedule(url, path, backend, depth, distance, brother, cycle, silent):
 @optional_maxdist
 @optional_brother
 @optional_logging
-def update(url, path, backend, depth, distance, brother, silent):
+def update(url, path, backend, max_depth, max_distance, brother, silent):
     site = get_site(url, brother)
     backend = get_backend(backend, path)
 
     logger.set_mode(silent)
-    schedule = Schedule(site, backend, maxdepth=depth, maxdist=distance)
+    schedule = Schedule(site, backend, maxdepth=max_depth, maxdist=max_distance)
     schedule.run_once()
 
 @click.command('delete', help='Delete news')
