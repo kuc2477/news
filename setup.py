@@ -52,7 +52,8 @@ setup(
         'beautifulsoup4>=4.4.1',
         'click',
         'django',
-        'tinydb'
+        'tinydb',
+        'ujson'
     ],
     test_suite='tests',
     tests_require=[

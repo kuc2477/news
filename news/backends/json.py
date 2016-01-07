@@ -28,20 +28,26 @@ STORE_PAGE_COLUMN_TYPES = {
     'content': str,
 }
 
-
 # decorator to check database consistancy
 def should_store_valid(f=None, default=None, error=True):
     if f is None:
         return partial(should_store_valid, default=default, error=error)
 
+    # Set validity checked flag to True once the method passes validity test.
+    # This will work as performance boost as method will bypass validity test
+    # once the method has passed the test.
     @wraps(f)
     def wrapper(self, *args, **kwargs):
-        if self.store_valid:
+        if wrapper.validity_checked or self.store_valid:
+            wrapper.validity_checked = True
             return f(self, *args, **kwargs)
         if default is None:
             raise InvalidStoreSchemaError
         else:
             return default
+
+    wrapper.validity_checked = False
+
     return wrapper
 
 
@@ -68,13 +74,20 @@ class JSONBackend(BackendBase):
 
     @should_store_valid
     def add_pages(self, *pages):
+        for site in {page.site for page in pages if not self.site_exists(page.site)}:
+            self.add_site(site)
+
         for page in pages:
             self._page_table.insert(page.to_json())
+
+        self.invalidate_page_cache()
 
     @should_store_valid
     def delete_pages(self, *pages):
         for page in pages:
             self._page_table.remove(where('url') == page.url)
+
+        self.invalidate_page_cache()
 
     def page_exists(self, page):
         url = getattr(page, 'url', page)
@@ -86,9 +99,11 @@ class JSONBackend(BackendBase):
             return None
 
         if url in self._page_cache:
+            print('cache hit')
             # use cached page if exists
             return self._page_cache[url]
 
+        print ('cache miss')
         try:
             p = self._page_table.search(where('url') == url).pop()
         except IndexError:
