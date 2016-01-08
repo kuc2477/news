@@ -4,6 +4,8 @@ Provides schedule class which glues all news components(`~news.site.Site`,
 `~news.backends`, etc.) togather.
 
 """
+from itertools import product
+
 import asyncio
 import schedule as worker
 
@@ -50,7 +52,7 @@ class Schedule(object):
         while True:
             worker.run_pending()
 
-    def run_once(self):
+    def run_once(self, fetch_callbacks=[], update_callbacks=[]):
         """Run news update once."""
         logger.debug('%s: News update start' % self.site.url)
 
@@ -58,6 +60,12 @@ class Schedule(object):
             fetch = self.site.fetch_pages(**self.options)
             fetched = self.loop.run_until_complete(fetch)
             new = [p for p in fetched if not self.backend.page_exists(p)]
+
+        # fire callbacks
+        for page, callback in product(fetched, fetch_callbacks):
+            callback(page)
+        for page, callback in product(new, update_callbacks):
+            callback(page)
 
         # add only new pages to the backend
         self.backend.add_pages(*new)

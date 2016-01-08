@@ -99,11 +99,9 @@ class JSONBackend(BackendBase):
             return None
 
         if url in self._page_cache:
-            print('cache hit')
             # use cached page if exists
             return self._page_cache[url]
 
-        print ('cache miss')
         try:
             p = self._page_table.search(where('url') == url).pop()
         except IndexError:

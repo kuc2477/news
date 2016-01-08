@@ -19,9 +19,6 @@ from .utils import (
     normalize, depth
 )
 
-ITERATION = 0
-CHANGED = False
-
 
 class Page(object):
     """Scrapped page containing various page meta information.
