@@ -5,6 +5,7 @@ Provides command line based interface to news scheduling.
 
 """
 import os
+import importlib
 
 import click
 
@@ -34,6 +35,18 @@ def optional_brother(f):
     return click.option(
         '-b', '--brother', multiple=True,
         help='brother url of the site'
+    )(f)
+
+def optional_fetch_callback(f):
+    return click.option(
+        '--fetch-callback', multiple=True,
+        help='path to fetch callback function'
+    )(f)
+
+def optional_update_callback(f):
+    return click.option(
+        '--update-callback', multiple=True,
+        help='path to update callback function'
     )(f)
 
 def optional_maxdepth(f):
@@ -81,8 +94,12 @@ def get_backend(backend_type, path=STORE_PATH):
         from .backends.django import DjangoBackend
         return DjangoBackend()
 
-def get_site(url, brothers):
-    return Site(url, brothers=[Site(u) for u in brothers])
+def get_callback(path):
+    callback_name = path.split('.')[-1]
+    module_path = path.replace(callback_name, '').rstrip('.')
+    module = importlib.import_module(module_path)
+
+    return getattr(module, callback_name)
 
 
 # ========
@@ -108,18 +125,23 @@ def show(backend, path):
 @optional_maxdepth
 @optional_maxdist
 @optional_brother
+@optional_fetch_callback
+@optional_update_callback
 @optional_cycle
 @optional_logging
 def schedule(
-        url, path, backend, max_depth, max_distance,
-        brother, cycle, silent):
-    site = get_site(url, brother)
+        url, path, backend, max_depth, max_distance, brother,
+        fetch_callback, update_callback, cycle, silent):
+    site = Site(url)
     backend = get_backend(backend, path)
 
     logger.set_mode(silent)
     schedule = Schedule(
         site, backend, cycle=cycle,
-        maxdepth=max_depth, maxdist=max_dist
+        maxdepth=max_depth, maxdist=max_dist,
+        brothers=list(brother),
+        fetch_callbacks=list(fetch_callback),
+        update_callbacks=list(update_callback)
     )
     schedule.run()
 
@@ -130,13 +152,22 @@ def schedule(
 @optional_maxdepth
 @optional_maxdist
 @optional_brother
+@optional_fetch_callback
+@optional_update_callback
 @optional_logging
-def update(url, path, backend, max_depth, max_distance, brother, silent):
-    site = get_site(url, brother)
+def update(url, path, backend, max_depth, max_distance, brother,
+           fetch_callback, update_callback, silent):
+    site = Site(url)
     backend = get_backend(backend, path)
 
     logger.set_mode(silent)
-    schedule = Schedule(site, backend, maxdepth=max_depth, maxdist=max_distance)
+    schedule = Schedule(
+        site, backend,
+        maxdepth=max_depth, maxdist=max_distance,
+        brothers=list(brother),
+        fetch_callbacks=list(fetch_callback),
+        update_callbacks=list(update_callback)
+    )
     schedule.run_once()
 
 @click.command('delete', help='Delete news')

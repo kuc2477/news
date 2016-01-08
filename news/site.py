@@ -19,14 +19,11 @@ class Site(object):
 
     :param url: The url of the site.
     :type url: :class:`str`
-    :param brothers: Brother sites of the site.
-    :type brothers: :class:`list`
 
     """
 
-    def __init__(self, url, brothers=[]):
+    def __init__(self, url):
         self.url = normalize(url)
-        self.brothers = brothers
 
     def __eq__(self, other):
         return self.url == other.url

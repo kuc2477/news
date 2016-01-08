@@ -114,11 +114,8 @@ __NEWS_LOGGER__ = logging.getLogger('NEWS')
 __NEWS_LOGGER__.addHandler(__NEWS_LOG_STREAM_HANDLER__)
 
 def _set_mode(self, silent):
-    if not silent:
-        self.propagate = True
-        self.setLevel(logging.DEBUG)
-    else:
-        self.propagate = False
+    self.propagate = not silent
+    self.setLevel(logging.DEBUG if not silent else logging.CRITICAL)
 
 # Export logger alias
 logger = __NEWS_LOGGER__

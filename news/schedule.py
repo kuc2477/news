@@ -31,7 +31,8 @@ class Schedule(object):
 
     """
 
-    def __init__(self, site, backend, cycle=600, loop=None, **kwargs):
+    def __init__(self, site, backend, cycle=600, loop=None,
+                 fetch_callbacks=[], update_callbacks=[], **kwargs):
         self.site = site
         self.backend = backend
         self.cycle = cycle
@@ -52,7 +53,7 @@ class Schedule(object):
         while True:
             worker.run_pending()
 
-    def run_once(self, fetch_callbacks=[], update_callbacks=[]):
+    def run_once(self):
         """Run news update once."""
         logger.debug('%s: News update start' % self.site.url)
 
@@ -62,9 +63,9 @@ class Schedule(object):
             new = [p for p in fetched if not self.backend.page_exists(p)]
 
         # fire callbacks
-        for page, callback in product(fetched, fetch_callbacks):
+        for page, callback in product(fetched, self.fetch_callbacks):
             callback(page)
-        for page, callback in product(new, update_callbacks):
+        for page, callback in product(new, self.update_callbacks):
             callback(page)
 
         # add only new pages to the backend

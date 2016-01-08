@@ -130,7 +130,7 @@ class Page(object):
         """
         return 0 if self.src is None else self.src.distance + 1
 
-    def worth_visit(self, url, maxdepth=None, maxdist=None,
+    def worth_visit(self, url, maxdepth=None, maxdist=None, brothers=[],
                     blacklist=['png', 'jpg', 'gif', 'pdf', 'svg', 'zip']):
         """Returns boolean value whether the url is worth to explore or not.
 
@@ -144,9 +144,10 @@ class Page(object):
         :type blacklist: :class:`list`
 
         """
+        normalized_brothers = [normalize(brother) for brother in brothers]
 
         is_child = issuburl(self.site.url, url)
-        is_relative = any([issuburl(b.url, url) for b in self.site.brothers])
+        is_relative = any([issuburl(b.url, url) for b in normalized_brothers])
         depth_ok = depth(self.site.url, url) <= maxdepth if maxdepth is not None else True
         distance_ok = self.distance < maxdist if maxdist is not None else True
         blacklist_ok = ext(url) not in blacklist
