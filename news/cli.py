@@ -25,11 +25,13 @@ from .schedule import Schedule
 def required_url(f):
     return click.argument('url')(f)
 
+
 def optional_cycle(f):
     return click.option(
         '-c', '--cycle', type=int, default=180,
         help='cycle in seconds for updating site pages'
     )(f)
+
 
 def optional_brother(f):
     return click.option(
@@ -37,17 +39,41 @@ def optional_brother(f):
         help='brother url of the site'
     )(f)
 
+
+def optional_pipe(f):
+    return click.option(
+        '-p', '--pipe', multiple=True,
+        help='path to page pipeline function'
+    )(f)
+
+
+def optional_start_callback(f):
+    return click.option(
+        '--on-start', default=None,
+        help='path to schedule fetch start callback'
+    )(f)
+
+
+def optional_complete_callback(f):
+    return click.option(
+        '--on-complete', default=None,
+        help='path to schedule update complete callback'
+    )(f)
+
+
 def optional_fetch_callback(f):
     return click.option(
         '--fetch-callback', multiple=True,
         help='path to fetch callback function'
     )(f)
 
-def optional_update_callback(f):
+
+def optional_add_callback(f):
     return click.option(
         '--update-callback', multiple=True,
         help='path to update callback function'
     )(f)
+
 
 def optional_maxdepth(f):
     return click.option(
@@ -55,11 +81,13 @@ def optional_maxdepth(f):
         help='maximum depth to allow from the site to pages'
     )(f)
 
+
 def optional_maxdist(f):
     return click.option(
         '--max-distance', type=int, default=None,
         help='maximum distance to allow from the site to pages'
     )(f)
+
 
 def optional_backend_type(f):
     return click.option(
@@ -67,11 +95,13 @@ def optional_backend_type(f):
         default='json', help='backend type to use'
     )(f)
 
+
 def optional_path(f):
     return click.option(
-        '-p', '--path', type=str, default=STORE_PATH,
+        '--backend-path', type=str, default=STORE_PATH,
         help='path to news store backend'
     )(f)
+
 
 def optional_logging(f):
     return click.option(
@@ -94,7 +124,11 @@ def get_backend(backend_type, path=STORE_PATH):
         from .backends.django import DjangoBackend
         return DjangoBackend()
 
-def get_callback(path):
+
+def get_function(path):
+    if path is None:
+        return None
+
     callback_name = path.split('.')[-1]
     module_path = path.replace(callback_name, '').rstrip('.')
     module = importlib.import_module(module_path)
@@ -110,6 +144,7 @@ def get_callback(path):
 def main():
     pass
 
+
 @click.command('show', help='Show list of stored urls')
 @optional_backend_type
 @optional_path
@@ -118,6 +153,7 @@ def show(backend, path):
     for url in backend.get_urls():
         print(url)
 
+
 @click.command('schedule', help='Run news schedule')
 @required_url
 @optional_path
@@ -125,25 +161,38 @@ def show(backend, path):
 @optional_maxdepth
 @optional_maxdist
 @optional_brother
+@optional_start_callback
+@optional_complete_callback
 @optional_fetch_callback
-@optional_update_callback
+@optional_add_callback
+@optional_pipe
 @optional_cycle
 @optional_logging
 def schedule(
         url, path, backend, max_depth, max_distance, brother,
-        fetch_callback, update_callback, cycle, silent):
+        start_callback, complete_callback,
+        fetch_callback, add_callback,
+        pipe, cycle, silent):
     site = Site(url)
     backend = get_backend(backend, path)
+
+    pipes = [get_function(p) for p in pipe]
+    on_start = get_function(start_callback)
+    on_complete = get_function(complete_callback)
+    fetch_callbacks = [get_function(c) for c in fetch_callback]
+    add_callbacks = [get_function(c) for c in add_callback]
 
     logger.set_mode(silent)
     schedule = Schedule(
         site, backend, cycle=cycle,
-        maxdepth=max_depth, maxdist=max_dist,
+        maxdepth=max_depth, maxdist=max_distance,
         brothers=list(brother),
-        fetch_callbacks=list(fetch_callback),
-        update_callbacks=list(update_callback)
+        on_start=on_start, on_complete=on_complete,
+        fetch_callbacks=fetch_callbacks, add_callbacks=add_callbacks,
+        pipes=pipes
     )
     schedule.run()
+
 
 @click.command('update', help='Update news')
 @required_url
@@ -152,23 +201,36 @@ def schedule(
 @optional_maxdepth
 @optional_maxdist
 @optional_brother
+@optional_start_callback
+@optional_complete_callback
 @optional_fetch_callback
-@optional_update_callback
+@optional_add_callback
+@optional_pipe
 @optional_logging
 def update(url, path, backend, max_depth, max_distance, brother,
-           fetch_callback, update_callback, silent):
+           start_callback, complete_callback,
+           fetch_callback, add_callback,
+           pipe, silent):
     site = Site(url)
     backend = get_backend(backend, path)
+
+    pipes = [get_function(p) for p in pipe]
+    on_start = get_function(start_callback)
+    on_complete = get_function(complete_callback)
+    fetch_callbacks = [get_function(c) for c in fetch_callback]
+    add_callbacks = [get_function(c) for c in add_callback]
 
     logger.set_mode(silent)
     schedule = Schedule(
         site, backend,
         maxdepth=max_depth, maxdist=max_distance,
         brothers=list(brother),
-        fetch_callbacks=list(fetch_callback),
-        update_callbacks=list(update_callback)
+        on_start=on_start, on_complete=on_complete,
+        fetch_callbacks=fetch_callbacks, add_callbacks=add_callbacks,
+        pipes=pipes
     )
     schedule.run_once()
+
 
 @click.command('delete', help='Delete news')
 @required_url
