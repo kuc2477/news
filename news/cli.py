@@ -47,14 +47,14 @@ def optional_pipe(f):
     )(f)
 
 
-def optional_start_callback(f):
+def optional_on_start(f):
     return click.option(
         '--on-start', default=None,
         help='path to schedule fetch start callback'
     )(f)
 
 
-def optional_complete_callback(f):
+def optional_on_complete(f):
     return click.option(
         '--on-complete', default=None,
         help='path to schedule update complete callback'
@@ -70,7 +70,7 @@ def optional_fetch_callback(f):
 
 def optional_add_callback(f):
     return click.option(
-        '--update-callback', multiple=True,
+        '--add-callback', multiple=True,
         help='path to update callback function'
     )(f)
 
@@ -91,12 +91,12 @@ def optional_maxdist(f):
 
 def optional_backend_type(f):
     return click.option(
-        '--backend', type=click.Choice(['json', 'django']),
+        '--backend-type', type=click.Choice(['json', 'django']),
         default='json', help='backend type to use'
     )(f)
 
 
-def optional_path(f):
+def optional_backend_path(f):
     return click.option(
         '--backend-path', type=str, default=STORE_PATH,
         help='path to news store backend'
@@ -147,38 +147,37 @@ def main():
 
 @click.command('show', help='Show list of stored urls')
 @optional_backend_type
-@optional_path
-def show(backend, path):
-    backend = get_backend(backend, path)
+@optional_backend_path
+def show(backend_type, backend_path):
+    backend = get_backend(backend, backend_path)
     for url in backend.get_urls():
         print(url)
 
 
 @click.command('schedule', help='Run news schedule')
 @required_url
-@optional_path
+@optional_backend_path
 @optional_backend_type
 @optional_maxdepth
 @optional_maxdist
 @optional_brother
-@optional_start_callback
-@optional_complete_callback
+@optional_on_start
+@optional_on_complete
+@optional_pipe
 @optional_fetch_callback
 @optional_add_callback
-@optional_pipe
 @optional_cycle
 @optional_logging
 def schedule(
-        url, path, backend, max_depth, max_distance, brother,
-        start_callback, complete_callback,
-        fetch_callback, add_callback,
-        pipe, cycle, silent):
+        url, backend_path, backend_type, max_depth, max_distance, brother,
+        on_start, on_complete, pipe, fetch_callback, add_callback,
+        cycle, silent):
     site = Site(url)
-    backend = get_backend(backend, path)
+    backend = get_backend(backend_type, backend_path)
 
     pipes = [get_function(p) for p in pipe]
-    on_start = get_function(start_callback)
-    on_complete = get_function(complete_callback)
+    on_start = get_function(on_start)
+    on_complete = get_function(on_complete)
     fetch_callbacks = [get_function(c) for c in fetch_callback]
     add_callbacks = [get_function(c) for c in add_callback]
 
@@ -196,27 +195,25 @@ def schedule(
 
 @click.command('update', help='Update news')
 @required_url
-@optional_path
 @optional_backend_type
+@optional_backend_path
 @optional_maxdepth
 @optional_maxdist
 @optional_brother
-@optional_start_callback
-@optional_complete_callback
+@optional_on_start
+@optional_on_complete
+@optional_pipe
 @optional_fetch_callback
 @optional_add_callback
-@optional_pipe
 @optional_logging
-def update(url, path, backend, max_depth, max_distance, brother,
-           start_callback, complete_callback,
-           fetch_callback, add_callback,
-           pipe, silent):
+def update(url, backend_type, backend_path, max_depth, max_distance, brother,
+           on_start, on_complete, pipe, fetch_callback, add_callback, silent):
     site = Site(url)
-    backend = get_backend(backend, path)
+    backend = get_backend(backend_type, backend_path)
 
     pipes = [get_function(p) for p in pipe]
-    on_start = get_function(start_callback)
-    on_complete = get_function(complete_callback)
+    on_start = get_function(on_start)
+    on_complete = get_function(on_complete)
     fetch_callbacks = [get_function(c) for c in fetch_callback]
     add_callbacks = [get_function(c) for c in add_callback]
 
@@ -235,9 +232,9 @@ def update(url, path, backend, max_depth, max_distance, brother,
 @click.command('delete', help='Delete news')
 @required_url
 @optional_backend_type
-@optional_path
-def delete(url, backend, path):
-    backend = get_backend(backend, path)
+@optional_backend_path
+def delete(url, backend_type, backend_path):
+    backend = get_backend(backend_type, backend_path)
     backend.delete_pages(*backend.get_pages(url))
 
 
