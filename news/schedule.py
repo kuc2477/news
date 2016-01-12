@@ -1,7 +1,7 @@
 """:mod: `news.schedule` --- News schedules
 
 Provides schedule class which glues all news components(`~news.site.Site`,
-`~news.backends`, etc.) togather.
+`~news.backends`, etc.) together.
 
 """
 from itertools import product
