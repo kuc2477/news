@@ -149,8 +149,8 @@ def main():
 @optional_backend_type
 @optional_backend_path
 def show(backend_type, backend_path):
-    backend = get_backend(backend, backend_path)
-    for url in backend.get_urls():
+    backend_type = get_backend(backend_type, backend_path)
+    for url in backend_type.get_urls():
         print(url)
 
 

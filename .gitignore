@@ -61,3 +61,4 @@ target/
 *.sw*
 .ipynb_checkpoints
 *.json
+*.eggs

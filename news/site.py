@@ -6,10 +6,8 @@ Provides site utility functions and :class:`~news.site.Site` class.
 """
 from urllib.parse import urlparse
 
-import asyncio
 import aiohttp
 
-from .utils import logger
 from .utils import normalize
 from .page import Page
 
@@ -40,7 +38,7 @@ class Site(object):
         """
         async with aiohttp.get(self.url) as response:
             # Initialize url set to check if links has been fetched or not.
-            self.reached_urls= {self.url}
+            self.reached_urls = {self.url}
 
             root = Page(self, None, self.url, await response.text())
             return {root}.union(await root.fetch_linked_pages(**kwargs))

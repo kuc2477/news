@@ -104,10 +104,11 @@ class Schedule(object):
             callback(page)
 
         # show logs
-        template = '%s: News update completed in %.2f seconds '
-        template += '(%d fetched / %d added)'
+        template = '{site}: News update completed in {elapsed:.2f} seconds '
+        template += '({fetched} fetched / {added} added)'
         logger.debug(template.format(
-            self.site.url, elapsed(), len(fetched), len(new)
+            site=self.site.url, elapsed=elapsed(),
+            fetched=len(fetched), added=len(new)
         ))
 
         # fire complete callback if exists

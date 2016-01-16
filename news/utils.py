@@ -14,28 +14,31 @@ def ispath(url):
     parsed = urlparse(url)
     return not parsed.scheme and not parsed.hostname
 
+
 def isabspath(url):
-    parsed = urlparse(url)
     return ispath(url) and url.startswith('/')
 
+
 def isrelpath(url):
-    parsed = urlparse(url)
     return ispath(url) and not url.startswith('/')
+
 
 def issamehost(index, url):
     return ispath(url) or urlparse(index).hostname == urlparse(url).hostname
 
+
 def issuburl(index, url):
     parsedi = urlparse(index)
     parsedu = urlparse(url)
-    return issamehost(index, url) and  (
+    return issamehost(index, url) and (
         isrelpath(url) or
-        parsedu.path.rstrip('/').startswith(
-        parsedi.path.rstrip('/'))
+        parsedu.path.rstrip('/').startswith(parsedi.path.rstrip('/'))
     )
+
 
 def ext(url):
     return os.path.splitext(url)[1][1:]
+
 
 def fillurl(index, url):
     parsedi = urlparse(index)
@@ -55,6 +58,7 @@ def fillurl(index, url):
 
     return normalize(filled)
 
+
 def normalize(url):
     parsed = urlparse(url)
     normpath = re.sub(r'\/+', '/', os.path.normpath('/' + parsed.path))
@@ -63,6 +67,7 @@ def normalize(url):
     return '%s://%s%s%s' % (
         parsed.scheme, parsed.hostname, normpath, query
     )
+
 
 def depth(index, url):
     if not issuburl(index, url):
@@ -83,10 +88,11 @@ def depth(index, url):
 @contextmanager
 def elapsed_timer():
     start = default_timer()
-    elapser = lambda: default_timer() - start
+
+    def elapser():
+        return default_timer() - start
+
     yield lambda: elapser()
-    end = default_timer()
-    elapser = lambda: end - start
 
 
 # Logging handler and formatter
@@ -112,6 +118,7 @@ __NEWS_LOG_STREAM_HANDLER__.setFormatter(__NEWS_LOG_FORMATTER__)
 # Configure logger
 __NEWS_LOGGER__ = logging.getLogger('NEWS')
 __NEWS_LOGGER__.addHandler(__NEWS_LOG_STREAM_HANDLER__)
+
 
 def _set_mode(self, silent):
     self.propagate = not silent

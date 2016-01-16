@@ -4,11 +4,7 @@
 Provides page utility functions and :class:`~news.page.Page` class.
 
 """
-import os.path
-import logging
-
 from itertools import chain
-from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 from asyncio import gather
@@ -50,7 +46,6 @@ class Page(object):
 
     def __hash__(self):
         return hash(self.url) ^ hash(self.site.url)
-
 
     # ============
     # Main methods
@@ -95,12 +90,10 @@ class Page(object):
         pages = {Page(self.site, self, u, c) for c, u in contents}
 
         # linked page sets from the linked pages of the page.
-        linked_page_sets = await gather(*[
-            page.fetch_linked_pages(**kwargs) for page in pages
-       ])
+        linked_page_sets = await gather(*[page.fetch_linked_pages(**kwargs)
+                                          for page in pages])
 
         return pages.union(set(chain(*linked_page_sets)))
-
 
     # ==========
     # Properties
@@ -148,11 +141,14 @@ class Page(object):
 
         is_child = issuburl(self.site.url, url)
         is_relative = any([issuburl(b.url, url) for b in normalized_brothers])
-        depth_ok = depth(self.site.url, url) <= maxdepth if maxdepth is not None else True
+        depth_ok = depth(self.site.url, url) <= maxdepth if \
+            maxdepth is not None else True
+
         distance_ok = self.distance < maxdist if maxdist is not None else True
         blacklist_ok = ext(url) not in blacklist
 
-        return ((is_child and depth_ok) or is_relative) and distance_ok and blacklist
+        return ((is_child and depth_ok) or is_relative) and distance_ok and \
+            blacklist_ok
 
     def get_worthy_urls(self, **kwargs):
         """Returns full urls of linked urls worth to visit from the page.

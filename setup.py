@@ -33,7 +33,7 @@ else:
 setup(
     name='news',
     packages=find_packages(exclude=['tests']),
-    entry_points = '''
+    entry_points='''
         [console_scripts]
         news = news.cli:main
     ''',
@@ -53,7 +53,9 @@ setup(
         'click',
         'django',
         'tinydb',
-        'ujson'
+        'ujson',
+        'colorlog',
+        'schedule'
     ],
     test_suite='tests',
     tests_require=[

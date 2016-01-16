@@ -4,14 +4,19 @@
 This module maps generates exceptions and warnings.
 
 """
+
+
 class NewsException(Exception):
     """All News-related exceptions are derived from this class."""
+
 
 class NewsWarning(NewsException, Warning):
     """Base class for News-related warnings."""
 
+
 class NewsError(NewsException):
     """Base class for News-related errors."""
+
 
 class NewsFetalError(NewsException):
     """Base class for News-related fetal errors."""
