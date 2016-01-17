@@ -55,7 +55,12 @@ setup(
         'tinydb',
         'ujson',
         'colorlog',
-        'schedule'
+        'schedule',
+        'extraction==0.2.1'
+    ],
+    dependency_links=[
+        'https://github.com/kuc2477/extraction/archive/master.zip' +
+        '#egg=extraction-0.2.1'
     ],
     test_suite='tests',
     tests_require=[
