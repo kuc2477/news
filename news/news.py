@@ -6,7 +6,9 @@ Provides page utility functions and :class:`~news.page.Page` class.
 """
 from itertools import chain
 
+from cached_property import cached_property
 from bs4 import BeautifulSoup
+from extraction import Extractor
 from asyncio import gather
 import aiohttp
 
@@ -16,7 +18,7 @@ from .utils import (
 )
 
 
-class Page(object):
+class News(object):
     """Scrapped page containing various page meta information.
 
     Abstracts a scrapped page and provides an asynchronous page fetching
@@ -40,7 +42,7 @@ class Page(object):
         self.content = content
 
     def __eq__(self, other):
-        return (isinstance(other, Page) and
+        return (isinstance(other, News) and
                 self.url == other.url and
                 self.site.url == other.site.url)
 
@@ -87,7 +89,7 @@ class Page(object):
             logger.error('[INVALID] %s responded with invalid contents' % u)
 
         # linked pages of the page.
-        pages = {Page(self.site, self, u, c) for c, u in contents}
+        pages = {News(self.site, self, u, c) for c, u in contents}
 
         # linked page sets from the linked pages of the page.
         linked_page_sets = await gather(*[page.fetch_linked_pages(**kwargs)
@@ -122,6 +124,23 @@ class Page(object):
 
         """
         return 0 if self.src is None else self.src.distance + 1
+
+    @cached_property
+    def extracted(self):
+        extractor = Extractor()
+        return extractor.extract(self.content)
+
+    @property
+    def title(self):
+        return self.extracted.title
+
+    @property
+    def image(self):
+        return self.extracted.image
+
+    @property
+    def description(self):
+        return self.extracted.description
 
     def worth_visit(self, url, maxdepth=None, maxdist=None, brothers=[],
                     blacklist=['png', 'jpg', 'gif', 'pdf', 'svg', 'zip']):
@@ -168,5 +187,8 @@ class Page(object):
             'site': self.site.url,
             'src': self.src.url if self.src is not None else None,
             'url': self.url,
-            'content': self.content
+            'content': self.content,
+            'title': self.title,
+            'image': self.image,
+            'description': self.description
         }

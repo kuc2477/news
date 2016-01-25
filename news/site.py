@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import aiohttp
 
 from .utils import normalize
-from .page import Page
+from .news import News
 
 
 class Site(object):
@@ -40,7 +40,7 @@ class Site(object):
             # Initialize url set to check if links has been fetched or not.
             self.reached_urls = {self.url}
 
-            root = Page(self, None, self.url, await response.text())
+            root = News(self, None, self.url, await response.text())
             return {root}.union(await root.fetch_linked_pages(**kwargs))
 
     @property

@@ -50,12 +50,13 @@ setup(
     install_requires=[
         'aiohttp>=0.19.0',
         'beautifulsoup4>=4.4.1',
-        'click',
-        'django',
-        'tinydb',
-        'ujson',
-        'colorlog',
-        'schedule',
+        'click>=6.2',
+        'django>=1.7',
+        'tinydb>=3.1.0',
+        'ujson>=1.34',
+        'colorlog>=2.6.0',
+        'schedule>=0.3.2',
+        'cached-property>=1.3.0',
         'extraction==0.2.1'
     ],
     dependency_links=[

@@ -3,17 +3,13 @@
 Django ORM page store backend for news.
 
 """
-import django
-from django.conf import settings
-
 from . import BackendBase
-from ..page import Page
+from ..news import News
 from ..site import Site
 from ..models.django import (
-    Page as PageModel,
+    News as NewsModel,
     Site as SiteModel
 )
-from ..exceptions import InvalidStoreSchemaError
 
 
 class DjangoBackend(BackendBase):
@@ -28,7 +24,7 @@ class DjangoBackend(BackendBase):
         SiteModel.objects.create(url=site.url)
 
     def delete_site(self, site):
-        try :
+        try:
             SiteModel.objects.get(pk=site.url).delete()
         except SiteModel.DoesNotExist:
             pass
@@ -38,31 +34,33 @@ class DjangoBackend(BackendBase):
 
     def add_pages(self, *pages):
         # add site if the site of page doesn't exist in the store
-        for site in {page.site for page in pages if not self.site_exists(page.site)}:
+        for site in {page.site for page in pages if
+                     not self.site_exists(page.site)}:
             self.add_site(site)
 
-        PageModel.objects.bulk_create([_model_from_page(page) for page in pages])
+        NewsModel.objects.bulk_create([
+            _model_from_page(page) for page in pages])
 
     def delete_pages(self, *pages):
-        PageModel.objects.filter(url__in=[page.url for page in pages]).delete()
+        NewsModel.objects.filter(url__in=[page.url for page in pages]).delete()
 
     def page_exists(self, page):
-        # Page should be either url itself or `~news.page.Page` instance.
-        assert(isinstance(page, (str, Page)))
-        return PageModel.objects.filter(
-            url=(page.url if isinstance(page, Page) else page)
+        # News should be either url itself or `~news.page.News` instance.
+        assert(isinstance(page, (str, News)))
+        return NewsModel.objects.filter(
+            url=(page.url if isinstance(page, News) else page)
         ).exists()
 
     def get_page(self, url):
         try:
-            return _page_from_model(PageModel.objects.get(url=url))
-        except PageModel.DoesNotExist:
+            return _page_from_model(NewsModel.objects.get(url=url))
+        except NewsModel.DoesNotExist:
             return None
 
     def get_pages(self, site=None):
         # Site should be either url itself or `~news.site.Site` instance.
         assert(isinstance(site, (str, Site)) or site is None)
-        ps = PageModel.objects.all()
+        ps = NewsModel.objects.all()
 
         if site is not None:
             ps = ps.filter(site__url=(
@@ -72,7 +70,11 @@ class DjangoBackend(BackendBase):
 
 
 def _page_from_model(p):
-    return Page(Site(p.site.url), getattr(p.src, 'url', None), p.url, p.content)
+    return News(
+        Site(p.site.url), getattr(p.src, 'url', None),
+        p.url, p.content
+    )
+
 
 def _model_from_page(page):
     try:
@@ -80,7 +82,7 @@ def _model_from_page(page):
     except SiteModel.DoesNotExist:
         site = None
 
-    return PageModel(
+    return NewsModel(
         url=page.url, site=site,
         src=getattr(page.src, 'url', None),
         content=page.content

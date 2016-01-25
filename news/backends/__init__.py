@@ -1,26 +1,20 @@
-""":mod:`news.backends` --- Page backend abstract base
+""":mod:`news.backends` --- News backend abstract base
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Provides common interface for multiple page backend implementations.
+Provides common interface for multiple news backend implementations.
 
 """
 import abc
-from functools import wraps
-from functools import partial
 
 from ..site import Site
-from ..page import Page
-from ..exceptions import (
-    StoreDoesNotExistError,
-    InvalidStoreSchemaError
-)
+from ..news import News
 
 
 class BackendBase(metaclass=abc.ABCMeta):
-    """Abstract base class for page store backends.
+    """Abstract base class for news store backends.
 
     Provides common interface for schedule classes to interact with
-    different page storage backends.
+    different news storage backends.
 
     :param site: The host site of the backend.
     :type site: :class:`news.site.Site`
@@ -49,7 +43,6 @@ class BackendBase(metaclass=abc.ABCMeta):
         """
         return NotImplemented
 
-
     @abc.abstractmethod
     def get_site(self, url):
         """Returns a stored site.
@@ -75,19 +68,19 @@ class BackendBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def add_pages(self, *pages):
-        """Adds a page to the backend's store
+        """Adds a news to the backend's store
 
-        Note that won't be added if page already exists in the store.
+        Note that won't be added if news already exists in the store.
 
         """
         return NotImplemented
 
     @abc.abstractmethod
     def delete_pages(self, *pages):
-        """Deletes a page from the backend's store
+        """Deletes a news from the backend's store
 
-        :param page: The page to delete.
-        :type page: :class:`news.page.Page`
+        :param news: The news to delete.
+        :type news: :class:`news.news.News`
         :return: Result of the deletion.
         :rtype: :class:`bool`
 
@@ -97,27 +90,27 @@ class BackendBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_page(self, url):
-        """Returns a stored page.
+        """Returns a stored news.
 
-        :param url: The url of the page.
+        :param url: The url of the news.
         :type url: :class:`str`
-        :return: stored page.
-        :rtype: :class:`news.page.Page`
+        :return: stored news.
+        :rtype: :class:`news.news.News`
 
         """
         return NotImplemented
 
-    def page_exists(self, page):
-        """Check existance of the page from the backend's store
+    def page_exists(self, news):
+        """Check existance of the news from the backend's store
 
-        :param page: Page or url to test existance.
-        :type page: :class:`news.page.Page` or :class:`str`
-        :return: Whether the page exists in the page storage.
+        :param news: News or url to test existance.
+        :type news: :class:`news.news.News` or :class:`str`
+        :return: Whether the news exists in the news storage.
         :rtype: :class:`bool`
 
         """
         return self.get_page(
-            page.url if isinstance(page, Page) else page
+            news.url if isinstance(news, News) else news
         ) is not None
 
     @abc.abstractmethod
@@ -141,4 +134,4 @@ class BackendBase(metaclass=abc.ABCMeta):
         :rtype: :class:`list`
 
         """
-        return [page.url for page in self.get_pages(site)]
+        return [news.url for news in self.get_pages(site)]

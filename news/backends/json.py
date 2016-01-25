@@ -4,15 +4,12 @@
 JSON page store backend for news.
 
 """
-import os
-import json
 from functools import partial, wraps
-from itertools import repeat
 
 from tinydb import TinyDB, where
 
 from . import BackendBase
-from ..page import Page
+from ..news import News
 from ..site import Site
 from ..exceptions import InvalidStoreSchemaError
 
@@ -24,9 +21,13 @@ STORE_SITE_COLUMN_TYPES = {
 STORE_PAGE_COLUMN_TYPES = {
     'site': str,
     'src': (str, None),
-    'url' : str,
+    'url': str,
     'content': str,
+    'title': (str, None),
+    'image': (str, None),
+    'description': (str, None)
 }
+
 
 # decorator to check database consistancy
 def should_store_valid(f=None, default=None, error=True):
@@ -74,7 +75,8 @@ class JSONBackend(BackendBase):
 
     @should_store_valid
     def add_pages(self, *pages):
-        for site in {page.site for page in pages if not self.site_exists(page.site)}:
+        for site in {page.site for page in pages if
+                     not self.site_exists(page.site)}:
             self.add_site(site)
 
         for page in pages:
@@ -113,10 +115,9 @@ class JSONBackend(BackendBase):
             content = p['content']
 
             # build page from backend
-            page = Page(site, src, url, content)
+            page = News(site, src, url, content)
             self._page_cache[url] = page
             return page
-
 
     @should_store_valid
     def get_pages(self, site=None):
@@ -133,10 +134,14 @@ class JSONBackend(BackendBase):
 
     @property
     def store_valid(self):
+        # alias
+        SITE_COLTYPES = STORE_SITE_COLUMN_TYPES
+        PAGE_COLTYPES = STORE_PAGE_COLUMN_TYPES
+
         try:
             return all(
-                [_valid(s, STORE_SITE_COLUMN_TYPES) for s in self._site_table.all()] +
-                [_valid(p, STORE_PAGE_COLUMN_TYPES) for p in self._page_table.all()]
+                [_valid(s, SITE_COLTYPES) for s in self._site_table.all()] +
+                [_valid(p, PAGE_COLTYPES) for p in self._page_table.all()]
             )
         except (TypeError, ValueError):
             return False
@@ -155,7 +160,8 @@ def _valid(e, schema):
         except TypeError:
             nullable = None in types
             types = tuple([t for t in types if t is not None])
-            valid = isinstance(e[name], types) or (nullable and e[name] is None)
+            valid = isinstance(e[name], types) or (
+                nullable and e[name] is None)
         if not valid:
             return False
     return True
