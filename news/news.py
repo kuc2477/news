@@ -48,6 +48,9 @@ class News(object):
     def __hash__(self):
         return hash(self.url) ^ hash(self.site.url)
 
+    def __str__(self):
+        return '<%s> %s' % (self.url, self.title)
+
     # ============
     # Main methods
     # ============

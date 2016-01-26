@@ -1,8 +1,9 @@
 from django.db import models
 
-
-TITLE_MAX_LENGTH = 150
-DESCRIPTION_MAX_LENGTH = 300
+from ..constants import (
+    NEWS_TITLE_MAX_LENGTH,
+    NEWS_DESCRIPTION_MAX_LENGTH
+)
 
 
 class Site(models.Model):
@@ -19,8 +20,8 @@ class News(models.Model):
                             blank=True, null=True)
     content = models.TextField()
 
-    title = models.CharField(max_length=TITLE_MAX_LENGTH)
-    description = models.CharField(max_length=DESCRIPTION_MAX_LENGTH)
+    title = models.CharField(max_length=NEWS_TITLE_MAX_LENGTH)
+    description = models.CharField(max_length=NEWS_DESCRIPTION_MAX_LENGTH)
     image = models.URLField()
 
     def __str__(self):

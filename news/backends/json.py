@@ -12,6 +12,7 @@ from . import BackendBase
 from ..news import News
 from ..site import Site
 from ..exceptions import InvalidStoreSchemaError
+from ..utils import logger
 
 
 STORE_PATH = '.NEWS_STORE.json'
@@ -43,6 +44,7 @@ def should_store_valid(f=None, default=None, error=True):
             wrapper.validity_checked = True
             return f(self, *args, **kwargs)
         if default is None:
+            logger.critical('Current store has invalid schema')
             raise InvalidStoreSchemaError
         else:
             return default

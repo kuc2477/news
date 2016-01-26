@@ -150,8 +150,8 @@ def main():
 @optional_backend_path
 def show(backend_type, backend_path):
     backend_type = get_backend(backend_type, backend_path)
-    for url in backend_type.get_urls():
-        print(url)
+    for news in backend_type.get_news_list():
+        print(news)
 
 
 @click.command('schedule', help='Run news schedule')
