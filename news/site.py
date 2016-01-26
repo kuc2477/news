@@ -29,7 +29,7 @@ class Site(object):
     def __hash__(self):
         return hash(self.url)
 
-    async def fetch_pages(self, **kwargs):
+    async def fetch_news(self, **kwargs):
         """Fetch new pages from the site.
 
         :return: `page`s of the site.
@@ -41,7 +41,7 @@ class Site(object):
             self.reached_urls = {self.url}
 
             root = News(self, None, self.url, await response.text())
-            return {root}.union(await root.fetch_linked_pages(**kwargs))
+            return {root}.union(await root.fetch_linked_news(**kwargs))
 
     @property
     def scheme(self):

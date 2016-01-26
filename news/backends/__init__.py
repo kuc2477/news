@@ -67,7 +67,7 @@ class BackendBase(metaclass=abc.ABCMeta):
         ) is not None
 
     @abc.abstractmethod
-    def add_news(self, *pages):
+    def add_news(self, *news):
         """Adds a news to the backend's store
 
         Note that won't be added if news already exists in the store.
@@ -76,7 +76,7 @@ class BackendBase(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def delete_news(self, *pages):
+    def delete_news(self, *news):
         """Deletes a news from the backend's store
 
         :param news: The news to delete.

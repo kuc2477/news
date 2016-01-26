@@ -1,4 +1,4 @@
-""":mod:`news.page` --- Scrapped pages and utility functions
+""":mod:`news.page` --- Scrapped news and utility functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Provides page utility functions and :class:`~news.page.Page` class.
@@ -19,18 +19,17 @@ from .utils import (
 
 
 class News(object):
-    """Scrapped page containing various page meta information.
+    """News containing page meta information.
 
-    Abstracts a scrapped page and provides an asynchronous page fetching
-    interface.
+    provides an asynchronous linked news fetching interface.
 
-    :param site: The site of the page.
+    :param site: The site of the news.
     :type site: :class:`news.site.Site`
-    :param src: The source page of the page.
-    :type src: :class:`news.page.Page`
-    :param url: The url of the page.
+    :param src: The source news of the news.
+    :type src: :class:`news.news.News`
+    :param url: The url of the news.
     :type url: :class:`str`
-    :param content: The content of the page.
+    :param content: The content of the news.
     :type content: :class:`str`
 
     """
@@ -53,12 +52,12 @@ class News(object):
     # Main methods
     # ============
 
-    async def fetch_linked_pages(self, **kwargs):
-        """Recursively fetch linked pages from the page.
+    async def fetch_linked_news(self, **kwargs):
+        """Recursively fetch linked news from the news content.
 
         :param reached_urls: Set of reached urls before the method call.
         :type reached_urls: :class:`list`
-        :return: List of linked `page`s of the page
+        :return: List of linked `news`s of the news
         :rtype: :class:`list`
 
         """
@@ -88,14 +87,14 @@ class News(object):
         for u in [u for u in unreached if u not in [u for c, u in contents]]:
             logger.error('[INVALID] %s responded with invalid contents' % u)
 
-        # linked pages of the page.
-        pages = {News(self.site, self, u, c) for c, u in contents}
+        # linked news of the page.
+        news = {News(self.site, self, u, c) for c, u in contents}
 
-        # linked page sets from the linked pages of the page.
-        linked_page_sets = await gather(*[page.fetch_linked_pages(**kwargs)
-                                          for page in pages])
+        # linked page sets from the linked news of the page.
+        linked_page_sets = await gather(*[page.fetch_linked_news(**kwargs)
+                                          for page in news])
 
-        return pages.union(set(chain(*linked_page_sets)))
+        return news.union(set(chain(*linked_page_sets)))
 
     # ==========
     # Properties
@@ -148,11 +147,11 @@ class News(object):
 
         :param url: The url to test if it is worth to visit.
         :type url: :class:`str`
-        :param maxdepth: Maximum depth allowed for linked pages.
+        :param maxdepth: Maximum depth allowed for linked news.
         :type maxdepth: :class:`int` or `None`
-        :param maxdist: Maximum distance allowed for linked pages.
+        :param maxdist: Maximum distance allowed for linked news.
         :type maxdist: :class:`int` or `None`
-        :param blacklist: The extname blacklist for linked pages.
+        :param blacklist: The extname blacklist for linked news.
         :type blacklist: :class:`list`
 
         """

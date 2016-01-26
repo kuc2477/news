@@ -29,7 +29,7 @@ def required_url(f):
 def optional_cycle(f):
     return click.option(
         '-c', '--cycle', type=int, default=180,
-        help='cycle in seconds for updating site pages'
+        help='cycle in seconds for updating site news'
     )(f)
 
 
@@ -43,7 +43,7 @@ def optional_brother(f):
 def optional_pipe(f):
     return click.option(
         '-p', '--pipe', multiple=True,
-        help='path to page pipeline function'
+        help='path to news pipeline function'
     )(f)
 
 
@@ -78,14 +78,14 @@ def optional_add_callback(f):
 def optional_maxdepth(f):
     return click.option(
         '--max-depth', type=int, default=None,
-        help='maximum depth to allow from the site to pages'
+        help='maximum depth to allow from the site to news'
     )(f)
 
 
 def optional_maxdist(f):
     return click.option(
         '--max-distance', type=int, default=None,
-        help='maximum distance to allow from the site to pages'
+        help='maximum distance to allow from the site to news'
     )(f)
 
 
@@ -235,7 +235,7 @@ def update(url, backend_type, backend_path, max_depth, max_distance, brother,
 @optional_backend_path
 def delete(url, backend_type, backend_path):
     backend = get_backend(backend_type, backend_path)
-    backend.delete_pages(*backend.get_pages(url))
+    backend.delete_news(*backend.get_news_list(url))
 
 
 main.add_command(show)

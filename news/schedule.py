@@ -38,7 +38,7 @@ class Schedule(object):
     :type on_start: :class:`function`
     :param on_complete: Callback to be fired on schedule job finish.
     :type on_complete: :class:`function`
-    :param **kwargs: Fetch options for `~news.page.Page.fetch_linked_pages`
+    :param **kwargs: Fetch options for `~news.news.News.fetch_linked_news`
     :type **kwargs: :class:`dict`
 
     """
@@ -82,7 +82,7 @@ class Schedule(object):
             self.on_start(self)
 
         with elapsed_timer() as elapsed:
-            fetch = self.site.fetch_pages(**self.options)
+            fetch = self.site.fetch_news(**self.options)
             fetched = self.loop.run_until_complete(fetch)
 
             # apply pipelines
@@ -94,10 +94,10 @@ class Schedule(object):
                 callback(page)
 
             # filter out pages that already exists in the store
-            new = [p for p in fetched if not self.backend.page_exists(p)]
+            new = [p for p in fetched if not self.backend.news_exists(p)]
 
         # add new pages to the backend
-        self.backend.add_pages(*new)
+        self.backend.add_news(*new)
 
         # fire add callbacks
         for page, callback in product(new, self.update_callbacks):
