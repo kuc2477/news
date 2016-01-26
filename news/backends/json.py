@@ -1,7 +1,7 @@
 """:mod:`news.backends.json` --- JSON backend
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-JSON page store backend for news.
+JSON news store backend for news.
 
 """
 from functools import partial, wraps
@@ -18,7 +18,7 @@ STORE_PATH = '.NEWS_STORE.json'
 STORE_SITE_COLUMN_TYPES = {
     'url': str
 }
-STORE_PAGE_COLUMN_TYPES = {
+STORE_NEWS_COLUMN_TYPES = {
     'site': str,
     'src': (str, None),
     'url': str,
@@ -57,8 +57,8 @@ class JSONBackend(BackendBase):
         self.path = path
         self._db = TinyDB(self.path)
         self._site_table = self._db.table('site')
-        self._page_table = self._db.table('page')
-        self._page_cache = {}
+        self._news_table = self._db.table('page')
+        self._news_cache = {}
 
     @should_store_valid
     def add_site(self, site):
@@ -74,80 +74,79 @@ class JSONBackend(BackendBase):
         return Site(s['url']) if s is not None else None
 
     @should_store_valid
-    def add_pages(self, *pages):
-        for site in {page.site for page in pages if
-                     not self.site_exists(page.site)}:
+    def add_news(self, *news):
+        for site in {n.site for n in news if not self.site_exists(n.site)}:
             self.add_site(site)
 
-        for page in pages:
-            self._page_table.insert(page.to_json())
+        for news in news:
+            self._news_table.insert(news.to_json())
 
-        self.invalidate_page_cache()
-
-    @should_store_valid
-    def delete_pages(self, *pages):
-        for page in pages:
-            self._page_table.remove(where('url') == page.url)
-
-        self.invalidate_page_cache()
-
-    def page_exists(self, page):
-        url = getattr(page, 'url', page)
-        return self._page_table.get(where('url') == url)
+        self.invalidate_news_cache()
 
     @should_store_valid
-    def get_page(self, url):
+    def delete_news(self, *news):
+        for n in news:
+            self._news_table.remove(where('url') == n.url)
+
+        self.invalidate_news_cache()
+
+    def news_exists(self, news):
+        url = getattr(news, 'url', news)
+        return self._news_table.get(where('url') == url)
+
+    @should_store_valid
+    def get_news(self, url):
         if url is None:
             return None
 
-        if url in self._page_cache:
-            # use cached page if exists
-            return self._page_cache[url]
+        if url in self._news_cache:
+            # use cached news if exists
+            return self._news_cache[url]
 
         try:
-            p = self._page_table.search(where('url') == url).pop()
+            p = self._news_table.search(where('url') == url).pop()
         except IndexError:
-            # return None if page doesn't exist in the table
+            # return None if news doesn't exist in the table
             return None
         else:
             site = Site(p['site'])
-            src = self.get_page(p['src'])
+            src = self.get_news(p['src'])
             content = p['content']
 
-            # build page from backend
-            page = News(site, src, url, content)
-            self._page_cache[url] = page
-            return page
+            # build news from backend
+            news = News(site, src, url, content)
+            self._news_cache[url] = news
+            return news
 
     @should_store_valid
-    def get_pages(self, site=None):
+    def get_news_list(self, site=None):
         # Site should be either url itself or `~news.site.Site` instance.
         assert(isinstance(site, (str, Site)) or site is None)
 
-        ps = self._page_table.all()
+        ps = self._news_table.all()
         if site is not None:
             ps = [p for p in ps if
                   (p['site'] == site if isinstance(site, str) else
                    p['site'] == site.url)]
 
-        return [self.get_page(u) for u in [p['url'] for p in ps]]
+        return [self.get_news(u) for u in [p['url'] for p in ps]]
 
     @property
     def store_valid(self):
         # alias
         SITE_COLTYPES = STORE_SITE_COLUMN_TYPES
-        PAGE_COLTYPES = STORE_PAGE_COLUMN_TYPES
+        NEWS_COLTYPES = STORE_NEWS_COLUMN_TYPES
 
         try:
             return all(
                 [_valid(s, SITE_COLTYPES) for s in self._site_table.all()] +
-                [_valid(p, PAGE_COLTYPES) for p in self._page_table.all()]
+                [_valid(p, NEWS_COLTYPES) for p in self._news_table.all()]
             )
         except (TypeError, ValueError):
             return False
 
-    def invalidate_page_cache(self):
-        self._page_cache = {}
+    def invalidate_news_cache(self):
+        self._news_cache = {}
 
 
 def _valid(e, schema):

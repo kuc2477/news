@@ -35,7 +35,7 @@ class BackendBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def delete_site(self, site):
-        """Deletes a site from the backend's store along with it's pages.
+        """Deletes a site from the backend's store along with it's newss.
 
         :param site: The site to delete
         :type site: :class:`news.site.Site`
@@ -67,7 +67,7 @@ class BackendBase(metaclass=abc.ABCMeta):
         ) is not None
 
     @abc.abstractmethod
-    def add_pages(self, *pages):
+    def add_news(self, *pages):
         """Adds a news to the backend's store
 
         Note that won't be added if news already exists in the store.
@@ -76,7 +76,7 @@ class BackendBase(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def delete_pages(self, *pages):
+    def delete_news(self, *pages):
         """Deletes a news from the backend's store
 
         :param news: The news to delete.
@@ -89,7 +89,7 @@ class BackendBase(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def get_page(self, url):
+    def get_news(self, url):
         """Returns a stored news.
 
         :param url: The url of the news.
@@ -100,7 +100,7 @@ class BackendBase(metaclass=abc.ABCMeta):
         """
         return NotImplemented
 
-    def page_exists(self, news):
+    def news_exists(self, news):
         """Check existance of the news from the backend's store
 
         :param news: News or url to test existance.
@@ -109,17 +109,17 @@ class BackendBase(metaclass=abc.ABCMeta):
         :rtype: :class:`bool`
 
         """
-        return self.get_page(
+        return self.get_news(
             news.url if isinstance(news, News) else news
         ) is not None
 
     @abc.abstractmethod
-    def get_pages(self, site=None):
-        """Returns stored pages of the site.
+    def get_news_list(self, site=None):
+        """Returns stored newss of the site.
 
-        :param site: Site or site url of the pages.
+        :param site: Site or site url of the newss.
         :type site: :class:`news.site.Site` or :class:`str`
-        :return: pages of the site.
+        :return: newss of the site.
         :rtype: :class:`list`
 
         """
@@ -128,10 +128,10 @@ class BackendBase(metaclass=abc.ABCMeta):
     def get_urls(self, site=None):
         """Returns stored urls of the site.
 
-        :param site: Site or site url of the pages.
+        :param site: Site or site url of the newss.
         :type site: :class:`news.site.Site` or :class:`str`
-        :return: urls of the site pages.
+        :return: urls of the site newss.
         :rtype: :class:`list`
 
         """
-        return [news.url for news in self.get_pages(site)]
+        return [news.url for news in self.get_news_list(site)]

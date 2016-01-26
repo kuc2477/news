@@ -22,17 +22,17 @@ def path(tmpdir):
 
 
 @pytest.fixture
-def valid_store_json(page):
+def valid_store_json(news):
     store = {
-        'site': {1: page.site.to_json()},
-        'page': {1: page.to_json()}
+        'site': {1: news.site.to_json()},
+        'news': {1: news.to_json()}
     }
     return json.dumps(store)
 
 
 @pytest.fixture(params=[
     'text only response',
-    '<a href="/path/to/other/page">response with local link</a>',
+    '<a href="/path/to/other/news">response with local link</a>',
     '<a href="http://www.naver.com/path/">response with local link</a>',
     '<a href="http://www.daum.net">response with external link</a>',
     '<a href="#hash">response with only hash</a>',
@@ -47,7 +47,7 @@ def text_content():
 
 
 @pytest.fixture(params=[
-    '<a href="/path/to/other/page">response with local link</a>',
+    '<a href="/path/to/other/news">response with local link</a>',
     '<a href="http://httpbin.org">response with local link</a>',
 ])
 def local_link_content(request):
@@ -89,25 +89,25 @@ def site(url):
 
 
 @pytest.fixture
-def page(site, url, content):
+def news(site, url, content):
     return News(site, None, url, content)
 
 
 @pytest.fixture
-def text_page(site, url, text_content):
+def text_news(site, url, text_content):
     return News(site, None, url, text_content)
 
 
 @pytest.fixture
-def local_link_page(site, url, local_link_content):
+def local_link_news(site, url, local_link_content):
     return News(site, None, url, local_link_content)
 
 
 @pytest.fixture
-def external_link_page(site, url, external_link_content):
+def external_link_news(site, url, external_link_content):
     return News(site, None, url, external_link_content)
 
 
 @pytest.fixture
-def hash_link_page(site, url, hash_link_content):
+def hash_link_news(site, url, hash_link_content):
     return News(site, None, url, hash_link_content)
