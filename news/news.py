@@ -1,7 +1,8 @@
-""":mod:`news.page` --- Scrapped news and utility functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.news` --- News domain class and it's functions.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Provides page utility functions and :class:`~news.page.Page` class.
+Provides :class:`~news.news.News` domain class and it's related utiltiy
+functions.
 
 """
 from itertools import chain
@@ -12,14 +13,16 @@ from extraction import Extractor
 from asyncio import gather
 import aiohttp
 
+from .base import DomainBase
 from .utils import (
     logger, fillurl, ext, issuburl,
     normalize, depth
 )
 
 
-class News(object):
-    """News containing page meta information.
+class News(DomainBase):
+
+    """News domain class
 
     provides an asynchronous linked news fetching interface.
 
@@ -51,9 +54,50 @@ class News(object):
     def __str__(self):
         return '<%s> %s' % (self.url, self.title)
 
-    # ============
-    # Main methods
-    # ============
+    @property
+    def id(self):
+        return self.url
+
+    @property
+    def root(self):
+        """Returns root page of the page.
+
+        :return: Root page of the page.
+        :rtype: :class:`news.page.Page`
+
+        """
+        return self if self.src is None else self.src.root
+
+    @property
+    def depth(self):
+        return depth(self.site.url, self.url)
+
+    @property
+    def distance(self):
+        """Returns distance from the root page.
+
+        :return: Distance from the root page.
+        :rtype: :class:`int`
+
+        """
+        return 0 if self.src is None else self.src.distance + 1
+
+    @cached_property
+    def extracted(self):
+        extractor = Extractor()
+        return extractor.extract(self.content)
+
+    @property
+    def title(self):
+        return self.extracted.title
+
+    @property
+    def image(self):
+        return self.extracted.image
+
+    @property
+    def description(self):
+        return self.extracted.description
 
     async def fetch_linked_news(self, **kwargs):
         """Recursively fetch linked news from the news content.
@@ -98,51 +142,6 @@ class News(object):
                                           for page in news])
 
         return news.union(set(chain(*linked_page_sets)))
-
-    # ==========
-    # Properties
-    # ==========
-
-    @property
-    def root(self):
-        """Returns root page of the page.
-
-        :return: Root page of the page.
-        :rtype: :class:`news.page.Page`
-
-        """
-        return self if self.src is None else self.src.root
-
-    @property
-    def depth(self):
-        return depth(self.site.url, self.url)
-
-    @property
-    def distance(self):
-        """Returns distance from the root page.
-
-        :return: Distance from the root page.
-        :rtype: :class:`int`
-
-        """
-        return 0 if self.src is None else self.src.distance + 1
-
-    @cached_property
-    def extracted(self):
-        extractor = Extractor()
-        return extractor.extract(self.content)
-
-    @property
-    def title(self):
-        return self.extracted.title
-
-    @property
-    def image(self):
-        return self.extracted.image
-
-    @property
-    def description(self):
-        return self.extracted.description
 
     def worth_visit(self, url, maxdepth=None, maxdist=None, brothers=[],
                     blacklist=['png', 'jpg', 'gif', 'pdf', 'svg', 'zip']):

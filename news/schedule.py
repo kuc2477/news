@@ -1,7 +1,9 @@
-""":mod: `news.schedule` --- News schedules
+""":mod: `news.schedule` --- Schedule related domain classes.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Provides schedule class which glues all news components(`~news.site.Site`,
-`~news.backends`, etc.) together.
+
+Provides schedule related domain classes which will be usually used by other
+processes or threads in background.
 
 """
 from itertools import product
@@ -11,6 +13,11 @@ import schedule as worker
 
 from .utils import elapsed_timer
 from .utils import logger
+
+
+class ScheduleMeta(object):
+    # TODO: NOT IMPLEMENTED YET
+    pass
 
 
 class Schedule(object):
@@ -114,3 +121,7 @@ class Schedule(object):
         # fire complete callback if exists
         if self.on_complete:
             self.on_complete(self)
+
+
+class Scheduler(object):
+    pass

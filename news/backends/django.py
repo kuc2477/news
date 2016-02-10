@@ -20,18 +20,6 @@ class DjangoBackend(BackendBase):
             cls._instance = super().__new__(cls, *args, **kwargs)
         return cls._instance
 
-    def add_site(self, site):
-        SiteModel.objects.create(url=site.url)
-
-    def delete_site(self, site):
-        try:
-            SiteModel.objects.get(pk=site.url).delete()
-        except SiteModel.DoesNotExist:
-            pass
-
-    def get_site(self, url):
-        return Site(url) if SiteModel.objects.filter(pk=url).exists() else None
-
     def add_news(self, *news):
         # add site if the site of news doesn't exist in the store
         for site in {n.site for n in news if not self.site_exists(n.site)}:
@@ -39,6 +27,10 @@ class DjangoBackend(BackendBase):
 
         NewsModel.objects.bulk_create([
             _model_from_news(n) for n in news])
+
+    def update_news(self, *news):
+        # TODO: NOT IMPLEMENTED YET
+        pass
 
     def delete_news(self, *news):
         NewsModel.objects.filter(url__in=[n.url for n in news]).delete()

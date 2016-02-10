@@ -14,16 +14,10 @@ class SQLAlchemyBackend(BackendBase):
             cls._insteance = super().__new__(cls, *args, **kwargs)
         return cls._insteance
 
-    def add_site(self, site):
-        pass
-
-    def delete_site(self, site):
-        pass
-
-    def get_site(self, url):
-        pass
-
     def add_news(self, *news):
+        pass
+
+    def update_news(self, *news):
         pass
 
     def delete_news(self, *news):
@@ -32,5 +26,20 @@ class SQLAlchemyBackend(BackendBase):
     def get_news(self, url):
         pass
 
-    def get_news_list(self, site=None):
+    def get_news_list(self, url=None):
+        pass
+
+    def add_schedule_meta(self, *metas):
+        pass
+
+    def update_schedule_meta(self, meta):
+        pass
+
+    def delete_schedule_meta(self, *metas):
+        pass
+
+    def get_schedule_meta(self, owner, url):
+        pass
+
+    def get_schedule_metas(self, owner, url):
         pass
