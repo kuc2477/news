@@ -6,8 +6,6 @@ Provides common interface for multiple news backend implementations.
 """
 import abc
 
-from ..news import News
-
 
 class BackendBase(metaclass=abc.ABCMeta):
     """Abstract base class for news store backends.
@@ -47,10 +45,12 @@ class BackendBase(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def get_news(self, url):
+    def get_news(self, root, url):
         """Returns a stored news.
 
-        :param url: The url of the news.
+        :param root: URL of the root news of the news.
+        :type root: :class:`str`
+        :param url: URL of the news.
         :type url: :class:`str`
         :return: stored news.
         :rtype: :class:`news.news.News`
@@ -59,40 +59,40 @@ class BackendBase(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def get_news_list(self, site=None):
+    def get_news_list(self, root=None):
         """Returns stored newss of the site.
 
-        :param site: Site or site url of the newss.
-        :type site: :class:`news.site.Site` or :class:`str`
-        :return: newss of the site.
+        :param root: URL of the root news of the news.
+        :type root: :class:`str`
+        :return: A list of news
         :rtype: :class:`list`
 
         """
         return NotImplemented
 
-    def news_exists(self, news):
+    def news_exists(self, root, url):
         """Check existance of the news from the backend's store
 
-        :param news: News or url to test existance.
-        :type news: :class:`news.news.News` or :class:`str`
+        :param: root: URL of the root news of the news.
+        :type root: :class:`str`
+        :param url: URL of the news.
+        :type url: :class:`str`
         :return: Whether the news exists in the news storage.
         :rtype: :class:`bool`
 
         """
-        return self.get_news(
-            news.url if isinstance(news, News) else news
-        ) is not None
+        return self.get_news(root, url) is not None
 
-    def get_urls(self, site=None):
+    def get_urls(self, root=None):
         """Returns stored urls of the site.
 
-        :param site: Site or site url of the newss.
-        :type site: :class:`news.site.Site` or :class:`str`
-        :return: urls of the site newss.
+        :param root: Site or site url of the newss.
+        :type root: :class:`str`
+        :return: URLs of the news list from given root news.
         :rtype: :class:`list`
 
         """
-        return [news.url for news in self.get_news_list(site)]
+        return [news.url for news in self.get_news_list(root)]
 
     @abc.abstractmethod
     def add_schedule_meta(*metas):
