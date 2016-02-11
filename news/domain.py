@@ -3,8 +3,10 @@ import abc
 
 class DomainBase(metaclass=abc.ABCMeta):
     """
-    Base class that should be implemented by domain classes. Provides
-    common interface for domain classes.
+    Domain base class that should be implemented by domain classes.
+
+    Provide common attributes and properties for persistance between domain
+    objects and a store backend.
 
     """
 
@@ -14,9 +16,9 @@ class DomainBase(metaclass=abc.ABCMeta):
     def __hash__(self):
         return hash(self.id)
 
-    @abc.abstractmethod
     def __str__(self):
-        return NotImplemented
+        template = '{0}: {1}'.format()
+        return self.id
 
     @abc.abstractproperty
     def id(self):

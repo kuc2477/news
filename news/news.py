@@ -8,7 +8,7 @@ functions.
 from cached_property import cached_property
 from extraction import Extractor
 
-from .base import DomainBase
+from .domain import DomainBase
 from .utils import (
     normalize, depth
 )
@@ -36,11 +36,13 @@ class News(DomainBase):
         self._content = content
 
     def __str__(self):
-        return '<%s> %s' % (self._url, self.title)
+        template = '[{0}]: {1}'
+        return template.format(self.url, self.title)
 
     @property
     def id(self):
-        return hash('{root}:{url}'.format(root=self._root._url, url=self._url))
+        template = '{0}:{1}'
+        return hash(template.format(self.root.url, self.url))
 
     @property
     def root(self):
@@ -80,12 +82,16 @@ class News(DomainBase):
         return self.extracted.description
 
     @property
+    def content(self):
+        return self._content
+
+    @property
     def serialized(self):
         return {
-            'root': self._root,
-            'src': self._src,
-            'url': self._url,
-            'content': self._content,
+            'root': self.root.url,
+            'src': self.src.url,
+            'url': self.url,
+            'content': self.content,
             'title': self.title,
             'image': self.image,
             'description': self.description
