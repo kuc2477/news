@@ -1,17 +1,18 @@
 from django.db import models
 
+from . import ModelBase
 from ..constants import (
     NEWS_TITLE_MAX_LENGTH,
     NEWS_DESCRIPTION_MAX_LENGTH
 )
 
 
-# TODO: NOT IMPLEMENTED YET
-class ScheduleMeta(models.Model):
+class ScheduleMeta(ModelBase, models.Model):
+    # TODO: NOT IMPLEMENTED YET
     pass
 
 
-class News(models.Model):
+class News(ModelBase, models.Model):
     site = models.URLField()
     url = models.URLField(primary_key=True)
     src = models.ForeignKey('self', related_name='children', db_index=True,
@@ -23,4 +24,13 @@ class News(models.Model):
     image = models.URLField()
 
     def __str__(self):
-        return self.url
+        pass
+
+    @classmethod
+    def from_domain(cls, domain_object):
+        # TODO: NOT IMPLEMENTED YET
+        pass
+
+        # TODO: NOT IMPLEMENTED YET
+    def to_domain(self):
+        pass

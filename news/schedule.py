@@ -6,122 +6,70 @@ Provides schedule related domain classes which will be usually used by other
 processes or threads in background.
 
 """
-from itertools import product
-
 import asyncio
 import schedule as worker
 
-from .utils import elapsed_timer
-from .utils import logger
-
-
-class ScheduleMeta(object):
-    # TODO: NOT IMPLEMENTED YET
-    pass
+from .reporter import (
+    Reporter,
+    ReporterMeta
+)
+from .constants import (
+    DEFAULT_SCHEDULE_CYCLE,
+    DEFAULT_FILTER_OPTIONS
+)
 
 
 class Schedule(object):
-    """Scraping schedule class
-
-    Represents schedule to be run scraping bound source site in every
-    predefined cycle.
-
-    :param site: Site to be scheduled for news update.
-    :type site: :class:'~news.site.Site'
-    :param backend: Backend type to use for page storage.
-    :type backend: Any :class:`~news.backend.BackendBase` implementations.
-    :param cycle: Cycle for news updates in seconds.
-    :type cycle: :class:'int'
-    :param loop: Event loop to be used for schedule. Will fall back to
-        base asyncio event loop from `asyncio.get_event_loop()` if omitted.
-    :type loop: '~asyncio.BaseEventLoop'
-    :param fetch_callbacks: Callbacks to be fired when pages are fetched.
-    :type fetch_callbacks: :class:`list`
-    :param add_callbacks: Callbacks to be fired when pages are added.
-    :type add_callbacks: :class:`list`
-    :param pipes: Pipeline functions that filters fetched pages
-    :type pipes: :class:`list`
-    :param on_start: Callback to be fired on schedule job start.
-    :type on_start: :class:`function`
-    :param on_complete: Callback to be fired on schedule job finish.
-    :type on_complete: :class:`function`
-    :param **kwargs: Fetch options for `~news.news.News.fetch_linked_news`
-    :type **kwargs: :class:`dict`
-
-    """
-
-    def __init__(self, site, backend, cycle=600, loop=None,
-                 fetch_callbacks=[], add_callbacks=[], pipes=[],
-                 on_start=None, on_complete=None, **kwargs):
-        self.site = site
+    def __init__(self, backend, schedule_meta, reporter_meta):
         self.backend = backend
-        self.cycle = cycle
-        self.loop = loop or asyncio.get_event_loop()
+        self.schedule_meta = schedule_meta
+        self.reporter_meta = reporter_meta
+        self.reporter = None
 
-        self.fetch_callbacks = fetch_callbacks
-        self.update_callbacks = add_callbacks
-        self.pipes = pipes
-        self.on_start = on_start
-        self.on_complete = on_complete
+    @classmethod
+    def from_meta(cls, schedule_meta, backend, intel_strategy=None,
+                  report_experience=None, fetch_experience=None,
+                  dispatch_middlewares=None, fetch_middlewares=None):
+        intel_strategy = intel_strategy or (lambda backend: [])
+        intel = intel_strategy(backend)
 
-        self.options = kwargs
+        reporter_meta = ReporterMeta(
+            intel,
+            report_experience, fetch_experience,
+            dispatch_middlewares, fetch_middlewares,
+            **schedule_meta.get_filter_options()
+        )
+        return cls(backend, schedule_meta, reporter_meta)
 
-    def run(self):
-        """Run news updating schedule."""
-        # set news updating cycle for the job
-        worker.every(self.cycle).seconds.do(lambda: self.run_once())
+    def prepare(self):
+        self._reporter = Reporter(
+            self._backend,
+            self._schedule_meta.get_url,
+            meta=self._reporter_meta
+        )
 
-        # notify logger that we are about to run a schedule
-        logger.debug(
-            '%s: News schedule registered with cycle of %d seconds' %
-            (self.site.url, self.cycle))
-
-        # run schedule
-        while True:
-            worker.run_pending()
-
-    def run_once(self):
-        """Run news update once."""
-        logger.debug('%s: News update start' % self.site.url)
-
-        # fire start callback if exists
-        if self.on_start:
-            self.on_start(self)
-
-        with elapsed_timer() as elapsed:
-            fetch = self.site.fetch_news(**self.options)
-            fetched = self.loop.run_until_complete(fetch)
-
-            # apply pipelines
-            for pipe in self.pipes:
-                fetched = pipe(fetched)
-
-            # fire fetch callbacks
-            for page, callback in product(fetched, self.fetch_callbacks):
-                callback(page)
-
-            # filter out pages that already exists in the store
-            new = [p for p in fetched if not self.backend.news_exists(p)]
-
-        # add new pages to the backend
-        self.backend.add_news(*new)
-
-        # fire add callbacks
-        for page, callback in product(new, self.update_callbacks):
-            callback(page)
-
-        # show logs
-        template = '{site}: News update completed in {elapsed:.2f} seconds '
-        template += '({fetched} fetched / {added} added)'
-        logger.debug(template.format(
-            site=self.site.url, elapsed=elapsed(),
-            fetched=len(fetched), added=len(new)
-        ))
-
-        # fire complete callback if exists
-        if self.on_complete:
-            self.on_complete(self)
+    def run(self, bulk_report=True):
+        if not self._reporter:
+            self.prepare()
+        return self._reporter.dispatch(bulk_report)
 
 
 class Scheduler(object):
-    pass
+    def __init__(self, backend, celery):
+        self._backend = backend
+        self._schedule_meta_list = []
+
+    def initialize(self):
+        pass
+
+    def start(self):
+        pass
+
+    def enroll(self, *schedule_meta):
+        pass
+
+    def update(self, *schedule_meta):
+        pass
+
+    def remove(self, *schedule_meta):
+        pass

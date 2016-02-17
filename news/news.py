@@ -42,7 +42,7 @@ class News(DomainBase):
     @property
     def id(self):
         template = '{0}:{1}'
-        return hash(template.format(self.root.url, self.url))
+        return template.format(self.root.url, self.url)
 
     @property
     def root(self):

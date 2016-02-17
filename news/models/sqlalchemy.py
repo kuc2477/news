@@ -8,6 +8,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy_utils.types.url import URLType
 
+from . import ModelBase
 from ..constants import (
     NEWS_TITLE_MAX_LENGTH,
     NEWS_DESCRIPTION_MAX_LENGTH
@@ -17,12 +18,21 @@ from ..constants import (
 Base = declarative_base()
 
 
-# TODO: NOT IMPLEMENTED YET
-class ScheduleMeta(Base):
+class ScheduleMeta(ModelBase, Base):
     __tablename__ = 'schedule_meta'
+    # TODO: NOT IMPLEMENTED YET
+
+    @classmethod
+    def from_domain(cls, domain_object):
+        # TODO: NOT IMPLEMENTED YET
+        pass
+
+    def to_domain(self):
+        # TODO: NOT IMPLEMENTED YET
+        pass
 
 
-class News(Base):
+class News(ModelBase, Base):
     __tablename__ = 'news'
 
     site = Column(URLType)
@@ -37,3 +47,12 @@ class News(Base):
 
     def __str__(self):
         return self.url
+
+    @classmethod
+    def from_domain(cls, domain_object):
+        # TODO: NOT IMPLEMENTED YET
+        pass
+
+    def to_domain(self):
+        # TODO: NOT IMPLEMENTED YET
+        pass
