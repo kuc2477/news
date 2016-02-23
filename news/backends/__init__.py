@@ -1,45 +1,49 @@
-""":mod:`news.backends` --- Backend abstract base
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.backends` --- Contains abstract backend class.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Provide common interface for news backend implementations.
+Provides common interface that should be implemented by orm specific backends.
 
 """
-import abc
+import collections
 
 
-class SignletoneBackendMixin(object):
+class AbstractBackend(object):
     """
-    Mixin for singletone backend implementations.
+    Abstract news backend that should be implemented in orm specific ways.
 
-    """
-
-    __instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls.__instance:
-            cls.__instance = super().__new__(cls, *args, **kwargs)
-        return cls.__instance
-
-
-class BackendBase(metaclass=abc.ABCMeta):
-    """
-    Abstract base class of news backend.
+    :param owner_class: Owner class to use with backend.
+    :type owner_class: Implementation of `~news.models.AbstractModel`.
+    :param schedule_class: Schedule class to use with backend.
+    :type schedule_class: Implementation of `~news.models.AbstractSchedule`.
+    :param news_class: News class to use with backend.
+    :type news_class: Implementation of `~news.models.AbstractNews`.
 
     """
 
-    #: Implementation of `~news.models.AbstractOwnerMixin`
-    owner_class = NotImplemented
+    combinations = {}
 
-    #: Implementation of `~news.models.AbstractNewsMixin`
-    news_class = NotImplemented
+    def __init__(self, owner_class=None, schedule_class=None, news_class=None):
+        self.owner_class = owner_class
+        self.schedule_class = schedule_class
+        self.news_class = news_class
 
-    #: Implementation of `~news.models.AbstractScheduleMetaMixin`
-    schedule_meta_class = NotImplemented
+    @classmethod
+    def create_backend(
+            cls, owner_class=None, schedule_class=None, news_class=None):
+        # make combination of model classes and check if same type of backend
+        # with same combination of model classes ever been instantiated or
+        # not.
+        C = collections.namedtuple('Combination', 'owner schedule news')
+        c = C(owner=owner_class, schedule=schedule_class, news=news_class)
 
-    @abc.abstractmethod
+        if c in cls.combinations:
+            return cls.combinations[c]
+        else:
+            return cls(owner_class, schedule_class, news_class)
+
     def get_news(self, owner, url):
         """
-        Retrieve a news for owner from backend.
+        Should retrive a news for owner from backend.
 
         :param owner: Owner of the news.
         :type owner: :attr: `owner_class`
@@ -49,12 +53,11 @@ class BackendBase(metaclass=abc.ABCMeta):
         :rtype: :attr: `news_class`
 
         """
-        return NotImplemented
+        raise NotImplementedError
 
-    @abc.abstractmethod
     def get_news_list(self, owner, root_url):
         """
-        Retrieve a list of news for owner from backend.
+        Should retrieve  a list of news for owner from backend.
 
         :param owner: Owner of the news.
         :type owner: :attr:`owner_class`
@@ -64,34 +67,18 @@ class BackendBase(metaclass=abc.ABCMeta):
         :rtype: :class:`list`
 
         """
-        return NotImplemented
+        raise NotImplementedError
 
-    @abc.abstractmethod
-    def add_news(self, *news):
+    def save_news(self, *news):
         """
-        Add news to the backend.
+        Should save news to the backend.
 
-        :param news: News to add.
-        :type news: :attr:`news_class`
-
-        .. note:: News won't be added if a news of both same owner and url
-            already exists in the backend.
-
-        """
-        return NotImplemented
-
-    @abc.abstractmethod
-    def update_news(self, *news):
-        """
-        Update news in the backend.
-
-        :param news: News to update.
+        :param news: News to save.
         :type news: :attr:`news_class`
 
         """
-        return NotImplemented
+        raise NotImplementedError
 
-    @abc.abstractmethod
     def delete_news(self, *news):
         """
         Delete news in the backend.
@@ -100,11 +87,11 @@ class BackendBase(metaclass=abc.ABCMeta):
         :type news: :attr:`news_class`
 
         """
-        return NotImplemented
+        raise NotImplementedError
 
     def news_exists(self, owner, url):
         """
-        Check existance of the news in the backend.
+        Should check existance of the news in the backend.
 
         :param owner: Owner of the news.
         :type owner: :attr:`owner_class`
@@ -116,10 +103,9 @@ class BackendBase(metaclass=abc.ABCMeta):
         """
         return self.get_news(owner, url) is not None
 
-    @abc.abstractmethod
-    def get_schedule_meta(owner, url):
+    def get_schedule(owner, url):
         """
-        Retrieve a schedule meta for owner from the backend.
+        Should retrieve a schedule meta for owner from the backend.
 
         :param owner: Owner of the schedule meta.
         :type owner: :attr:`owner_class`
@@ -127,12 +113,11 @@ class BackendBase(metaclass=abc.ABCMeta):
         :rtype: :attr:`schedule_meta_class`
 
         """
-        return NotImplemented
+        raise NotImplementedError
 
-    @abc.abstractmethod
-    def get_schedule_meta_list(owner):
+    def get_schedules(owner):
         """
-        Retrieve a list of schedule meta for owner from backend.
+        Should retrieve a list of schedule meta for owner from backend.
 
         :param owner: Owner of the schedule meta list.
         :type owner: :attr:`schedule_meta_class`
@@ -141,11 +126,11 @@ class BackendBase(metaclass=abc.ABCMeta):
 
         """
 
-        return NotImplemented
+        raise NotImplementedError
 
-    def schedule_meta_exists(self, owner, url):
+    def schedule_exists(self, owner, url):
         """
-        Check existance of the schedule meta in the backend.
+        Should check existance of the schedule meta in the backend.
 
         :param owner: Owner of the schedule meta.
         :type owner: :attr:`schedule_meta_class`
@@ -155,4 +140,12 @@ class BackendBase(metaclass=abc.ABCMeta):
         :rtype: :class:`bool`
 
         """
-        return self.get_schedule_meta(owner, url) is not None
+        return self.get_schedule(owner, url) is not None
+
+    def set_post_save_listener(self, listener):
+        """Should register post save listener"""
+        raise NotImplementedError
+
+    def set_post_delete_listener(self, listener):
+        """Should register post save listener"""
+        raise NotImplementedError

@@ -1,9 +1,6 @@
-import json
 import pytest
 
-from news.site import Site
 from news.news import News
-from news.backends.json import JSONBackend
 from news.backends.django import DjangoBackend
 
 
@@ -14,20 +11,6 @@ from news.backends.django import DjangoBackend
 @pytest.fixture
 def url():
     return 'http://httpbin.org'
-
-
-@pytest.fixture
-def path(tmpdir):
-    return tmpdir.mkdir('t').join('STORE.json')
-
-
-@pytest.fixture
-def valid_store_json(news):
-    store = {
-        'site': {1: news.site.to_json()},
-        'news': {1: news.to_json()}
-    }
-    return json.dumps(store)
 
 
 @pytest.fixture(params=[
@@ -64,14 +47,9 @@ def hash_link_content():
     return '<a href="#hash">response with only hash</a>'
 
 
-# ====================
-# News related objects
-# ====================
-
-@pytest.fixture
-def json_backend(path):
-    return JSONBackend(str(path))
-
+# ======
+# Models
+# ======
 
 @pytest.fixture
 def django_backend():
@@ -79,35 +57,35 @@ def django_backend():
 
 
 @pytest.fixture
-def backend(json_backend):
-    return json_backend
+def owner():
+    pass
 
 
 @pytest.fixture
-def site(url):
-    return Site(url)
+def schedule_meta():
+    pass
 
 
 @pytest.fixture
-def news(site, url, content):
-    return News(site, None, url, content)
+def news(url, content):
+    return News(url, content)
 
 
 @pytest.fixture
-def text_news(site, url, text_content):
+def news_with_text_only(site, url, text_content):
     return News(site, None, url, text_content)
 
 
 @pytest.fixture
-def local_link_news(site, url, local_link_content):
+def news_with_local_link(site, url, local_link_content):
     return News(site, None, url, local_link_content)
 
 
 @pytest.fixture
-def external_link_news(site, url, external_link_content):
+def news_with_external_link(site, url, external_link_content):
     return News(site, None, url, external_link_content)
 
 
 @pytest.fixture
-def hash_link_news(site, url, hash_link_content):
+def news_with_hash_link(site, url, hash_link_content):
     return News(site, None, url, hash_link_content)

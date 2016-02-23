@@ -1,7 +1,7 @@
-""":mod: `news.reporter` --- Reporter class for fetching news from the web.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod: `news.reporter` --- Contains reporter related classes.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Provides :class:`~news.reporter.Reporter` class and it's various derivatives.
+Provides :class:`~news.reporter.Reporter` class and it's derivatives.
 
 """
 import copy
@@ -13,17 +13,24 @@ import asyncio
 import aiohttp
 from cached_property import cached_property
 
-from .news import News
-from .constants import DEFAULT_FILTER_OPTIONS
 from .utils import (
     ext, issuburl, fillurl,
     normalize, depth
 )
 
 
-class ReporterMeta(object):
+__all__ = ['ReporterMeta', 'Reporter']
 
+
+class ReporterMeta(object):
     """
+    Meta information / options to be used by reporters.
+
+    :param schedule: Schedule which created the chief reporter of the
+        reporter or reporter itself. Schedule provides necessary information
+        such as the owner of the schedule or filter options to use in news
+        fetching process.
+    :type schedule: Implementation of `~news.models.AbstractSchedule`.
     :param intel: A list of news that was fetched in the past.
         Reporters responsible for each news of intel will be
         summoned by the reporter and dispatched along with the reporters
@@ -54,35 +61,60 @@ class ReporterMeta(object):
     :type filter_options: :class:`dict`
 
     """
-    def __init__(self, intel=None,
+    def __init__(self, schedule, intel=None,
                  report_experience=None, fetch_experience=None,
-                 dispatch_middlewares=None, fetch_middlewares=None,
-                 **filter_options):
+                 dispatch_middlewares=None, fetch_middlewares=None):
+        # Schedule meta that contains information about owner and
+        # filter options.
+        self.schedule = schedule
+
+        # Intel (list of news) to be used for batch-fetching, which will
+        # impreove performance of the chief reporter's initial fetch.
         self.intel = intel or []
+
+        # Experience of the reporter, which will filter out meaningless
+        # urls or news, thus improve performance of the reporter.
         self.report_experience = report_experience or (
             lambda root_url, news: True
         )
         self.fetch_experience = fetch_experience or (
             lambda root_url, news, url: True
         )
+
+        # Middlewares
         self.dispatch_middlewares = dispatch_middlewares or []
         self.fetch_middlewares = fetch_middlewares or []
-        self.filter_options = DEFAULT_FILTER_OPTIONS.copy()
-        self.filter_options = self.filter_options.update(filter_options)
+
+    @property
+    def owner(self):
+        """
+        (`~news.models.AbstractOwnerMixin` implementation of
+        :attr:`schedule` backend type) The owner of the schedule meta that
+        is used to instantiate this reporter meta.
+
+        """
+
+        return self.schedule.owner
+
+    @property
+    def filter_options(self):
+        """
+        (:class:`dict`) Filter options to be used by reporters.
+
+        """
+        return self.schedule.get_filter_options()
 
 
 class Reporter(object):
+    """
+    Reporter responsible for fetching a list of news under given url.
 
-    """Class responsible for fetching :class:`~news.news.News` from the web.
-
-    Provides news fetching interface with various hooks and fetch strategy
-    customization points.
-
-    :param backend: The news store backend instance to report news to.
-    :type backend: Instance of any :class:`news.backends.BackendBase`
     :param url: The url to cover and fetch from the web.
     :type url: :class:`str`
-        implementations.
+    :param backend: The news store backend instance to report news to.
+    :type backend: Instance of any :class:`news.backends.BackendBase`
+    :param meta: Meta information to be used in fetching process.
+    :type meta: :class:`~news.reporter.ReporterMeta`
     :param predecessor: Predecessor who dispatched the reporter to the url.
         The reporter who has `None` predecessor will be considered as a chief
         reporter, who is be responsible of collecting visited urls and
@@ -90,11 +122,12 @@ class Reporter(object):
     :type predecessor: :class:`~news.reporter.Reporter`
 
     """
-    def __init__(self, backend, url, predecessor=None, meta=None):
+
+    def __init__(self, url, backend, meta, predecessor=None):
         self._url = normalize(url)
         self._backend = backend
         self._predecessor = predecessor
-        self._meta = meta or ReporterMeta()
+        self._meta = meta
 
         # news will be set on reporter once fetched
         self._news = None
@@ -109,6 +142,10 @@ class Reporter(object):
             self._visited_urls_lock = asyncio.Lock()
             self._visited_urls = set()
 
+    # ============================
+    # Fetched news getter / setter
+    # ============================
+
     @property
     def fetched_news(self):
         return self._news
@@ -117,9 +154,33 @@ class Reporter(object):
     def fetched_news(self, news):
         self._news = news
 
+    # =======================
+    # Reporter meta shortcuts
+    # =======================
+
+    @property
+    def schedule(self):
+        return self._meta.schedule
+
+    @property
+    def owner(self):
+        return self._meta.owner
+
+    @property
+    def filter_options(self):
+        return self._meta.filter_options
+
+    # ===========================
+    # Reporter url / relationship
+    # ===========================
+
     @property
     def url(self):
         return self._url
+
+    @property
+    def predecessor(self):
+        return self._predecessor
 
     @cached_property
     def chief(self):
@@ -132,6 +193,10 @@ class Reporter(object):
     @cached_property
     def distance(self):
         return 0 if not self._predecessor else self._predecessor.distance + 1
+
+    # ====================
+    # Main reporting logic
+    # ====================
 
     async def dispatch(self, bulk_report=False):
         """
@@ -199,10 +264,12 @@ class Reporter(object):
             # report to the chief reporter that we visited the url.
             self._report_visited()
 
-            # refine response into a news
-            root = self.chief.fetched_news
-            src = self._predecessor.fetched_news if self._predecessor else None
-            news = News(root, src, self.url, await response.text())
+            # refine the response into a news
+            news_class = self._backend.news_class
+            news = news_class.create_instance(
+                self.schedule, self.url, await response.text(),
+                src=self.predecessor.fetched_news if not self.chief else None
+            )
 
             # set fetched news to the reporter.
             self.fetched_news = news
@@ -219,6 +286,10 @@ class Reporter(object):
             # experience.
             return news if worth_to_report else None
 
+    # =========
+    # Enhancers
+    # =========
+
     def _enhance_dispatch(self):
         original = self.dispatch
         middlewares = self._meta.dispatch_middlewares
@@ -228,6 +299,10 @@ class Reporter(object):
         original = self._fetch
         middlewares = self._meta.fetch_middlewares
         self._fetch = reduce(lambda f, m: m(f), middlewares, original)
+
+    # =====================================
+    # Reporter operations / utility methods
+    # =====================================
 
     def _report_news(self, *news):
         self._backend.add_news(*news)
@@ -255,7 +330,7 @@ class Reporter(object):
 
     def _worth_visit(self, news, url):
         root_url = self.chief.url
-        filter_options = self._meta.filter_options
+        filter_options = self.filter_options
         experience = self._meta.fetch_experience
 
         brothers = filter_options.get('brothers')
@@ -276,6 +351,10 @@ class Reporter(object):
         return format_ok and dist_ok and blacklist_ok and \
             not self._already_visited(url) and \
             experience(self.chief.url, news, url)
+
+    # =======================
+    # Reporter callup methods
+    # =======================
 
     def _take_responsibility(self, news):
         if news.src:

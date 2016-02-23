@@ -1,68 +1,70 @@
-""":mod:`news.backends.django` --- Django ORM backend
-
-Django ORM news store backend for news.
-
-"""
-from . import (
-    SignletoneBackendMixin,
-    BackendBase
+""":mod:`news.backends.django` --- Django backend. """
+from django.db import transaction
+from django.core.signals import (
+    post_save,
+    post_delete
 )
-from ..news import News
-from ..models.django import (
-    News as NewsModel,
-    ScheduleMeta as ScheduleMetaModel
-)
+from . import AbstractBackend
 
 
-class DjangoBackend(SignletoneBackendMixin, BackendBase):
-    def add_news(self, *news):
-        # add site if the site of news doesn't exist in the store
-        for site in {n.site for n in news if not self.site_exists(n.site)}:
-            self.add_site(site)
+class DjangoBackend(AbstractBackend):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.OwnerManager = self.owner_cls.objects
+        self.ScheduleManager = self.schedule_cls.objects
+        self.NewsManager = self.news_cls.objects
 
-        NewsModel.objects.bulk_create([
-            _model_from_news(n) for n in news])
+    def get_news(self, owner, url):
+        return self.ScheduleManager\
+            .filter(schedule__owner=owner)\
+            .filter(url=url)\
+            .first()
 
-    def update_news(self, *news):
-        # TODO: NOT IMPLEMENTED YET
-        pass
+    def get_news_list(self, owner, root_url):
+        return self.ScheduleManager\
+            .filter(url=root_url)\
+            .filter(owner=owner)\
+            .all()
+
+    @transaction.atomic
+    def save_news(self, *news):
+        for n in news:
+            if not self.news_exists(n.owner, n.url):
+                self.cascade_save_news(n)
+            else:
+                previous = self.get_news(n.owner, n.url)
+                previous.content = n.content
+                previous.src = n.src
+                previous.save()
+
+    @transaction.atomic
+    def cascade_save_news(self, news):
+        if news.src and news.src.id is None:
+            self.cascade_save_news(news.src)
+        news.save()
 
     def delete_news(self, *news):
-        NewsModel.objects.filter(url__in=[n.url for n in news]).delete()
+        queryset = self.NewsManager.filter(id__in=[n.id for n in news])
+        queryset.delete()
 
-    def get_news(self, url):
-        try:
-            return _news_from_model(NewsModel.objects.get(url=url))
-        except NewsModel.DoesNotExist:
-            return None
+    def get_schedule(self, owner, url):
+        return self.ScheduleManager\
+            .filter(owner=owner)\
+            .filter(url=url)\
+            .first()
 
-    def get_news_list(self, site=None):
-        # Site should be either url itself or `~news.site.Site` instance.
-        assert(isinstance(site, (str, Site)) or site is None)
-        ps = NewsModel.objects.all()
+    def get_schedules(self, owner=None, url=None):
+        queryset = self.ScheduleManager.all()
 
-        if site is not None:
-            ps = ps.filter(site__url=(
-                site.url if isinstance(site, Site) else site))
+        if owner:
+            queryset = queryset.filter(owner=owner)
+        if url:
+            queryset = queryset.filter(url=url)
 
-        return [_news_from_model(p) for p in ps]
+        return queryset.all()
 
+    def set_schedule_save_listener(self, listener):
+        post_save.connect(listener, sender=self.schedule_class, weak=False)
 
-def _news_from_model(p):
-    return News(
-        Site(p.site.url), getattr(p.src, 'url', None),
-        p.url, p.content
-    )
-
-
-def _model_from_news(news):
-    try:
-        site = SiteModel.objects.get(pk=news.site.url)
-    except SiteModel.DoesNotExist:
-        site = None
-
-    return NewsModel(
-        url=news.url, site=site,
-        src=getattr(news.src, 'url', None),
-        content=news.content
-    )
+    def set_schedule_delete_listener(self, listener):
+        post_delete.connect(listener, sender=self.schedule_class, weak=False)

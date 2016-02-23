@@ -1,10 +1,9 @@
 from django.conf import settings
 
 
-
 DJANGO_SETTINGS_DICT = dict(
     INSTALLED_APPS=('news',),
-    DATABASES = {
+    DATABASES={
         "default": {
             "NAME": "__NEWS_TEST_DB__",
             "ENGINE": "django.db.backends.sqlite3",

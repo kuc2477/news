@@ -3,17 +3,10 @@
 SQLAlchemy news store backend.
 
 """
-from . import BackendBase
+from . import AbstractBackend
 
 
-class SQLAlchemyBackend(BackendBase):
-    _insteance = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._insteance:
-            cls._insteance = super().__new__(cls, *args, **kwargs)
-        return cls._insteance
-
+class SQLAlchemyBackend(AbstractBackend):
     def add_news(self, *news):
         pass
 
@@ -29,17 +22,8 @@ class SQLAlchemyBackend(BackendBase):
     def get_news_list(self, url=None):
         pass
 
-    def add_schedule_meta(self, *metas):
+    def get_schedule(self, owner, url):
         pass
 
-    def update_schedule_meta(self, meta):
-        pass
-
-    def delete_schedule_meta(self, *metas):
-        pass
-
-    def get_schedule_meta(self, owner, url):
-        pass
-
-    def get_schedule_metas(self, owner, url):
+    def get_schedule_list(self, owner):
         pass

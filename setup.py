@@ -49,17 +49,16 @@ setup(
     url='https://github.com/kuc2477/news',
     install_requires=[
         'aiohttp>=0.19.0',
+        'schedule>=0.3.2',
         'beautifulsoup4>=4.4.1',
+        'extraction==0.2.1',
         'click>=6.2',
-        'tinydb>=3.1.0',
-        'ujson>=1.34',
+        'colorlog>=2.6.0',
+        'cached-property>=1.3.0',
         'django>=1.7',
+        'django-jsonfield>=0.9.16',
         'SQLAlchemy>=1.0.11',
         'sqlalchemy-utils>=0.31.6',
-        'colorlog>=2.6.0',
-        'schedule>=0.3.2',
-        'cached-property>=1.3.0',
-        'extraction==0.2.1',
     ],
     dependency_links=[
         'https://github.com/kuc2477/extraction/archive/master.zip' +
