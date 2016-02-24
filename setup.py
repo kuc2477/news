@@ -52,6 +52,7 @@ setup(
         'schedule>=0.3.2',
         'beautifulsoup4>=4.4.1',
         'extraction==0.2.1',
+        'urltools>=0.3.2',
         'click>=6.2',
         'colorlog>=2.6.0',
         'cached-property>=1.3.0',

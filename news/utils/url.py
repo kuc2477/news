@@ -1,6 +1,7 @@
 import re
 import os.path
 from urllib.parse import urlparse
+import urltools
 
 
 def ispath(url):
@@ -53,13 +54,7 @@ def fillurl(index, url):
 
 
 def normalize(url):
-    parsed = urlparse(url)
-    normpath = re.sub(r'\/+', '/', os.path.normpath('/' + parsed.path))
-    normpath = '' if normpath == '/' else normpath
-    query = '?' + parsed.query if parsed.query else ''
-    return '%s://%s%s%s' % (
-        parsed.scheme, parsed.hostname, normpath, query
-    )
+    return urltools.normalize(url).rstrip('/')
 
 
 def depth(index, url):

@@ -1,7 +1,7 @@
 from urllib.parse import urlparse
 
 import pytest
-from news import utils
+from news.utils import url
 
 
 @pytest.fixture(params=[
@@ -69,39 +69,39 @@ def nonpath(request):
 
 
 def test_ispath(relpath, abspath, exturl, nonpath):
-    assert(utils.ispath(relpath))
-    assert(utils.ispath(abspath))
-    assert(not utils.ispath(exturl))
-    assert(not utils.ispath(nonpath))
+    assert(url.ispath(relpath))
+    assert(url.ispath(abspath))
+    assert(not url.ispath(exturl))
+    assert(not url.ispath(nonpath))
 
 
 def test_isabspath(relpath, abspath, exturl, nonpath):
-    assert(not utils.isabspath(relpath))
-    assert(utils.isabspath(abspath))
-    assert(not utils.isabspath(exturl))
-    assert(not utils.isabspath(exturl))
+    assert(not url.isabspath(relpath))
+    assert(url.isabspath(abspath))
+    assert(not url.isabspath(exturl))
+    assert(not url.isabspath(exturl))
 
 
 def test_issamehost(index, relpath, abspath, exturl, nonpath):
-    assert(utils.issamehost(index, relpath))
-    assert(utils.issamehost(index, abspath))
-    assert(not utils.issamehost(index, exturl))
-    assert(utils.issamehost(index, nonpath))
+    assert(url.issamehost(index, relpath))
+    assert(url.issamehost(index, abspath))
+    assert(not url.issamehost(index, exturl))
+    assert(url.issamehost(index, nonpath))
 
 
 def test_issuburl(index, suburl, nonsuburl):
-    assert(utils.issuburl(index, suburl))
-    assert(not utils.issuburl(index, nonsuburl))
+    assert(url.issuburl(index, suburl))
+    assert(not url.issuburl(index, nonsuburl))
 
 
 def test_fillurl(index, relpath, abspath):
-    assert(utils.fillurl(index, relpath) ==
-           utils.normalize(index + '/' + relpath))
+    assert(url.fillurl(index, relpath) ==
+           url.normalize(index + '/' + relpath))
     parsedi = urlparse(index)
     parsedu = urlparse(abspath)
     assert(
-        utils.fillurl(index, abspath) ==
-        utils.normalize(
+        url.fillurl(index, abspath) ==
+        url.normalize(
             '%s://%s/%s%s' % (
                 parsedi.scheme, parsedi.hostname, parsedu.path.lstrip('/'),
                 '?' + parsedu.query if parsedu.query else '')
@@ -111,22 +111,22 @@ def test_fillurl(index, relpath, abspath):
 
 def test_normalize():
     assert(
-        utils.normalize('http://www.naver.com/a//b///c') ==
+        url.normalize('http://www.naver.com/a//b///c') ==
         'http://www.naver.com/a/b/c'
     )
     assert(
-        utils.normalize('http://www.naver.com///') ==
+        url.normalize('http://www.naver.com///') ==
         'http://www.naver.com'
     )
 
 
 def test_depth():
-    assert(utils.depth('http://www.naver.com/a/',
+    assert(url.depth('http://www.naver.com/a/',
                        'http://www.naver.com/a/b/c') == 2)
-    assert(utils.depth('http://www.naver.com/a/',
+    assert(url.depth('http://www.naver.com/a/',
                        'http://www.naver.com/a') == 0)
-    assert(utils.depth('http://www.naver.com/a/b',
+    assert(url.depth('http://www.naver.com/a/b',
                        'http://www.naver.com/a/b//c') == 1)
-    assert(utils.depth('http://www.naver.com/a/b/c', '/a/b/c/d/../d') == 1)
-    assert(utils.depth('http://www.naver.com/a/b', '/b/c/d/') == -1)
-    assert(utils.depth('http://www.naver.com/a/b', 'c/d') == 2)
+    assert(url.depth('http://www.naver.com/a/b/c', '/a/b/c/d/../d') == 1)
+    assert(url.depth('http://www.naver.com/a/b', '/b/c/d/') == -1)
+    assert(url.depth('http://www.naver.com/a/b', 'c/d') == 2)

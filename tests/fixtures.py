@@ -1,6 +1,4 @@
 import pytest
-
-from news.news import News
 from news.backends.django import DjangoBackend
 
 
