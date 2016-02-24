@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 from jsonfield import JSONField
 
-from . import (
+from .abstract import (
     AbstractSchedule,
     AbstractNews
 )
@@ -15,53 +15,70 @@ from ..constants import (
 )
 
 
-__all__ = ['Schedule', 'News']
+__all__ = ['Schedule', 'News', 'create_abc_schedule', 'create_abc_news']
 
 
-class Schedule(models.Model):
-    owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL, related_name='schedules',
-        db_index=True
-    )
+def create_abc_schedule(user_model=settings.AUTH_USER_MODEL):
 
-    url = models.URLField()
-    cycle = models.IntegerField(default=DEFAULT_SCHEDULE_CYCLE)
+    class AbstractBaseSchedule(models.Model, AbstractSchedule):
+        owner = models.ForeignKey(
+            user_model,  related_name='schedules', db_index=True
+        )
+        url = models.URLField()
+        cycle = models.IntegerField(default=DEFAULT_SCHEDULE_CYCLE)
 
-    max_dist = models.IntegerField(
-        blank=True, null=True, default=DEFAULT_MAX_DIST)
-    max_depth = models.IntegerField(
-        blank=True, null=True, default=DEFAULT_MAX_DEPTH)
+        max_dist = models.IntegerField(
+            blank=True, null=True, default=DEFAULT_MAX_DIST)
+        max_depth = models.IntegerField(
+            blank=True, null=True, default=DEFAULT_MAX_DEPTH)
 
-    blacklist = JSONField(default=DEFAULT_BLACKLIST)
-    brothers = JSONField(default=DEFAULT_BROTHERS)
+        blacklist = JSONField(default=DEFAULT_BLACKLIST)
+        brothers = JSONField(default=DEFAULT_BROTHERS)
 
-    def get_filter_options(self):
-        return {
-            'max_dist': self.max_dist,
-            'max_depth': self.max_depth,
-            'blacklist': self.blacklist,
-            'brothers': self.brothers
-        }
+        def get_filter_options(self):
+            return {
+                'max_dist': self.max_dist,
+                'max_depth': self.max_depth,
+                'blacklist': self.blacklist,
+                'brothers': self.brothers
+            }
 
-    class Meta:
-        unique_together = (('owner', 'url'),)
+        class Meta:
+            abstract = True
+            unique_together = (('owner', 'url'),)
+
+    return AbstractBaseSchedule
 
 
-class News(models.Model):
-    schedule = models.ForeignKey(
-        Schedule, related_name='news_list', db_index=True
-    )
-    src = models.ForeignKey(
-        'self', related_name='children', db_index=True,
-        blank=True, null=True
-    )
+def create_abc_news(schedule_model):
 
-    url = models.URLField()
-    content = models.TextField()
+    class AbstractBaseNews(models.Model, AbstractNews):
+        schedule = models.ForeignKey(
+            schedule_model, related_name='news_list',
+            db_index=True
+        )
+        src = models.ForeignKey(
+            'self', related_name='children', db_index=True,
+            blank=True, null=True
+        )
 
-    @classmethod
-    def create_instance(cls, schedule, url, content, src=None):
-        return cls(schedule=schedule, url=url, content=content, src=src)
+        url = models.URLField()
+        content = models.TextField()
 
-    class Meta:
-        unique_together = (('schedule', 'url'),)
+        @classmethod
+        def create_instance(cls, schedule, url, content, src=None):
+            return cls(schedule=schedule, url=url, content=content, src=src)
+
+        class Meta:
+            abstract = True
+            unique_together = (('schedule', 'url'),)
+
+    return AbstractBaseNews
+
+
+class Schedule(create_abc_schedule()):
+    pass
+
+
+class News(create_abc_news(Schedule)):
+    pass

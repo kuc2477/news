@@ -41,20 +41,25 @@ def django_schedule(db, django_schedule_class, django_owner, url):
 
 
 @pytest.fixture
-def django_root_news(db, django_news_class, django_schedule):
-    news = django_news_class()
+def django_root_news(db, django_news_class, django_schedule,
+                     url_root, content_root):
+    news = django_news_class(
+        schedule=django_schedule,
+        url=url_root,
+        content=content_root
+    )
     news.save()
     return news
 
 
 @pytest.fixture
-def django_news(django_news_class, django_schedule, django_root_news,
-                url, content):
+def django_news(db, django_news_class, django_schedule, django_root_news,
+                url_child, content_child):
     news = django_news_class(
         schedule=django_schedule,
         src=django_root_news,
-        url=url,
-        content=content
+        url=url_child,
+        content=content_child
     )
     news.save()
     return news

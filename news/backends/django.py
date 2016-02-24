@@ -4,7 +4,7 @@ from django.db.models.signals import (
     post_save,
     post_delete
 )
-from . import AbstractBackend
+from .abstract import AbstractBackend
 
 
 class DjangoBackend(AbstractBackend):
@@ -15,16 +15,20 @@ class DjangoBackend(AbstractBackend):
         self.NewsManager = self.news_class.objects
 
     def get_news(self, owner, url):
-        return self.ScheduleManager\
-            .filter(schedule__owner=owner)\
+        return self.NewsManager\
+            .filter(schedule__owner=owner.id)\
             .filter(url=url)\
             .first()
 
-    def get_news_list(self, owner, root_url):
-        return self.ScheduleManager\
-            .filter(url=root_url)\
-            .filter(owner=owner)\
-            .all()
+    def get_news_list(self, owner=None, root_url=None):
+        news_list = self.NewsManager.all()
+
+        if owner:
+            news_list = news_list.filter(owner=owner)
+        if root_url:
+            news_list = news_list.filter(url=root_url)
+
+        return news_list
 
     @transaction.atomic
     def save_news(self, *news):

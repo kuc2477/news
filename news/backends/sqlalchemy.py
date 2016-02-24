@@ -3,7 +3,7 @@
 SQLAlchemy news store backend.
 
 """
-from . import AbstractBackend
+from .abstract import AbstractBackend
 
 
 class SQLAlchemyBackend(AbstractBackend):

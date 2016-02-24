@@ -8,7 +8,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy_utils.types.url import URLType
 
-from . import ModelBase
+from .abstract import ModelBase
 from ..constants import (
     NEWS_TITLE_MAX_LENGTH,
     NEWS_DESCRIPTION_MAX_LENGTH
