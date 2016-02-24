@@ -34,21 +34,27 @@ def django_owner(django_owner_class):
 
 
 @pytest.fixture
-def django_schedule(django_schedule_class, django_owner, url):
+def django_schedule(db, django_schedule_class, django_owner, url):
     schedule = django_schedule_class(owner=django_owner, url=url)
     schedule.save()
     return schedule
 
 
 @pytest.fixture
-def django_root_news(django_news_class, django_schedule):
+def django_root_news(db, django_news_class, django_schedule):
     news = django_news_class()
     news.save()
     return news
 
 
 @pytest.fixture
-def django_news(django_news_class, django_schedule, django_root_news):
-    news = django_news_class()
+def django_news(django_news_class, django_schedule, django_root_news,
+                url, content):
+    news = django_news_class(
+        schedule=django_schedule,
+        src=django_root_news,
+        url=url,
+        content=content
+    )
     news.save()
     return news

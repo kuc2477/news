@@ -1,10 +1,11 @@
 """:mod: `news.models` --- Contains news model interfaces.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 Provides abstract common news model interfaces that should be implemeted
 backends.
 
 """
+from django.db import models
 from cached_property import cached_property
 from extraction import Extractor
 from ..utils import url
@@ -23,7 +24,6 @@ class AbstractModel(object):
 
     """
 
-    @property
     def id(self):
         """
         Should return the id of the model.
@@ -42,7 +42,6 @@ class AbstractSchedule(AbstractModel):
 
     """
 
-    @property
     def owner(self):
         """
         Should return a owner of the schedule.
@@ -53,7 +52,6 @@ class AbstractSchedule(AbstractModel):
         """
         raise NotImplementedError
 
-    @property
     def url(self):
         """
         Should return target url of the schedule.
@@ -64,7 +62,6 @@ class AbstractSchedule(AbstractModel):
         """
         raise NotImplementedError
 
-    @property
     def cycle(self):
         """
         Should return cycle of the schedule.
@@ -114,7 +111,6 @@ class AbstractNews(AbstractModel):
         """
         raise NotImplementedError
 
-    @property
     def url(self):
         """
         Should return the url of the news.
@@ -125,7 +121,6 @@ class AbstractNews(AbstractModel):
         """
         raise NotImplementedError
 
-    @property
     def content(self):
         """
         Should return the content of the news.
@@ -136,7 +131,6 @@ class AbstractNews(AbstractModel):
         """
         raise NotImplementedError
 
-    @property
     def owner(self):
         """
         Should return the owner of the news.
@@ -147,7 +141,6 @@ class AbstractNews(AbstractModel):
         """
         raise NotImplementedError
 
-    @property
     def src(self):
         """
         Should return parent news of the news.
