@@ -123,11 +123,11 @@ class Reporter(object):
 
     """
 
-    def __init__(self, url, backend, meta, predecessor=None):
-        self._url = normalize(url)
-        self._backend = backend
-        self._predecessor = predecessor
-        self._meta = meta
+    def __init__(self, url, meta, backend, predecessor=None):
+        self.url = normalize(url)
+        self.meta = meta
+        self.backend = backend
+        self.predecessor = predecessor
 
         # news will be set on reporter once fetched
         self._news = None
@@ -154,37 +154,29 @@ class Reporter(object):
     def fetched_news(self, news):
         self._news = news
 
-    # =======================
-    # Reporter meta shortcuts
-    # =======================
+    # =============
+    # Reporter meta
+    # =============
 
     @property
     def schedule(self):
-        return self._meta.schedule
+        return self.meta.schedule
 
     @property
     def owner(self):
-        return self._meta.owner
+        return self.meta.owner
 
     @property
     def filter_options(self):
-        return self._meta.filter_options
+        return self.meta.filter_options
 
-    # ===========================
-    # Reporter url / relationship
-    # ===========================
-
-    @property
-    def url(self):
-        return self._url
-
-    @property
-    def predecessor(self):
-        return self._predecessor
+    # =====================
+    # Reporter relationship
+    # =====================
 
     @cached_property
     def chief(self):
-        return self._predecessor.chief if self._predecessor else self
+        return self.predecessor.chief if self.predecessor else self
 
     @cached_property
     def is_chief(self):
@@ -192,11 +184,11 @@ class Reporter(object):
 
     @cached_property
     def distance(self):
-        return 0 if not self._predecessor else self._predecessor.distance + 1
+        return 0 if not self.predecessor else self.predecessor.distance + 1
 
-    # ====================
-    # Main reporting logic
-    # ====================
+    # =================
+    # Reporter dispatch
+    # =================
 
     async def dispatch(self, bulk_report=False):
         """
@@ -211,21 +203,21 @@ class Reporter(object):
         :rtype: :class:`list`
 
         """
-        news = await self._fetch(not bulk_report)
-        urls = self._get_worthy_urls(news)
+        news = await self.fetch(not bulk_report)
+        urls = self.get_worthy_urls(news) if news else []
 
-        news_linked = await self._dispatch_reporters(urls, bulk_report)
+        news_linked = await self.dispatch_reporters(urls, bulk_report)
         news_total = news_linked.append(news)
 
         # Bulk report news if the flag is set to `True`. We don't have to
-        # take care of `False` case since it will be reported on `fetch()`
-        # calls of each news.
-        if bulk_report:
-            self._report_news(*news_total)
+        # take care of `False` case since news should be reported on `fetch()`
+        # calls of each successors already.
+        if bulk_report and self.is_chief:
+            self.report_news(*news_total)
 
         return news_total
 
-    async def _dispatch_reporters(self, urls, bulk_report=False):
+    async def dispatch_reporters(self, urls, bulk_report=False):
         """
         Dispatch the reporter's successors to the web to fetch news subtree of
         the url assigned to him.
@@ -240,13 +232,13 @@ class Reporter(object):
         :rtype: :class:`list`
 
         """
-        reporters = self._call_up_reporters(urls)
+        reporters = self.call_up_reporters(urls)
         dispatches = [r.dispatch(bulk_report=bulk_report) for r in reporters]
         news_sets = await asyncio.gather(*dispatches)
         news_list = itertools.chain(*news_sets)
         return news_list
 
-    async def _fetch(self, immediate_report=True):
+    async def fetch(self, immediate_report=True):
         """
         Dispatch the reporter to the web and fetch a news of the url assigned
         to him. Note that the url will be marked as visited whether the
@@ -262,29 +254,29 @@ class Reporter(object):
         """
         async with aiohttp.get(self.url) as response:
             # report to the chief reporter that we visited the url.
-            self._report_visited()
+            self.report_visited()
 
-            # refine the response into a news
-            news_class = self._backend.news_class
-            news = news_class.create_instance(
-                self.schedule, self.url, await response.text(),
-                src=self.predecessor.fetched_news if not self.chief else None
-            )
+            # make news from response and set fetched
+            self.fetched_news = news = self.make_news(await response.text())
 
-            # set fetched news to the reporter.
-            self.fetched_news = news
+            if not self.worth_to_report(news):
+                return None
 
-            # determine whether the news is worth to report or not
-            worth_to_report = self._worth_report(news)
+            if immediate_report:
+                self.report_news(news)
 
-            # Report the news if the `immediate_report` flag is set to `True`
-            # and expected to be valuable based on reporter's experience.
-            if immediate_report and worth_to_report:
-                self._report_news(news)
+            return news
 
-            # Return the news only if it is valuable based on the reporter's
-            # experience.
-            return news if worth_to_report else None
+    # ====
+    # News
+    # ====
+
+    def make_news(self, content):
+        src = self.predecessor.fetched_news if not self.chief else None
+        news_class = self.backend.news_class
+        news = news_class.create_instance(
+            self.schedule, self.url, content, src=src)
+        return news
 
     # =========
     # Enhancers
@@ -292,30 +284,30 @@ class Reporter(object):
 
     def _enhance_dispatch(self):
         original = self.dispatch
-        middlewares = self._meta.dispatch_middlewares
+        middlewares = self.meta.dispatch_middlewares
         self.dispatch = reduce(lambda d, m: m(d), middlewares, original)
 
     def _enhance_fetch(self):
-        original = self._fetch
-        middlewares = self._meta.fetch_middlewares
-        self._fetch = reduce(lambda f, m: m(f), middlewares, original)
+        original = self.fetch
+        middlewares = self.meta.fetch_middlewares
+        self.fetch = reduce(lambda f, m: m(f), middlewares, original)
 
-    # =====================================
-    # Reporter operations / utility methods
-    # =====================================
+    # ===================
+    # Reporter operations
+    # ===================
 
-    def _report_news(self, *news):
-        self._backend.add_news(*news)
+    def report_news(self, *news):
+        self.backend.add_news(*news)
 
-    def _report_visited(self):
+    def report_visited(self):
         with (yield from self.chief._visited_urls_lock):
-            self.chief._visited_urls.add(self._url)
+            self.chief._visited_urls.add(self.url)
 
-    def _already_visited(self, url):
+    def already_visited(self, url):
         with (yield from self.chief._visited_urls_lock):
             return url in self.chief._visited_urls
 
-    def _get_worthy_urls(self, news):
+    def get_worthy_urls(self, news):
         atags = BeautifulSoup(news.content, 'html.parser')('a')
 
         # expand relative / absolute / external urls
@@ -323,15 +315,15 @@ class Reporter(object):
         expended = {fillurl(self.chief.url, r) for r in raws}
 
         # return only worthy urls
-        return {e for e in expended if self._worth_visit(news, e)}
+        return {e for e in expended if self.worth_to_visit(news, e)}
 
-    def _worth_report(self, news):
-        return self._meta.report_experience(self.chief.url, news)
+    def worth_to_report(self, news):
+        return self.meta.report_experience(self.chief.url, news)
 
-    def _worth_visit(self, news, url):
+    def worth_to_visit(self, news, url):
         root_url = self.chief.url
         filter_options = self.filter_options
-        experience = self._meta.fetch_experience
+        experience = self.meta.fetch_experience
 
         brothers = filter_options.get('brothers')
         max_depth = filter_options.get('max_depth')
@@ -349,48 +341,48 @@ class Reporter(object):
         format_ok = (is_child and depth_ok) or is_relative
 
         return format_ok and dist_ok and blacklist_ok and \
-            not self._already_visited(url) and \
+            not self.already_visited(url) and \
             experience(self.chief.url, news, url)
 
     # =======================
     # Reporter callup methods
     # =======================
 
-    def _take_responsibility(self, news):
+    def take_responsibility(self, news):
         if news.src:
             predecessor = copy.deepcopy(self)
-            predecessor._take_responsibility(news.src)
+            predecessor.take_responsibility(news.src)
         else:
             predecessor = self.chief
 
-        self._url = news.url
-        self._predecessor = predecessor
+        self.url = news.url
+        self.predecessor = predecessor
         self.fetched_news = news
 
-    def _summon_for(self, news):
+    def summon_reporter_for(self, news):
         reporter = copy.deepcopy(self)
-        reporter._take_responsibility(news)
+        reporter.take_responsibility(news)
         return reporter
 
-    def _summon_reporters(self):
+    def summon_reporters_for_intel(self):
         # summon reporters responsible for news only that has same root url
         # with our chief reporter's url.
-        return [self._summon_for(news) for news in self._meta.intel
+        return [self.summon_reporter_for(news) for news in self.meta.intel
                 if news.root.url == self.chief.url]
 
-    def _recruit_for(self, url):
+    def recruit_reporter_for(self, url):
         reporter = copy.deepcopy(self)
-        reporter._url = url
-        reporter._predecessor = self
+        reporter.url = url
+        reporter.predecessor = self
         return reporter
 
-    def _recruit_reporters(self, urls):
-        return [self._recruit_for(u) for u in urls]
+    def recruit_reporters_for_urls(self, urls):
+        return [self.recruit_reporter_for(u) for u in urls]
 
-    def _call_up_reporters(self, urls):
+    def call_up_reporters(self, urls):
         # recruite new reporters for the urls and summon reporters responsible
         # for each news intel.
-        recruited = self._recruit_reporters(urls)
-        summoned = self._summon_reporters()
+        recruited = self.recruit_reporters_for_urls(urls)
+        summoned = self.summon_reporters_for_intel()
 
         return recruited + summoned
