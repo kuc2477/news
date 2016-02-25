@@ -1,4 +1,3 @@
-from unittest import mock
 from django.db.models.signals import (
     post_save,
     post_delete
@@ -126,6 +125,7 @@ def test_set_schedule_save_listener_create(
         using='default'
     )
 
+
 @pytest.mark.django_db
 def test_set_schedule_save_listener_update(mocker, django_backend,
                                            django_schedule):
@@ -143,6 +143,7 @@ def test_set_schedule_save_listener_update(mocker, django_backend,
         update_fields=None,
         using='default'
     )
+
 
 @pytest.mark.django_db
 def test_set_schedule_delete_listener(mocker, django_backend, django_schedule):

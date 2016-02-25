@@ -13,7 +13,7 @@ import asyncio
 import aiohttp
 from cached_property import cached_property
 
-from .utils import (
+from .utils.url import (
     ext, issuburl, fillurl,
     normalize, depth
 )
