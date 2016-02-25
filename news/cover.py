@@ -27,14 +27,14 @@ class Cover(object):
         return cls(backend, schedule, reporter_meta)
 
     def prepare(self):
-        self._reporter = Reporter(
-            self._backend,
-            self._schedule_meta.get_url,
-            meta=self._reporter_meta
+        self.reporter = Reporter(
+            self.schedule.url,
+            self.backend,
+            meta=self.reporter_meta
         )
 
     def run(self, bulk_report=True):
-        if not self._reporter:
+        if not self.reporter:
             self.prepare()
 
         loop = asyncio.get_event_loop()
