@@ -130,12 +130,12 @@ class AbstractNews(AbstractModel):
         """
         raise NotImplementedError
 
-    def owner(self):
+    def schedule(self):
         """
-        Should return the owner of the news.
+        Should return schedule of the news
 
-        :returns: The owner of the news.
-        :rtype: Any implementation of :class:`~news.models.AbstractOwnerMixin`
+        :returns: The schedule of the news.
+        :rtype: Any implementation of :class:`~news.models.AbstractSchedule`
 
         """
         raise NotImplementedError
@@ -145,10 +145,14 @@ class AbstractNews(AbstractModel):
         Should return parent news of the news.
 
         :returns: The parent news of the news.
-        :rtype: Any implementation of :class:`~news.models.AbstractNewsMixin`
+        :rtype: Any implementation of :class:`~news.models.AbstractNews`
 
         """
         raise NotImplementedError
+
+    @property
+    def owner(self):
+        return self.schedule.owner
 
     @property
     def root(self):

@@ -16,7 +16,7 @@ class DjangoBackend(AbstractBackend):
 
     def get_news(self, owner, url):
         return self.NewsManager\
-            .filter(schedule__owner=owner.id)\
+            .filter(schedule__owner=owner)\
             .filter(url=url)\
             .first()
 
@@ -24,9 +24,9 @@ class DjangoBackend(AbstractBackend):
         news_list = self.NewsManager.all()
 
         if owner:
-            news_list = news_list.filter(owner=owner)
+            news_list = news_list.filter(schedule__owner=owner)
         if root_url:
-            news_list = news_list.filter(url=root_url)
+            news_list = news_list.filter(schedule__url=root_url)
 
         return news_list
 
