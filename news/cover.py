@@ -29,8 +29,8 @@ class Cover(object):
     def prepare(self):
         self.reporter = Reporter(
             self.schedule.url,
+            self.reporter_meta,
             self.backend,
-            meta=self.reporter_meta
         )
 
     def run(self, bulk_report=True):

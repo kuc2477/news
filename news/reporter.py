@@ -349,11 +349,15 @@ class Reporter(object):
     # =======================
 
     def take_responsibility(self, news):
-        if news.src:
-            predecessor = copy.deepcopy(self)
-            predecessor.take_responsibility(news.src)
-        else:
-            predecessor = self.chief
+        # we don't take responsibility for root news. only non-root news are
+        # valid intels.
+        assert(news.src is not None)
+
+        if news is None:
+            return self
+
+        predecessor = copy.deepcopy(self)
+        predecessor.take_responsibility(news.src)
 
         self.url = news.url
         self.predecessor = predecessor
@@ -368,7 +372,7 @@ class Reporter(object):
         # summon reporters responsible for news only that has same root url
         # with our chief reporter's url.
         return [self.summon_reporter_for(news) for news in self.meta.intel
-                if news.root.url == self.chief.url]
+                if news.root.url == self.chief.url and not news.src]
 
     def recruit_reporter_for(self, url):
         reporter = copy.deepcopy(self)

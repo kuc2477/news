@@ -19,5 +19,5 @@ def test_cover_prepare(cover):
     assert(cover.reporter is None)
     cover.prepare()
     assert(cover.reporter is not None)
-    assert(cover.reporter._meta == cover.reporter_meta)
-    assert(cover.reporter._backend == cover.backend)
+    assert(cover.reporter.meta == cover.reporter_meta)
+    assert(cover.reporter.backend == cover.backend)
