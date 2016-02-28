@@ -4,15 +4,13 @@
 Provides :class:`~news.reporter.Reporter` class and it's derivatives.
 
 """
+from functools import reduce
 import copy
 import itertools
-from functools import reduce
-
-from bs4 import BeautifulSoup
 import asyncio
 import aiohttp
+from bs4 import BeautifulSoup
 from cached_property import cached_property
-
 from .utils.url import (
     ext, issuburl, fillurl,
     normalize, depth
@@ -39,31 +37,19 @@ class ReporterMeta(object):
         intel can be dispatched without wating for their
         predecessors to dispatch them.
     :type intel: :class:`list`
-    :param report_experience: Lambda function that takes root url of the news
+    :param report_experience: Lambda function that takes schedule of the news
         and a news as arguments and returns `True` if the news is valuable,
         considered valuable, or return `False` otherwise.
     :type report_experience: :func:
-    :param fetch_experience: Lambda function that takes root url of the news,
-        the news that contains urls and a url as arguments and returns `True`
-        if the url is valuable, or return `False` otherwise.
+    :param fetch_experience: Lambda function that takes schedule of the news
+        and a news that contains urls and a url as arguments and returns
+        `True` if the url is valuable, or return `False` otherwise.
     :type fetch_experience: :func:
-    :param dispatch_middlewares: Middlewares to be applied to the reporter's
-        `dispatch` method. Provides hooks for logging, news pipelines, etc.
-        Each middleware should take `dispatch` method as a parameter and
-        return an enhanced `dispatch` method.
-    :type dispatch_middlewares: :class:`list`
-    :param fetch_middlewares: Middlewares to be applied to the reporter's
-        `fetch` method. Provides hooks for logging, news pipelines, etc.
-        Each middleware should take `dispatch` method as a parameter and
-        return an enhanced `fetch` method.
-    :type fetch_middlewares: :class:`list`
-    :param filter_options: Link filter options.
-    :type filter_options: :class:`dict`
 
     """
     def __init__(self, schedule, intel=None,
-                 report_experience=None, fetch_experience=None,
-                 dispatch_middlewares=None, fetch_middlewares=None):
+                 report_experience=None,
+                 fetch_experience=None,):
         # Schedule meta that contains information about owner and
         # filter options.
         self.schedule = schedule
@@ -75,15 +61,11 @@ class ReporterMeta(object):
         # Experience of the reporter, which will filter out meaningless
         # urls or news, thus improve performance of the reporter.
         self.report_experience = report_experience or (
-            lambda root_url, news: True
+            lambda schedule, news: True
         )
         self.fetch_experience = fetch_experience or (
-            lambda root_url, news, url: True
+            lambda schedule, news, url: True
         )
-
-        # Middlewares
-        self.dispatch_middlewares = dispatch_middlewares or []
-        self.fetch_middlewares = fetch_middlewares or []
 
     @property
     def owner(self):
@@ -123,7 +105,7 @@ class Reporter(object):
 
     """
 
-    def __init__(self, url, meta, backend, predecessor=None):
+    def __init__(self, url, backend, meta, predecessor=None):
         self.url = normalize(url)
         self.meta = meta
         self.backend = backend
@@ -131,10 +113,6 @@ class Reporter(object):
 
         # news will be set on reporter once fetched
         self._news = None
-
-        # enhance `dispatch()` and `fetch()` method with middlewares
-        self._enhance_dispatch()
-        self._enhance_fetch()
 
         # create an url mark store to track visited urls if the reporter is
         # the chief reporter.
@@ -254,7 +232,7 @@ class Reporter(object):
         """
         async with aiohttp.get(self.url) as response:
             # report to the chief reporter that we visited the url.
-            self.report_visited()
+            await self.report_visited()
 
             # make news from response and set fetched
             self.fetched_news = news = self.make_news(await response.text())
@@ -282,32 +260,53 @@ class Reporter(object):
     # Enhancers
     # =========
 
-    def _enhance_dispatch(self):
-        original = self.dispatch
-        middlewares = self.meta.dispatch_middlewares
-        self.dispatch = reduce(lambda d, m: m(d), middlewares, original)
+    def enhance_dispatch(self, *middlewares):
+        """
+        Enhance dispatch method of the reporter with middlewares.
 
-    def _enhance_fetch(self):
+        :param middlewares: Middlewares to be applied to the reporter's
+            `dispatch` method. Provides hooks for logging, news pipelines, etc.
+            Each middleware should take reporter itself and the `dispatch`
+            method as arguements and return an enhanced `dispatch` method.
+        :type middlewares: Arbitrary number of middlewares.
+
+        """
+        original = self.dispatch
+        self.dispatch = reduce(lambda d, m: m(self, d), middlewares, original)
+
+    def enhance_fetch(self, *middlewares):
+        """
+        Enhance fetch method of the reporter with middlewares.
+
+        Unlike dispatch middlewares, enhanced fetch method will be inherited
+        to successor reporters too.
+
+        :param middlewares: Middlewares to be applied to the reporter's
+            `fetch` method. Provides hooks for logging, news pipelines, etc.
+            Each middleware should take reporter itself and the `dispatch`
+            method as arguments and return an enhanced `fetch` method.
+        :type middlewares: Arbitrary number of middlewares.
+
+        """
         original = self.fetch
-        middlewares = self.meta.fetch_middlewares
-        self.fetch = reduce(lambda f, m: m(f), middlewares, original)
+        self.fetch = reduce(lambda f, m: m(self, f), middlewares, original)
 
     # ===================
     # Reporter operations
     # ===================
 
     def report_news(self, *news):
-        self.backend.add_news(*news)
+        self.backend.save_news(*news)
 
-    def report_visited(self):
-        with (yield from self.chief._visited_urls_lock):
+    async def report_visited(self):
+        with (await self.chief._visited_urls_lock):
             self.chief._visited_urls.add(self.url)
 
-    def already_visited(self, url):
-        with (yield from self.chief._visited_urls_lock):
+    async def already_visited(self, url):
+        with (await self.chief._visited_urls_lock):
             return url in self.chief._visited_urls
 
-    def get_worthy_urls(self, news):
+    async def get_worthy_urls(self, news):
         atags = BeautifulSoup(news.content, 'html.parser')('a')
 
         # expand relative / absolute / external urls
@@ -315,12 +314,12 @@ class Reporter(object):
         expended = {fillurl(self.chief.url, r) for r in raws}
 
         # return only worthy urls
-        return {e for e in expended if self.worth_to_visit(news, e)}
+        worthies = await asyncio.gather(*[
+            self.worth_to_visit(news, e) for e in expended
+        ])
+        return {e for e, w in zip(expended, worthies) if w}
 
-    def worth_to_report(self, news):
-        return self.meta.report_experience(self.chief.url, news)
-
-    def worth_to_visit(self, news, url):
+    async def worth_to_visit(self, news, url):
         root_url = self.chief.url
         filter_options = self.filter_options
         experience = self.meta.fetch_experience
@@ -341,8 +340,11 @@ class Reporter(object):
         format_ok = (is_child and depth_ok) or is_relative
 
         return format_ok and dist_ok and blacklist_ok and \
-            not self.already_visited(url) and \
-            experience(self.chief.url, news, url)
+            not await self.already_visited(url) and \
+            experience(self.schedule, news, url)
+
+    def worth_to_report(self, news):
+        return self.meta.report_experience(self.schedule, news)
 
     # =======================
     # Reporter callup methods

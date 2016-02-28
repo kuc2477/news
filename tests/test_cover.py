@@ -1,23 +1,32 @@
+import pytest
 from news.cover import Cover
 
 
 def test_cover_factory_method(django_backend, django_news, django_schedule):
-    cover = Cover.from_schedule(
-        django_schedule, django_backend,
-        intel_strategy=(lambda backend: backend.get_news_list(
-            owner=django_schedule.owner,
-            root_url=django_schedule.url
-        ))
-    )
+    cover = Cover.from_schedule(django_schedule, django_backend)
     assert(cover.backend == django_backend)
     assert(cover.schedule == django_schedule)
-    assert(cover.reporter_meta.schedule == django_schedule)
-    assert(django_news in cover.reporter_meta.intel)
 
 
-def test_cover_prepare(cover):
+@pytest.mark.asyncio
+async def test_cover_prepare(cover, django_root_news, django_news):
+    dispatch_middlewares = [lambda r, d: lambda bulk_report=False: [1, 2, 3]]
+    fetch_middlewares = [lambda r, f: lambda immediate_report=True: 100]
+
     assert(cover.reporter is None)
-    cover.prepare()
+
+    cover.prepare(report_experience=lambda s, n: n.url == django_root_news.url,
+                  fetch_experience=lambda s, n, u: django_root_news.url in u,
+                  dispatch_middlewares=dispatch_middlewares,
+                  fetch_middlewares=fetch_middlewares)
+
     assert(cover.reporter is not None)
-    assert(cover.reporter.meta == cover.reporter_meta)
     assert(cover.reporter.backend == cover.backend)
+
+    # check middlewares has been applied properly
+    assert(cover.reporter.dispatch() == [1, 2, 3])
+    assert(cover.reporter.fetch() == 100)
+
+    # check experience has been configured properly
+    assert(cover.reporter.worth_to_report(django_root_news))
+    assert(cover.reporter.worth_to_visit(django_root_news, django_news.url))

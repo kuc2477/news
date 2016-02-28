@@ -34,8 +34,8 @@ def django_owner(django_owner_class):
 
 
 @pytest.fixture
-def django_schedule(db, django_schedule_class, django_owner, url):
-    schedule = django_schedule_class(owner=django_owner, url=url)
+def django_schedule(db, django_schedule_class, django_owner, url_root):
+    schedule = django_schedule_class(owner=django_owner, url=url_root)
     schedule.save()
     return schedule
 

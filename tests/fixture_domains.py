@@ -14,8 +14,8 @@ def reporter_meta(django_schedule):
 
 
 @pytest.fixture
-def chief_reporter(url_root, reporter_meta, django_backend):
-    return Reporter(url_root, reporter_meta, django_backend)
+def chief_reporter(url_root, django_backend, reporter_meta):
+    return Reporter(url_root,  django_backend, reporter_meta)
 
 
 @pytest.fixture
@@ -27,9 +27,9 @@ def chief_reporter_fetched(chief_reporter, content_root):
 
 
 @pytest.fixture
-def successor_reporter(url_child, django_backend, reporter_meta,
+def successor_reporter(url_child, reporter_meta, django_backend,
                        chief_reporter_fetched):
-    return Reporter(url_child, reporter_meta, django_backend,
+    return Reporter(url_child, django_backend, reporter_meta,
                     predecessor=chief_reporter_fetched)
 
 

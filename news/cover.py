@@ -6,36 +6,44 @@ from .reporter import (
 
 
 class Cover(object):
-    def __init__(self, backend, schedule, reporter_meta):
+    def __init__(self, backend, schedule):
         self.backend = backend
         self.schedule = schedule
-        self.reporter_meta = reporter_meta
         self.reporter = None
 
     @classmethod
-    def from_schedule(cls, schedule, backend, intel_strategy=None,
-                      report_experience=None, fetch_experience=None,
-                      dispatch_middlewares=None, fetch_middlewares=None):
-        intel_strategy = intel_strategy or (lambda backend: [])
-        intel = intel_strategy(backend)
+    def from_schedule(cls, schedule, backend):
+        return cls(backend, schedule)
 
+    def prepare(self, intel=None,
+                report_experience=None, fetch_experience=None,
+                dispatch_middlewares=None, fetch_middlewares=None):
+        reporter_url = self.schedule.url
+        reporter_backend = self.backend
         reporter_meta = ReporterMeta(
-            schedule, intel,
-            report_experience, fetch_experience,
-            dispatch_middlewares, fetch_middlewares
+            self.schedule, intel=intel,
+            report_experience=report_experience,
+            fetch_experience=fetch_experience
         )
-        return cls(backend, schedule, reporter_meta)
 
-    def prepare(self):
+        # set chief reporter of the cover.
         self.reporter = Reporter(
-            self.schedule.url,
-            self.reporter_meta,
-            self.backend,
+            reporter_url,
+            reporter_backend,
+            reporter_meta
         )
+
+        # apply middlewares on the reporter if exists.
+        if dispatch_middlewares:
+            self.reporter.enhance_dispatch(*dispatch_middlewares)
+        if fetch_middlewares:
+            self.reporter.enhance_fetch(*fetch_middlewares)
 
     def run(self, bulk_report=True):
+        # prepare the reporter with bare experience and middlewares if he is
+        # not ready to be dispatched yet.
         if not self.reporter:
             self.prepare()
 
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(self._reporter.dispatch(bulk_report))
+        loop.run_until_complete(self.reporter.dispatch(bulk_report))
