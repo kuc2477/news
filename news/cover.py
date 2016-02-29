@@ -29,8 +29,8 @@ class Cover(object):
         # set chief reporter of the cover.
         self.reporter = Reporter(
             reporter_url,
+            reporter_meta,
             reporter_backend,
-            reporter_meta
         )
 
         # apply middlewares on the reporter if exists.

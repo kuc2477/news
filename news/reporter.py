@@ -93,10 +93,10 @@ class Reporter(object):
 
     :param url: The url to cover and fetch from the web.
     :type url: :class:`str`
-    :param backend: The news store backend instance to report news to.
-    :type backend: Instance of any :class:`news.backends.BackendBase`
     :param meta: Meta information to be used in fetching process.
     :type meta: :class:`~news.reporter.ReporterMeta`
+    :param backend: The news store backend instance to report news to.
+    :type backend: Instance of any :class:`news.backends.BackendBase`
     :param predecessor: Predecessor who dispatched the reporter to the url.
         The reporter who has `None` predecessor will be considered as a chief
         reporter, who is be responsible of collecting visited urls and
@@ -105,7 +105,7 @@ class Reporter(object):
 
     """
 
-    def __init__(self, url, backend, meta, predecessor=None):
+    def __init__(self, url, meta, backend, predecessor=None):
         self.url = normalize(url)
         self.meta = meta
         self.backend = backend
@@ -182,7 +182,7 @@ class Reporter(object):
 
         """
         news = await self.fetch(not bulk_report)
-        urls = self.get_worthy_urls(news) if news else []
+        urls = await self.get_worthy_urls(news) if news else []
 
         news_linked = await self.dispatch_reporters(urls, bulk_report)
         news_total = news_linked.append(news)
@@ -271,8 +271,11 @@ class Reporter(object):
         :type middlewares: Arbitrary number of middlewares.
 
         """
-        original = self.dispatch
-        self.dispatch = reduce(lambda d, m: m(self, d), middlewares, original)
+        if not hasattr(self, '_original_dispatch'):
+            self._original_dispatch = self.dispatch
+
+        self.dispatch = reduce(lambda d, m: m(self, d), middlewares,
+                               self.dispatch)
 
     def enhance_fetch(self, *middlewares):
         """
@@ -288,8 +291,10 @@ class Reporter(object):
         :type middlewares: Arbitrary number of middlewares.
 
         """
-        original = self.fetch
-        self.fetch = reduce(lambda f, m: m(self, f), middlewares, original)
+        if not hasattr(self, '_original_fetch'):
+            self._original_fetch = self.fetch
+
+        self.fetch = reduce(lambda f, m: m(self, f), middlewares, self.fetch)
 
     # ===================
     # Reporter operations
@@ -330,7 +335,7 @@ class Reporter(object):
         blacklist = filter_options.get('blacklist')
 
         is_child = issuburl(root_url, url)
-        is_relative = any([issuburl(b.url, url)] for b in brothers)
+        is_relative = any([issuburl(b, url) for b in brothers])
         blacklist_ok = ext(url) not in blacklist
         depth_ok = depth(root_url, url) <= max_depth if max_depth else True
         dist_ok = self.distance < max_dist if max_dist else True
@@ -352,7 +357,7 @@ class Reporter(object):
 
     def take_responsibility(self, news):
         # we don't take responsibility for root news. only non-root news are
-        # valid intels.
+        # valid intel.
         assert(news.src is not None)
 
         if news is None:

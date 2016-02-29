@@ -1,6 +1,7 @@
 from functools import wraps
 import pytest
 from news.models.abstract import AbstractSchedule
+from news.reporter import Reporter, ReporterMeta
 
 
 # ===============
@@ -126,18 +127,105 @@ async def test_already_visited(chief_reporter):
     assert(await chief_reporter.already_visited(chief_reporter.url))
 
 
+@pytest.mark.django_db
 @pytest.mark.asyncio
-async def test_get_worthy_urls():
-    pass
+async def test_worth_to_visit(django_backend, django_schedule, content_root):
+    django_schedule.max_dist = 1
+    django_schedule.max_depth = 1
+    django_schedule.brothers = ['http://www.naver.com']
+    django_schedule.save()
+
+    def fetch_experience(schedule, news, url):
+        return 'badexperience' not in url
+
+    reporter_meta = ReporterMeta(
+        django_schedule, fetch_experience=fetch_experience
+    )
+    reporter = Reporter(
+        django_schedule.url, reporter_meta, django_backend
+    )
+    news = reporter.make_news(content_root)
+
+    assert(await reporter.worth_to_visit(news, django_schedule.url + '/1'))
+    assert(not await reporter.worth_to_visit(news, django_schedule.url + '/1/2'))
+    assert(await reporter.worth_to_visit(news, 'http://www.naver.com'))
+    assert(await reporter.worth_to_visit(news, 'http://www.naver.com/123'))
+    assert(not await reporter.worth_to_visit(news, django_schedule.url +
+                                         '/badexperience'))
 
 
+@pytest.mark.django_db
 @pytest.mark.asyncio
-async def test_worth_to_visit():
-    pass
+async def test_get_worthy_urls(django_backend, django_schedule):
+    django_schedule.max_dist = 1
+    django_schedule.max_depth = 1
+    django_schedule.brothers = ['http://www.naver.com']
+    django_schedule.save()
+
+    def fetch_experience(schedule, news, url):
+        return 'badexperience' not in url
+
+    reporter_meta = ReporterMeta(
+        django_schedule, fetch_experience=fetch_experience
+    )
+    reporter = Reporter(
+        django_schedule.url, reporter_meta, django_backend
+    )
+    content = (
+        '''
+        <a href="{}" />
+        <a href="{}" />
+        <a href="{}" />
+        <a href="{}" />
+        <a href="{}" />
+        <a href="{}" />
+        <a href="{}" />
+        <a href="{}" />
+        '''.format(
+            django_schedule.url,
+            django_schedule.url + '/',
+            django_schedule.url + '/1',
+            django_schedule.url + '/1/2',
+            django_schedule.url + '/badexperience',
+            'http://www.naver.com',
+            'http://www.naver.com/',
+            'http://www.naver.com/123',
+        )
+    )
+
+    news = reporter.make_news(content)
+    worthy_urls = await reporter.get_worthy_urls(news)
+    assert(django_schedule.url in worthy_urls)
+    assert(django_schedule.url + '/' not in worthy_urls)
+    assert(django_schedule.url + '/1' in worthy_urls)
+    assert(django_schedule.url + '/1/2' not in worthy_urls)
+    assert(django_schedule.url + '/badexperience' not in worthy_urls)
+    assert('http://www.naver.com' in worthy_urls)
+    assert('http://www.naver.com/' not in worthy_urls)
+    assert('http://www.naver.com/123' in worthy_urls)
 
 
-def test_worth_to_report():
-    pass
+def test_worth_to_report(django_backend, django_schedule):
+    reporter_meta = ReporterMeta(
+        django_schedule,
+        report_experience=(
+            lambda s, n:
+            'valuable' in n.content and 'not' not in n.content
+        )
+    )
+    reporter = Reporter(
+        django_schedule.url,
+        reporter_meta,
+        django_backend,
+    )
+
+    valuable_content = 'valuable'
+    useless_content = 'not valuable'
+
+    valuable_news = reporter.make_news('valuable')
+    useless_news = reporter.make_news('not valuable')
+    assert(reporter.worth_to_report(valuable_news))
+    assert(not reporter.worth_to_report(useless_news))
 
 
 # ================
