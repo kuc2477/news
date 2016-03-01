@@ -10,13 +10,13 @@ def test_cover_factory_method(django_backend, django_news, django_schedule):
 
 @pytest.mark.asyncio
 async def test_cover_prepare(cover, django_root_news, django_news):
-    dispatch_middlewares = [lambda r, d: lambda bulk_report=False: [1, 2, 3]]
-    fetch_middlewares = [lambda r, f: lambda immediate_report=True: 100]
+    dispatch_middlewares = ['middlewares.dispatch_middleware']
+    fetch_middlewares = ['middlewares.fetch_middleware']
 
     assert(cover.reporter is None)
 
-    cover.prepare(report_experience=lambda s, n: n.url == django_root_news.url,
-                  fetch_experience=lambda s, n, u: django_root_news.url in u,
+    cover.prepare(report_experience='experiences.report_experience',
+                  fetch_experience='experiences.fetch_experience',
                   dispatch_middlewares=dispatch_middlewares,
                   fetch_middlewares=fetch_middlewares)
 
@@ -25,7 +25,7 @@ async def test_cover_prepare(cover, django_root_news, django_news):
 
     # check middlewares has been applied properly
     assert(cover.reporter.dispatch() == [1, 2, 3])
-    assert(cover.reporter.fetch() == 100)
+    assert(cover.reporter.fetch() == 1)
 
     # check experience has been configured properly
     assert(cover.reporter.worth_to_report(django_root_news))

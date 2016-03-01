@@ -1,6 +1,8 @@
 import pytest
 from news.cover import Cover
 from news.reporter import ReporterMeta, Reporter
+from news.scheduler import Scheduler
+from celery import Celery
 
 
 @pytest.fixture
@@ -15,12 +17,12 @@ def reporter_meta(django_schedule):
 
 @pytest.fixture
 def dispatch_middleware():
-    return lambda r, d: lambda bulk_report=False: [1, 2, 3]
+    return 'middlewares.dispatch_middleware'
 
 
 @pytest.fixture
 def fetch_middleware():
-    return lambda r, f: lambda immediate_report=True: 1
+    return 'middlewares.fetch_middleware'
 
 
 @pytest.fixture
@@ -49,3 +51,14 @@ def successor_reporter_fetched(successor_reporter, content_child):
     reporter.report_visited()
     reporter.fetched_news = reporter.make_news(content_child)
     return reporter
+
+
+@pytest.fixture
+def scheduler(django_backend):
+    return Scheduler(
+        django_backend, Celery(),
+        report_experience='experiences.report_experience',
+        fetch_experience='experiences.fetch_experience',
+        dispatch_middlewares=['middlewares.dispatch_middleware'],
+        fetch_middlewares=['middlewares.fetch_middleware']
+    )

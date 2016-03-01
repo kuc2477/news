@@ -1,4 +1,3 @@
-from functools import wraps
 import pytest
 from news.models.abstract import AbstractSchedule
 from news.reporter import Reporter, ReporterMeta
@@ -11,8 +10,10 @@ from news.reporter import Reporter, ReporterMeta
 def test_reporter_meta_attrs(reporter_meta):
     assert(isinstance(reporter_meta.schedule, AbstractSchedule))
     assert(isinstance(reporter_meta.intel, list))
-    assert(callable(reporter_meta.report_experience))
-    assert(callable(reporter_meta.fetch_experience))
+    assert(callable(reporter_meta.report_experience) or
+           reporter_meta.report_experience is None)
+    assert(callable(reporter_meta.fetch_experience) or
+           reporter_meta.fetch_experience is None)
 
 
 def test_chief_reporter_attrs(chief_reporter):
@@ -72,34 +73,19 @@ def test_make_news(chief_reporter, content_root):
 
 
 def test_enhance_dispatch(mocker, chief_reporter):
-    mocker.patch.object(chief_reporter, 'dispatch', return_value=[1, 2, 3])
+    mocker.patch.object(chief_reporter, 'dispatch', return_value=[4, 5, 6])
 
-    def middleware(reporter, dispatch):
-        @wraps(dispatch)
-        def enhanced(bulk_report=False):
-            total = dispatch(bulk_report)
-            total += [4, 5, 6]
-            return total
-        return enhanced
-
+    assert(chief_reporter.dispatch() == [4, 5, 6])
+    chief_reporter.enhance_dispatch('middlewares.dispatch_middleware')
     assert(chief_reporter.dispatch() == [1, 2, 3])
-    chief_reporter.enhance_dispatch(middleware)
-    assert(chief_reporter.dispatch() == [1, 2, 3, 4, 5, 6])
 
 
 def test_enhance_fetch(mocker, chief_reporter):
     mocker.patch.object(chief_reporter, 'fetch', return_value=0)
 
-    def middleware(reporter, fetch):
-        @wraps(fetch)
-        def enhanced(immediate_report=True):
-            fetched = fetch(immediate_report)
-            return None if fetched == 0 else fetched
-        return enhanced
-
     assert(chief_reporter.fetch() == 0)
-    chief_reporter.enhance_fetch(middleware)
-    assert(chief_reporter.fetch() is None)
+    chief_reporter.enhance_fetch('middlewares.fetch_middleware')
+    assert(chief_reporter.fetch() == 1)
 
 
 # ===================
@@ -135,11 +121,9 @@ async def test_worth_to_visit(django_backend, django_schedule, content_root):
     django_schedule.brothers = ['http://www.naver.com']
     django_schedule.save()
 
-    def fetch_experience(schedule, news, url):
-        return 'badexperience' not in url
-
     reporter_meta = ReporterMeta(
-        django_schedule, fetch_experience=fetch_experience
+        django_schedule,
+        fetch_experience='experiences.fetch_experience_skip_badexperience'
     )
     reporter = Reporter(
         django_schedule.url, reporter_meta, django_backend
@@ -163,11 +147,9 @@ async def test_get_worthy_urls(django_backend, django_schedule):
     django_schedule.brothers = ['http://www.naver.com']
     django_schedule.save()
 
-    def fetch_experience(schedule, news, url):
-        return 'badexperience' not in url
-
     reporter_meta = ReporterMeta(
-        django_schedule, fetch_experience=fetch_experience
+        django_schedule,
+        fetch_experience='experiences.fetch_experience_skip_badexperience'
     )
     reporter = Reporter(
         django_schedule.url, reporter_meta, django_backend
@@ -209,10 +191,7 @@ async def test_get_worthy_urls(django_backend, django_schedule):
 def test_worth_to_report(django_backend, django_schedule):
     reporter_meta = ReporterMeta(
         django_schedule,
-        report_experience=(
-            lambda s, n:
-            'valuable' in n.content and 'not' not in n.content
-        )
+        report_experience='experiences.report_experience_only_valuable'
     )
     reporter = Reporter(
         django_schedule.url,

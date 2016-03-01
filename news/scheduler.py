@@ -7,8 +7,8 @@ processes or threads in background.
 
 """
 import schedule as worker
-
 from .cover import Cover
+from .utils.python import importattr
 
 
 class Scheduler(object):
@@ -20,7 +20,7 @@ class Scheduler(object):
         self.jobs = dict()
 
         # reporter intel from past covers
-        self.intel_strategy = intel_strategy or (lambda schedule, backend: [])
+        self.intel_strategy = intel_strategy
 
         # middlewares
         self.dispatch_middlewares = dispatch_middlewares or []
@@ -30,7 +30,7 @@ class Scheduler(object):
         self.report_experience = report_experience
         self.fetch_experience = fetch_experience
 
-        # set celery task
+        # set run celery task
         self.run = self.celery.task(lambda cover: cover.run())
 
     def start(self):
@@ -39,14 +39,15 @@ class Scheduler(object):
 
         # start periodic jobs to push covers to the celery server.
         for schedule in self.backend.get_schedules():
-            self.add_schedule(schedule)
+            self._add_schedule(schedule)
 
     def _start_persistence(self):
         self.backend.set_schedule_save_listener(self._save_listener)
         self.backend.set_schedule_delete_listener(self._delete_listener)
 
-    def _get_job(self, schedule):
-        intel = self.intel_strategy(schedule, self.backend)
+    def _get_cover(self, schedule):
+        intel = importattr(self.intel_strategy)(schedule, self.backend) if \
+            self.intel_strategy else []
         cover = Cover.from_schedule(schedule, self.backend)
         cover.prepare(
             intel,
@@ -55,20 +56,19 @@ class Scheduler(object):
             dispatch_middlewares=self.dispatch_middlewares,
             fetch_middlewares=self.fetch_middlewares
         )
-        return lambda: self.run.delay(cover)
+        return cover
 
     # ==================
     # Schedule modifiers
     # ==================
 
     def _add_schedule(self, schedule):
-        self.jobs[schedule.id] = job = self._get_job(schedule)
-        worker.every(schedule.cycle).minutes.do(job)
+        cover = self._get_cover(schedule)
+        self.jobs[schedule.id] = \
+            worker.every(schedule.cycle).minutes.do(self.run, cover)
 
     def _remove_schedule(self, schedule):
-        job = self.jobs[schedule.id]
-        worker.cancel_job(job)
-        del self.jobs[schedule.id]
+        worker.cancel_job(self.jobs.pop(schedule.id))
 
     def _update_schedule(self, schedule):
         self.remove(schedule)

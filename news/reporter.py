@@ -13,6 +13,7 @@ from .utils.url import (
     ext, issuburl, fillurl,
     normalize, depth
 )
+from .utils.python import importattr
 
 
 __all__ = ['ReporterMeta', 'Reporter']
@@ -58,12 +59,8 @@ class ReporterMeta(object):
 
         # Experience of the reporter, which will filter out meaningless
         # urls or news, thus improve performance of the reporter.
-        self.report_experience = report_experience or (
-            lambda schedule, news: True
-        )
-        self.fetch_experience = fetch_experience or (
-            lambda schedule, news, url: True
-        )
+        self.report_experience = report_experience
+        self.fetch_experience = fetch_experience
 
     def exhaust_intel(self):
         intel = self.intel
@@ -284,8 +281,11 @@ class Reporter(object):
 
         """
         self._applied_dispatch_middlewares += middlewares
-        self.dispatch = reduce(lambda d, m: m(self, d),
-                               middlewares, self.dispatch)
+        self.dispatch = reduce(
+            lambda d, m: m(self, d),
+            [importattr(path) for path in middlewares],
+            self.dispatch
+        )
         return self
 
     def enhance_fetch(self, *middlewares):
@@ -303,8 +303,11 @@ class Reporter(object):
 
         """
         self._applied_fetch_middlewares += middlewares
-        self.fetch = reduce(lambda f, m: m(self, f),
-                            middlewares, self.fetch)
+        self.fetch = reduce(
+            lambda f, m: m(self, f),
+            [importattr(path) for path in middlewares],
+            self.fetch
+        )
         return self
 
     # ===================
@@ -338,7 +341,8 @@ class Reporter(object):
     async def worth_to_visit(self, news, url):
         root_url = self.chief.url
         filter_options = self.filter_options
-        experience = self.meta.fetch_experience
+        experience = importattr(self.meta.fetch_experience) \
+            if self.meta.fetch_experience else lambda s, n, u: True
 
         brothers = filter_options.get('brothers')
         max_depth = filter_options.get('max_depth')
@@ -357,10 +361,12 @@ class Reporter(object):
 
         return format_ok and dist_ok and blacklist_ok and \
             not await self.already_visited(url) and \
-            experience(self.schedule, news, url)
+            experience(self.schedule, news, url) if experience else True
 
     def worth_to_report(self, news):
-        return self.meta.report_experience(self.schedule, news)
+        experience = importattr(self.meta.report_experience) \
+            if self.meta.report_experience else lambda s, n: True
+        return experience(self.schedule, news)
 
     # =======================
     # Reporter callup methods

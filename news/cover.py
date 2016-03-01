@@ -34,10 +34,11 @@ class Cover(object):
         )
 
         # apply middlewares on the reporter if exists.
-        if dispatch_middlewares:
-            self.reporter.enhance_dispatch(*dispatch_middlewares)
-        if fetch_middlewares:
-            self.reporter.enhance_fetch(*fetch_middlewares)
+        for middleware in (dispatch_middlewares or []):
+            self.reporter.enhance_dispatch(middleware)
+
+        for middleware in (fetch_middlewares or []):
+            self.reporter.enhance_fetch(middleware)
 
     def run(self, bulk_report=True):
         # prepare the reporter with bare experience and middlewares if he is
