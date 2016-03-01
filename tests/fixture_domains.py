@@ -14,6 +14,16 @@ def reporter_meta(django_schedule):
 
 
 @pytest.fixture
+def dispatch_middleware():
+    return lambda r, d: lambda bulk_report=False: [1, 2, 3]
+
+
+@pytest.fixture
+def fetch_middleware():
+    return lambda r, f: lambda immediate_report=True: 1
+
+
+@pytest.fixture
 def chief_reporter(url_root, reporter_meta, django_backend):
     return Reporter(url_root,  reporter_meta, django_backend)
 

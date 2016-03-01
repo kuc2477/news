@@ -5,7 +5,6 @@ Provides :class:`~news.reporter.Reporter` class and it's derivatives.
 
 """
 from functools import reduce
-import copy
 import itertools
 import asyncio
 import aiohttp
@@ -67,6 +66,11 @@ class ReporterMeta(object):
             lambda schedule, news, url: True
         )
 
+    def exhaust_intel(self):
+        intel = self.intel
+        self.intel = []
+        return intel
+
     @property
     def owner(self):
         """
@@ -119,6 +123,10 @@ class Reporter(object):
         if self.is_chief:
             self._visited_urls_lock = asyncio.Lock()
             self._visited_urls = set()
+
+        # keep applied middlewares to inherit to successors
+        self._applied_dispatch_middlewares = []
+        self._applied_fetch_middlewares = []
 
     # ============================
     # Fetched news getter / setter
@@ -210,7 +218,7 @@ class Reporter(object):
         :rtype: :class:`list`
 
         """
-        reporters = self.call_up_reporters(urls)
+        reporters = self.call_up_reporters(urls, self.meta.exhaust_intel())
         dispatches = [r.dispatch(bulk_report=bulk_report) for r in reporters]
         news_sets = await asyncio.gather(*dispatches)
         news_list = itertools.chain(*news_sets)
@@ -250,11 +258,16 @@ class Reporter(object):
     # ====
 
     def make_news(self, content):
+        # update content if reporter is updating the news.
+        if self.fetched_news:
+            self.fetched_news.content = content
+            return self.fetched_news
+
+        # create new news if reporter is making fresh news.
         src = self.predecessor.fetched_news if not self.chief else None
         news_class = self.backend.news_class
-        news = news_class.create_instance(
+        return news_class.create_instance(
             self.schedule, self.url, content, src=src)
-        return news
 
     # =========
     # Enhancers
@@ -271,11 +284,10 @@ class Reporter(object):
         :type middlewares: Arbitrary number of middlewares.
 
         """
-        if not hasattr(self, '_original_dispatch'):
-            self._original_dispatch = self.dispatch
-
-        self.dispatch = reduce(lambda d, m: m(self, d), middlewares,
-                               self.dispatch)
+        self._applied_dispatch_middlewares += middlewares
+        self.dispatch = reduce(lambda d, m: m(self, d),
+                               middlewares, self.dispatch)
+        return self
 
     def enhance_fetch(self, *middlewares):
         """
@@ -291,10 +303,10 @@ class Reporter(object):
         :type middlewares: Arbitrary number of middlewares.
 
         """
-        if not hasattr(self, '_original_fetch'):
-            self._original_fetch = self.fetch
-
-        self.fetch = reduce(lambda f, m: m(self, f), middlewares, self.fetch)
+        self._applied_fetch_middlewares += middlewares
+        self.fetch = reduce(lambda f, m: m(self, f),
+                            middlewares, self.fetch)
+        return self
 
     # ===================
     # Reporter operations
@@ -355,45 +367,36 @@ class Reporter(object):
     # Reporter callup methods
     # =======================
 
-    def take_responsibility(self, news):
-        # we don't take responsibility for root news. only non-root news are
-        # valid intel.
-        assert(news.src is not None)
-
-        if news is None:
-            return self
-
-        predecessor = copy.deepcopy(self)
-        predecessor.take_responsibility(news.src)
-
-        self.url = news.url
-        self.predecessor = predecessor
-        self.fetched_news = news
+    def inherit_meta(self, url, predecessor=None):
+        reporter = Reporter(url, self.meta, self.backend)
+        reporter.enhance_fetch(*self._applied_fetch_middlewares)
+        reporter.predecessor = predecessor if predecessor else self
+        return reporter
 
     def summon_reporter_for(self, news):
-        reporter = copy.deepcopy(self)
-        reporter.take_responsibility(news)
+        reporter = self.inherit_meta(
+            news.url, predecessor=(
+                self.chief if news.src.is_root else
+                self.chief.summon_reporter_for(news.src)
+            )
+        )
+        reporter.fetched_news = news
         return reporter
 
-    def summon_reporters_for_intel(self):
-        # summon reporters responsible for news only that has same root url
-        # with our chief reporter's url.
-        return [self.summon_reporter_for(news) for news in self.meta.intel
-                if news.root.url == self.chief.url and not news.src]
+    def summon_reporters_for_intel(self, intel):
+        return [self.summon_reporter_for(news) for news in intel
+                if news.schedule == self.schedule and news.src]
 
     def recruit_reporter_for(self, url):
-        reporter = copy.deepcopy(self)
-        reporter.url = url
-        reporter.predecessor = self
-        return reporter
+        return self.inherit_meta(url)
 
     def recruit_reporters_for_urls(self, urls):
         return [self.recruit_reporter_for(u) for u in urls]
 
-    def call_up_reporters(self, urls):
+    def call_up_reporters(self, urls, intel):
         # recruite new reporters for the urls and summon reporters responsible
         # for each news intel.
         recruited = self.recruit_reporters_for_urls(urls)
-        summoned = self.summon_reporters_for_intel()
+        summoned = self.summon_reporters_for_intel(intel)
 
         return recruited + summoned

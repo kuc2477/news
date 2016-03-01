@@ -159,6 +159,10 @@ class AbstractNews(AbstractModel):
         return self if not self.src else self.src.root
 
     @property
+    def is_root(self):
+        return self.src is None
+
+    @property
     def depth(self):
         return url.depth(self.root.url, self.url)
 

@@ -147,11 +147,12 @@ async def test_worth_to_visit(django_backend, django_schedule, content_root):
     news = reporter.make_news(content_root)
 
     assert(await reporter.worth_to_visit(news, django_schedule.url + '/1'))
-    assert(not await reporter.worth_to_visit(news, django_schedule.url + '/1/2'))
+    assert(not await reporter.worth_to_visit(news, django_schedule.url +
+                                             '/1/2'))
     assert(await reporter.worth_to_visit(news, 'http://www.naver.com'))
     assert(await reporter.worth_to_visit(news, 'http://www.naver.com/123'))
     assert(not await reporter.worth_to_visit(news, django_schedule.url +
-                                         '/badexperience'))
+                                             '/badexperience'))
 
 
 @pytest.mark.django_db
@@ -219,9 +220,6 @@ def test_worth_to_report(django_backend, django_schedule):
         django_backend,
     )
 
-    valuable_content = 'valuable'
-    useless_content = 'not valuable'
-
     valuable_news = reporter.make_news('valuable')
     useless_news = reporter.make_news('not valuable')
     assert(reporter.worth_to_report(valuable_news))
@@ -232,15 +230,23 @@ def test_worth_to_report(django_backend, django_schedule):
 # Reporter callups
 # ================
 
-def test_take_responsibility():
-    pass
+def test_inherit_meta(chief_reporter, fetch_middleware):
+    chief_reporter.enhance_fetch(fetch_middleware)
+    reporter = chief_reporter.inherit_meta('/inherited')
+    assert(reporter.meta == chief_reporter.meta)
+    assert(reporter.backend == chief_reporter.backend)
+    assert(reporter.predecessor == chief_reporter)
+    assert(reporter.fetch() == chief_reporter.fetch() == 1)
 
 
-def test_summon_reporter_for():
-    pass
+def test_summon_reporter_for(chief_reporter, django_news):
+    reporter = chief_reporter.summon_reporter_for(django_news)
+    assert(reporter.url == django_news.url)
+    assert(reporter.fetched_news == django_news)
+    assert(reporter.predecessor == chief_reporter)
 
 
-def test_summon_reporters_for_intel():
+def test_summon_reporters_for_intel(chief_reporter):
     pass
 
 
