@@ -9,7 +9,6 @@ import itertools
 import asyncio
 import aiohttp
 from bs4 import BeautifulSoup
-from cached_property import cached_property
 from .utils.url import (
     ext, issuburl, fillurl,
     normalize, depth
@@ -160,15 +159,15 @@ class Reporter(object):
     # Reporter relationship
     # =====================
 
-    @cached_property
+    @property
     def chief(self):
-        return self.predecessor.chief if self.predecessor else self
+        return self if self.is_chief else self.predecessor.chief
 
-    @cached_property
+    @property
     def is_chief(self):
-        return self.chief == self
+        return self.predecessor is None
 
-    @cached_property
+    @property
     def distance(self):
         return 0 if not self.predecessor else self.predecessor.distance + 1
 
@@ -374,14 +373,22 @@ class Reporter(object):
         return reporter
 
     def summon_reporter_for(self, news):
-        reporter = self.inherit_meta(
-            news.url, predecessor=(
-                self.chief if news.src.is_root else
-                self.chief.summon_reporter_for(news.src)
+        try:
+            cache = self._summoned_reporter_cache
+        except AttributeError:
+            cache = self._summoned_reporter_cache = {}
+
+        try:
+            return cache[news]
+        except KeyError:
+            reporter = cache[news] = self.inherit_meta(
+                news.url, predecessor=(
+                    self.chief if news.src.is_root else
+                    self.chief.summon_reporter_for(news.src)
+                )
             )
-        )
-        reporter.fetched_news = news
-        return reporter
+            reporter.fetched_news = news
+            return reporter
 
     def summon_reporters_for_intel(self, intel):
         return [self.summon_reporter_for(news) for news in intel

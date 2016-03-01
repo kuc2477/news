@@ -239,24 +239,73 @@ def test_inherit_meta(chief_reporter, fetch_middleware):
     assert(reporter.fetch() == chief_reporter.fetch() == 1)
 
 
+@pytest.mark.django_db
 def test_summon_reporter_for(chief_reporter, django_news):
     reporter = chief_reporter.summon_reporter_for(django_news)
     assert(reporter.url == django_news.url)
     assert(reporter.fetched_news == django_news)
     assert(reporter.predecessor == chief_reporter)
 
-
-def test_summon_reporters_for_intel(chief_reporter):
-    pass
-
-
-def test_recruit_reporter_for():
-    pass
-
-
-def test_recruit_reporters_for_urls():
-    pass
+    news = reporter.backend.news_class.create_instance(
+        django_news.schedule, django_news.url + '/child', 'content',
+        src=django_news
+    )
+    reporter.backend.save_news(news)
+    successor_reporter = chief_reporter.summon_reporter_for(news)
+    assert(successor_reporter.url == news.url)
+    assert(successor_reporter.fetched_news == news)
+    assert(successor_reporter.predecessor == reporter)
 
 
-def test_call_up_reporters():
-    pass
+@pytest.mark.django_db
+def test_summon_reporters_for_intel(chief_reporter, django_news):
+    backend = chief_reporter.backend
+    create_instance = backend.news_class.create_instance
+
+    news0 = create_instance(
+        django_news.schedule, django_news.url + '/child0', 'content0',
+        src=django_news
+    )
+    news1 = create_instance(
+        django_news.schedule, django_news.url + '/child1', 'content1',
+        src=news0
+    )
+    news2 = create_instance(
+        django_news.schedule, django_news.url + '/child2', 'content2',
+        src=news1
+    )
+    news3 = create_instance(
+        django_news.schedule, django_news.url + '/child3', 'content3',
+        src=news2
+    )
+    intel = [news0, news1, news2, news3]
+    backend.save_news(*intel)
+
+    summoned = chief_reporter.summon_reporters_for_intel(intel)
+    assert(summoned[0].url == news0.url)
+    assert(summoned[1].url == news1.url)
+    assert(summoned[2].url == news2.url)
+    assert(summoned[3].url == news3.url)
+
+    assert(summoned[0].fetched_news == news0)
+    assert(summoned[1].fetched_news == news1)
+    assert(summoned[2].fetched_news == news2)
+    assert(summoned[3].fetched_news == news3)
+
+    assert(summoned[0].chief == chief_reporter)
+    assert(summoned[1].chief == chief_reporter)
+    assert(summoned[2].chief == chief_reporter)
+    assert(summoned[3].chief == chief_reporter)
+
+    assert(summoned[0].predecessor.url == django_news.url)
+    assert(summoned[0].predecessor.fetched_news == django_news)
+    assert(summoned[1].predecessor == summoned[0])
+    assert(summoned[2].predecessor == summoned[1])
+    assert(summoned[3].predecessor == summoned[2])
+
+
+def test_recruit_reporter_for(chief_reporter_fetched, url_child):
+    reporter = chief_reporter_fetched.recruit_reporter_for(url_child)
+    assert(reporter.url == url_child)
+    assert(reporter.predecessor == chief_reporter_fetched)
+    assert(reporter.backend == chief_reporter_fetched.backend)

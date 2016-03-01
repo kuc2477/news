@@ -55,7 +55,6 @@ setup(
         'urltools>=0.3.2',
         'click>=6.2',
         'colorlog>=2.6.0',
-        'cached-property>=1.3.0',
         'django>=1.7',
         'django-jsonfield>=0.9.16',
         'SQLAlchemy>=1.0.11',
