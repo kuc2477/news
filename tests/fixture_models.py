@@ -8,6 +8,7 @@ from news.models.sqlalchemy import (
     create_schedule, create_news
 )
 
+
 # =============
 # Django models
 # =============
@@ -41,8 +42,8 @@ def sa_abc_schedule(sa_owner_model):
 
 
 @pytest.fixture(scope='session')
-def sa_abc_news(sa_schedule_model, sa_declarative_base):
-    return create_abc_news(sa_schedule_model, sa_declarative_base)
+def sa_abc_news(sa_schedule_model):
+    return create_abc_news(sa_schedule_model)
 
 
 @pytest.fixture(scope='session')
@@ -61,7 +62,7 @@ def sa_schedule_model(sa_abc_schedule, sa_declarative_base):
 
 
 @pytest.fixture(scope='session')
-def sa_news_model(sa_abc_news):
+def sa_news_model(sa_abc_news, sa_declarative_base):
     return create_news(sa_abc_news, sa_declarative_base)
 
 
@@ -125,12 +126,14 @@ def sa_owner(sa_session, sa_owner_model):
     sa_session.commit()
     return owner
 
+
 @pytest.fixture
 def sa_schedule(sa_session, sa_owner, sa_schedule_model, url_root):
     schedule = sa_schedule_model(owner=sa_owner, url=url_root)
     sa_session.add(schedule)
     sa_session.commit()
     return schedule
+
 
 @pytest.fixture
 def sa_root_news(sa_session, sa_schedule, sa_news_model,
@@ -140,6 +143,7 @@ def sa_root_news(sa_session, sa_schedule, sa_news_model,
     sa_session.add(news)
     sa_session.commit()
     return news
+
 
 @pytest.fixture
 def sa_news(sa_session, sa_schedule, sa_root_news, sa_news_model,

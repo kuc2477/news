@@ -1,9 +1,5 @@
 import pytest
-from sqlalchemy import (
-    create_engine,
-    Column,
-    Integer
-)
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -37,9 +33,11 @@ def sa_db(request,
           sa_owner_model, sa_schedule_model, sa_news_model):
     # create tables
     sa_declarative_base.metadata.create_all()
+
     # clear tables
     def teardown():
         sa_declarative_base.metadata.drop_all()
+
     request.addfinalizer(teardown)
 
 

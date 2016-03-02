@@ -2,16 +2,12 @@ from sqlalchemy import (
     Column,
     ForeignKey,
     Integer,
-    String,
     Text
 )
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import (
-    declarative_base,
-    declared_attr
-)
-from sqlalchemy_utils.types.url import (
+from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy_utils.types import (
     URLType,
     JSONType
 )
@@ -28,12 +24,13 @@ from ..constants import (
 )
 
 
-__all__ = ['Schedule', 'News', 'create_abc_schedule', 'create_abc_news']
+__all__ = ['create_abc_schedule', 'create_abc_news',
+           'create_schedule', 'create_news']
 
 
 def create_abc_schedule(user_model):
     """Abstract base schedule model factory"""
-    class AbstractBaseSchedule(object):
+    class AbstractBaseSchedule(AbstractSchedule):
         @declared_attr
         def __tablename__(cls):
             return 'schedule'
@@ -48,13 +45,13 @@ def create_abc_schedule(user_model):
 
         @declared_attr
         def owner(cls):
-            return relationship(user_model, back_populates='schedules')
+            return relationship(user_model, backref='schedules')
 
         id = Column(Integer, primary_key=True)
         url = Column(URLType, nullable=False)
         cycle = Column(Integer, default=DEFAULT_SCHEDULE_CYCLE, nullable=False)
-        max_dist = Column(Integer)
-        max_depth = Column(Integer)
+        max_dist = Column(Integer, default=DEFAULT_MAX_DIST)
+        max_depth = Column(Integer, default=DEFAULT_MAX_DEPTH)
         blacklist = Column(JSONType, default=DEFAULT_BLACKLIST, nullable=False)
         brothers = Column(JSONType, default=DEFAULT_BROTHERS, nullable=False)
 
@@ -63,7 +60,7 @@ def create_abc_schedule(user_model):
 
 def create_abc_news(schedule_model):
     """Abstract base news model factory"""
-    class AbstractBaseNews(object):
+    class AbstractBaseNews(AbstractNews):
         @declared_attr
         def __tablename__(cls):
             return 'news'
@@ -78,7 +75,7 @@ def create_abc_news(schedule_model):
 
         @declared_attr
         def schedule(cls):
-            return relationship(Schedule, back_populates='news_list')
+            return relationship(schedule_model, backref='news_list')
 
         @declared_attr
         def src_id(cls):
@@ -86,8 +83,8 @@ def create_abc_news(schedule_model):
 
         @declared_attr
         def src(cls):
-            return relationship('News', back_populates='children',
-                                remote_side=[id])
+            return relationship('News', backref='children',
+                                remote_side=[cls.id])
 
         id = Column(Integer, primary_key=True)
         url = Column(URLType, nullable=False)
