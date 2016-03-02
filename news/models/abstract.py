@@ -71,15 +71,63 @@ class AbstractSchedule(AbstractModel):
         """
         raise NotImplementedError
 
+    def max_dist(self):
+        """
+        Should return allowed maximum distance of reporter to fetch further.
+
+        :returns: Maximum distance of reporter.
+        :rtype: :class:`int`
+
+        """
+        raise NotImplementedError
+
+    def max_depth(self):
+        """
+        Should return allowed maximum depth of repoter to fetch further.
+
+        :returns: Maximum depth of reporter.
+        :rtype: :class:`int`
+
+        """
+        raise NotImplementedError
+
+    def blacklist(self):
+        """
+        Should return filetype blacklist that should be skipped from fetching.
+
+        :returns: Filetype blacklist (e.g. ['png', 'gif', ...])
+        :rtpye: :class:`str`
+
+        """
+        raise NotImplementedError
+
+    def brothers(self):
+        """
+        Should return allowed brother urls that can be fetched from site with
+        different domain.
+
+        :returns: List of urls that are allowed to be fetched from the
+            schedule domain.
+        :rtype: :class:`list`
+
+        """
+        raise NotImplementedError
+
     def get_filter_options(self):
         """
-        Should return filter options of the schedule.
+        Return filter options of the schedule.
 
         :returns: Filter options to be used in reporting / fetching news.
         :rtype: :class:`dict`
 
         """
-        raise NotImplementedError
+        return {
+            'max_dist': self.max_dist,
+            'max_depth': self.max_depth,
+            'blacklist': self.blacklist,
+            'brothers': self.brothers
+        }
+
 
 
 class AbstractNews(AbstractModel):

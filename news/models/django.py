@@ -19,11 +19,11 @@ __all__ = ['Schedule', 'News', 'create_abc_schedule', 'create_abc_news']
 
 
 def create_abc_schedule(user_model=settings.AUTH_USER_MODEL):
-
+    """Abstract base schedule model factory"""
     class AbstractBaseSchedule(models.Model, AbstractSchedule):
         owner = models.ForeignKey(
-            user_model,  related_name='schedules', db_index=True
-        )
+            user_model, related_name='schedules', db_index=True)
+
         url = models.URLField()
         cycle = models.IntegerField(default=DEFAULT_SCHEDULE_CYCLE)
 
@@ -31,36 +31,22 @@ def create_abc_schedule(user_model=settings.AUTH_USER_MODEL):
             blank=True, null=True, default=DEFAULT_MAX_DIST)
         max_depth = models.IntegerField(
             blank=True, null=True, default=DEFAULT_MAX_DEPTH)
-
         blacklist = JSONField(default=DEFAULT_BLACKLIST)
         brothers = JSONField(default=DEFAULT_BROTHERS)
-
-        def get_filter_options(self):
-            return {
-                'max_dist': self.max_dist,
-                'max_depth': self.max_depth,
-                'blacklist': self.blacklist,
-                'brothers': self.brothers
-            }
 
         class Meta:
             abstract = True
             unique_together = (('owner', 'url'),)
-
     return AbstractBaseSchedule
 
 
 def create_abc_news(schedule_model):
-
+    """Abstract base news model factory"""
     class AbstractBaseNews(models.Model, AbstractNews):
-        schedule = models.ForeignKey(
-            schedule_model, related_name='news_list',
-            db_index=True
-        )
-        src = models.ForeignKey(
-            'self', related_name='children', db_index=True,
-            blank=True, null=True
-        )
+        schedule = models.ForeignKey(schedule_model, related_name='news_list', 
+                                     db_index=True)
+        src = models.ForeignKey('self', related_name='children',
+                                db_index=True, blank=True, null=True)
 
         url = models.URLField()
         content = models.TextField()
@@ -72,13 +58,12 @@ def create_abc_news(schedule_model):
         class Meta:
             abstract = True
             unique_together = (('schedule', 'url'),)
-
     return AbstractBaseNews
 
 
 class Schedule(create_abc_schedule()):
-    pass
+    """Default schedule model"""
 
 
 class News(create_abc_news(Schedule)):
-    pass
+    """Default news model"""
