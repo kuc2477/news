@@ -99,6 +99,7 @@ def create_abc_news(schedule_model):
         @classmethod
         def create_instance(cls, schedule, url, content, src=None):
             return cls(schedule=schedule, url=url, content=content, src=src)
+
     return AbstractBaseNews
 
 

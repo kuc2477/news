@@ -22,14 +22,16 @@ class AbstractBackend(object):
 
     combinations = {}
 
-    def __init__(self, owner_class=None, schedule_class=None, news_class=None):
+    def __init__(self, owner_class=None, schedule_class=None, news_class=None, 
+                 *args, **kwargs):
         self.owner_class = owner_class
         self.schedule_class = schedule_class
         self.news_class = news_class
 
     @classmethod
     def create_backend(
-            cls, owner_class=None, schedule_class=None, news_class=None):
+            cls, owner_class=None, schedule_class=None, news_class=None,
+            *args, **kwargs):
         # make combination of model classes and check if same type of backend
         # with same combination of model classes ever been instantiated or
         # not.
@@ -39,7 +41,10 @@ class AbstractBackend(object):
         if c in cls.combinations:
             return cls.combinations[c]
         else:
-            return cls(owner_class, schedule_class, news_class)
+            return cls(owner_class=owner_class,
+                       schedule_class=schedule_class,
+                       news_class=news_class,
+                       *args, **kwargs)
 
     def get_news(self, owner=None, url=None):
         """

@@ -120,33 +120,51 @@ def django_news(db, django_news_class, django_schedule, django_root_news,
 # ===========================
 
 @pytest.fixture
-def sa_owner(sa_session, sa_owner_model):
+def sa_owner(request, sa_session, sa_owner_model):
     owner = sa_owner_model()
     sa_session.add(owner)
     sa_session.commit()
+
+    def teardown():
+        sa_session.delete(owner)
+        sa_session.commit()
+    request.addfinalizer(teardown)
+
     return owner
 
 
 @pytest.fixture
-def sa_schedule(sa_session, sa_owner, sa_schedule_model, url_root):
+def sa_schedule(request, sa_session, sa_owner, sa_schedule_model, url_root):
     schedule = sa_schedule_model(owner=sa_owner, url=url_root)
     sa_session.add(schedule)
     sa_session.commit()
+
+    def teardown():
+        sa_session.delete(schedule)
+        sa_session.commit()
+    request.addfinalizer(teardown)
+
     return schedule
 
 
 @pytest.fixture
-def sa_root_news(sa_session, sa_schedule, sa_news_model,
+def sa_root_news(request, sa_session, sa_schedule, sa_news_model,
                  url_root, content_root):
     news = sa_news_model(schedule=sa_schedule, url=url_root,
                          content=content_root)
     sa_session.add(news)
     sa_session.commit()
+
+    def teardown():
+        sa_session.delete(news)
+        sa_session.commit()
+    request.addfinalizer(teardown)
+
     return news
 
 
 @pytest.fixture
-def sa_news(sa_session, sa_schedule, sa_root_news, sa_news_model,
+def sa_news(request, sa_session, sa_schedule, sa_root_news, sa_news_model,
             url_child, content_child):
     news = sa_news_model(
         schedule=sa_schedule, src=sa_root_news,
@@ -154,4 +172,10 @@ def sa_news(sa_session, sa_schedule, sa_root_news, sa_news_model,
     )
     sa_session.add(news)
     sa_session.commit()
+
+    def teardown():
+        sa_session.delete(news)
+        sa_session.commit()
+    request.addfinalizer(teardown)
+
     return news
