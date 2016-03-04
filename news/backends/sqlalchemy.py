@@ -3,6 +3,7 @@
 SQLAlchemy news store backend.
 
 """
+from sqlalchemy import event
 from sqlalchemy.orm import sessionmaker
 from .abstract import AbstractBackend
 
@@ -54,6 +55,7 @@ class SQLAlchemyBackend(AbstractBackend):
                 previous = self.get_news(n.owner, n.url)
                 previous.content = n.content
                 previous.src = n.src
+                self.session.merge(previous)
                 self.session.commit()
 
     def cascade_save_news(self, news):
@@ -81,6 +83,19 @@ class SQLAlchemyBackend(AbstractBackend):
             query = query.filter(self.Schedule.url == url)
 
         return query.all()
+
+    def set_schedule_save_listener(self, listener):
+        event.listens_for(self.schedule_class, 'after_insert')(
+            lambda mapper, connection, target: listener(target, created=True)
+        )
+        event.listens_for(self.schedule_class, 'after_update')(
+            lambda mapper, connection, target: listener(target, created=False)
+        )
+
+    def set_schedule_delete_listener(self, listener):
+        event.listens_for(self.schedule_class, 'after_delete')(
+            lambda mapper, connection, target: listener(target)
+        )
 
     # =====================
     # Session configuration

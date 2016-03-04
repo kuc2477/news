@@ -50,3 +50,35 @@ def test_get_schedule(sa_session, sa_backend, sa_schedule):
 def test_get_schedule_list(sa_session, sa_backend,
                            sa_schedule, sa_owner, url_root):
     assert(sa_schedule in sa_backend.get_schedule_list(sa_owner, url_root))
+
+
+def test_set_schedule_save_listener_create(
+        mocker, sa_session, sa_backend, sa_owner, sa_schedule_model, url):
+    stub = mocker.stub()
+    sa_backend.set_schedule_save_listener(stub)
+
+    schedule = sa_schedule_model(url=url, owner=sa_owner)
+    sa_session.add(schedule)
+    sa_session.commit()
+
+    stub.assert_called_once_with(schedule, created=True)
+
+
+def test_set_schedule_save_listener_update(mocker, sa_session, sa_backend,
+                                           sa_schedule):
+    stub = mocker.stub()
+    sa_backend.set_schedule_save_listener(stub)
+    sa_schedule.url = 'changed_url'
+    sa_session.commit()
+
+    stub.assert_called_once_with(sa_schedule, created=False)
+
+
+def test_set_schedule_delete_listener(mocker, sa_session, sa_backend,
+                                      sa_schedule):
+    stub = mocker.stub()
+    sa_backend.set_schedule_delete_listener(stub)
+    sa_session.delete(sa_schedule)
+    sa_session.commit()
+
+    stub.assert_called_once_with(sa_schedule)

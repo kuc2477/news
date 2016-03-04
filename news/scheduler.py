@@ -1,11 +1,12 @@
 """:mod: `news.schedule` --- Schedule related domain classes.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 Provides schedule related domain classes which will be usually used by other
 processes or threads in background.
 
 """
+import time
+import threading
 import schedule as worker
 from .cover import Cover
 from .utils.python import importattr
@@ -18,6 +19,8 @@ class Scheduler(object):
         self.backend = backend
         self.celery = celery
         self.jobs = dict()
+
+        self._scheduling = False
 
         # reporter intel from past covers
         self.intel_strategy = intel_strategy
@@ -37,9 +40,27 @@ class Scheduler(object):
         # start backend schedule persistence
         self._start_persistence()
 
-        # start periodic jobs to push covers to the celery server.
+        # add periodic jobs to the worker(scheduler) to push covers to
+        # celery server.
         for schedule in self.backend.get_schedules():
             self._add_schedule(schedule)
+
+        # start scheduling
+        self._scheduling = True
+        thread = threading.Thread(target=self._schedule_forever, args=())
+        thread.daemon = True
+        thread.start()
+
+    def stop(self):
+        self._scheduling = False
+
+    def clear(self):
+        pass
+
+    def _schedule_forever(self):
+        while self._scheduling:
+            worker.run_pending()
+            time.sleep(1)
 
     def _start_persistence(self):
         self.backend.set_schedule_save_listener(self._save_listener)

@@ -147,10 +147,10 @@ class AbstractBackend(object):
         """
         return self.get_schedule(owner, url) is not None
 
-    def set_post_save_listener(self, listener):
+    def set_schedule_save_listener(self, listener):
         """Should register post save listener"""
         raise NotImplementedError
 
-    def set_post_delete_listener(self, listener):
+    def set_schedule_delete_listener(self, listener):
         """Should register post save listener"""
         raise NotImplementedError
