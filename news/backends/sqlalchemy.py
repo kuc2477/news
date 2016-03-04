@@ -51,16 +51,15 @@ class SQLAlchemyBackend(AbstractBackend):
             if not self.news_exists(n.owner, n.url):
                 self.cascade_save_news(n)
             else:
-                previous = self.get_news_list(n.owner, n.url)
+                previous = self.get_news(n.owner, n.url)
                 previous.content = n.content
                 previous.src = n.src
-                self.session.merge(previous)
                 self.session.commit()
 
     def cascade_save_news(self, news):
         if news.src and news.src.id is None:
             self.cascade_save_news(news.src)
-        self.session.merge(news)
+        self.session.add(news)
         self.session.commit()
 
     def delete_news(self, *news):

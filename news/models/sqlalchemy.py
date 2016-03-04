@@ -5,7 +5,10 @@ from sqlalchemy import (
     Text
 )
 from sqlalchemy.schema import UniqueConstraint
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import (
+    relationship,
+    backref
+)
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy_utils.types import (
     URLType,
@@ -83,15 +86,20 @@ def create_abc_news(schedule_model):
 
         @declared_attr
         def src(cls):
-            return relationship('News', backref='children',
-                                remote_side=[cls.id])
+            return relationship(
+                'News', backref='children',
+                remote_side=[cls.id]
+            )
 
         id = Column(Integer, primary_key=True)
         url = Column(URLType, nullable=False)
         content = Column(Text, nullable=False)
 
         def __init__(self, schedule=None, url='', content='', src=None):
-            self.schedule = schedule
+            # avoid save-update cascade
+            self._schedule = schedule
+            self.schedule_id = schedule and schedule.id
+
             self.url = url
             self.content = content
             self.src = src
@@ -100,12 +108,16 @@ def create_abc_news(schedule_model):
         def create_instance(cls, schedule, url, content, src=None):
             return cls(schedule=schedule, url=url, content=content, src=src)
 
+        @property
+        def owner(self):
+            return self._schedule and self._schedule.owner
+
     return AbstractBaseNews
 
 
 def create_schedule(abc_schedule, base):
-    return type('Schedule', (base, abc_schedule), {})
+    return type('Schedule', (abc_schedule, base), {})
 
 
 def create_news(abc_news, base):
-    return type('News', (base, abc_news), {})
+    return type('News', (abc_news, base), {})
