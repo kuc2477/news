@@ -12,17 +12,18 @@ class AbstractBackend(object):
     Abstract news backend that should be implemented in orm specific ways.
 
     :param owner_class: Owner class to use with backend.
-    :type owner_class: Implementation of `~news.models.AbstractModel`.
+    :type owner_class: Implementation of :class:`~news.models.AbstractModel`.
     :param schedule_class: Schedule class to use with backend.
-    :type schedule_class: Implementation of `~news.models.AbstractSchedule`.
+    :type schedule_class: Implementation of
+        :class:`~news.models.AbstractSchedule`.
     :param news_class: News class to use with backend.
-    :type news_class: Implementation of `~news.models.AbstractNews`.
+    :type news_class: Implementation of :class:`~news.models.AbstractNews`.
 
     """
 
     combinations = {}
 
-    def __init__(self, owner_class=None, schedule_class=None, news_class=None, 
+    def __init__(self, owner_class=None, schedule_class=None, news_class=None,
                  *args, **kwargs):
         self.owner_class = owner_class
         self.schedule_class = schedule_class

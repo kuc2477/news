@@ -96,7 +96,7 @@ class AbstractSchedule(AbstractModel):
         Should return filetype blacklist that should be skipped from fetching.
 
         :returns: Filetype blacklist (e.g. ['png', 'gif', ...])
-        :rtpye: :class:`str`
+        :rtype: :class:`str`
 
         """
         raise NotImplementedError

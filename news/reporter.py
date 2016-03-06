@@ -27,7 +27,7 @@ class ReporterMeta(object):
         reporter or reporter itself. Schedule provides necessary information
         such as the owner of the schedule or filter options to use in news
         fetching process.
-    :type schedule: Implementation of `~news.models.AbstractSchedule`.
+    :type schedule: Implementation of :class:`~news.models.AbstractSchedule`.
     :param intel: A list of news that was fetched in the past.
         Reporters responsible for each news of intel will be
         summoned by the reporter and dispatched along with the reporters
@@ -70,8 +70,8 @@ class ReporterMeta(object):
     @property
     def owner(self):
         """
-        (`~news.models.AbstractOwnerMixin` implementation of
-        :attr:`schedule` backend type) The owner of the schedule meta that
+        (:class:`~news.models.AbstractOwnerMixin` implementation of the
+        :attr:`schedule`'s backend type) The owner of the schedule meta that
         is used to instantiate this reporter meta.
 
         """
