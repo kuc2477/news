@@ -1,8 +1,7 @@
-""":mod: `news.schedule` --- Schedule related domain classes.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.scheduler` --- News scheduler
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Provides schedule related domain classes which will be usually used by other
-processes or threads in background.
+Provides scheduler that runs news subscription on celery tasks.
 
 """
 import time

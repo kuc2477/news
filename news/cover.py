@@ -1,3 +1,9 @@
+""":mod:`news.cover` --- News cover jobs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+News cover jobs that will be run by reporters.
+
+"""
 import asyncio
 from .reporter import (
     ReporterMeta,

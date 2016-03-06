@@ -1,3 +1,9 @@
+""":mod:`news.models.sqlalchemy` --- News model SQLAlchemy implementations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Provides factory functions for both abstract and concrete News models.
+
+"""
 from sqlalchemy import (
     Column,
     ForeignKey,

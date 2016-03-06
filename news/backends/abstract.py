@@ -1,5 +1,5 @@
-""":mod:`news.backends.abstract` --- Contains abstract backend class.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.backends.abstract` --- Abstract News backend interfaces
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Provides common interface that should be implemented by orm specific backends.
 

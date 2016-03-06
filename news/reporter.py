@@ -1,5 +1,5 @@
-""":mod: `news.reporter` --- Contains reporter related classes.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.reporter` --- News reporters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Provides :class:`~news.reporter.Reporter` class and it's derivatives.
 
