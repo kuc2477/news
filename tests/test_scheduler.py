@@ -1,6 +1,7 @@
 import platform
 import pytest
 
+
 @pytest.mark.skipif(platform.system().lower() == 'windows',
                     reason='celery service test won\'t run in windows')
 def test_run(scheduler, cover):
