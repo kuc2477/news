@@ -1,3 +1,9 @@
+""":mod:`news.models.django` --- News model Django implementations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Provides factory functions and default News models.
+
+"""
 from django.db import models
 from django.conf import settings
 from jsonfield import JSONField
@@ -18,8 +24,20 @@ from ..constants import (
 __all__ = ['Schedule', 'News', 'create_abc_schedule', 'create_abc_news']
 
 
-def create_abc_schedule(user_model=settings.AUTH_USER_MODEL):
-    """Abstract base schedule model factory"""
+def create_abc_schedule(user_model=None):
+    """
+    Abstract base schedule model factory.
+
+    :param user_model: User model to use as schedule owners.
+    :type user_model: Any :class:`~django.contrib.auth.models.AbstractbaseUser`
+        implemenatation.
+    :returns: A abstract base schedule model.
+    :rtype: Abstract base django model of
+        :class:`~news.models.abstract.AbstractSchedule` implementation.
+
+    """
+    user_model = user_model or settings.AUTH_USER_MODEL
+
     class AbstractBaseSchedule(models.Model, AbstractSchedule):
         owner = models.ForeignKey(
             user_model, related_name='schedules', db_index=True)
@@ -41,9 +59,19 @@ def create_abc_schedule(user_model=settings.AUTH_USER_MODEL):
 
 
 def create_abc_news(schedule_model):
-    """Abstract base news model factory"""
+    """
+    Abstract base news model factory.
+
+    :param schedule_model: Schedule model to use as news's schedule.
+    :type schedule_model: Any concrete schedule model of abc models from
+        :func:`~create_abc_schedule` factory function.
+    :returns: A abstract base news model.
+    :rtype: Abstract base django model of
+        :class:`~news.models.abstract.AbstractNews` implementation.
+
+    """
     class AbstractBaseNews(models.Model, AbstractNews):
-        schedule = models.ForeignKey(schedule_model, related_name='news_list', 
+        schedule = models.ForeignKey(schedule_model, related_name='news_list',
                                      db_index=True)
         src = models.ForeignKey('self', related_name='children',
                                 db_index=True, blank=True, null=True)
@@ -62,8 +90,8 @@ def create_abc_news(schedule_model):
 
 
 class Schedule(create_abc_schedule()):
-    """Default schedule model"""
+    """Default django implementation of schedule model"""
 
 
 class News(create_abc_news(Schedule)):
-    """Default news model"""
+    """Default django implementation of news model"""

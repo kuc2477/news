@@ -1,5 +1,5 @@
-""":mod: `news.models.abstract` --- Contains abstract news model interfaces.
-
+""":mod:`news.models.abstract` --- Abstract News model interfaces
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Provides abstract common news model interfaces that should be implemeted
 backends.

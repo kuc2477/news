@@ -1,4 +1,9 @@
-""":mod:`news.backends.django` --- Django backend. """
+""":mod:`news.backends.django` --- News backend Django implementations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Provides an implemenation of news backend for django projects.
+
+"""
 from django.db import transaction
 from django.db.models.signals import (
     post_save,

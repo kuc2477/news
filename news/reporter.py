@@ -1,5 +1,5 @@
-""":mod: `news.reporter` --- Contains reporter related classes.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.reporter` --- News reporters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Provides :class:`~news.reporter.Reporter` class and it's derivatives.
 
@@ -36,13 +36,13 @@ class ReporterMeta(object):
         intel can be dispatched without wating for their
         predecessors to dispatch them.
     :type intel: :class:`list`
-    :param report_experience: Lambda function that takes schedule of the news
-        and a news as arguments and returns `True` if the news is valuable,
+    :param report_experience: A function that takes schedule of the news and a
+        news as arguments and returns `True` if the news is valuable,
         considered valuable, or return `False` otherwise.
     :type report_experience: :func:
-    :param fetch_experience: Lambda function that takes schedule of the news
-        and a news that contains urls and a url as arguments and returns
-        `True` if the url is valuable, or return `False` otherwise.
+    :param fetch_experience: A function that takes schedule of the news and a
+        news that contains urls and a url as arguments and returns `True` if
+        the url is valuable, or return `False` otherwise.
     :type fetch_experience: :func:
 
     """

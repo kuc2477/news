@@ -1,6 +1,7 @@
-""":mod:`news.backends.sqlalchemy` --- SQLAlchemy backend
+""":mod:`news.backends.sqlalchemy` --- News backend SQLAlchemy implementations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-SQLAlchemy news store backend.
+Provides an implementation of news backend for sqlalchemy projects.
 
 """
 from sqlalchemy import event
