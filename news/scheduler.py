@@ -81,6 +81,9 @@ class Scheduler(object):
     def start(self):
         """Starts backend persistence and news cover scheduling on another
         thread"""
+        if self._scheduling:
+            return
+
         # start backend schedule persistence
         self._start_persistence()
 
@@ -92,7 +95,6 @@ class Scheduler(object):
         # start scheduling
         self._scheduling = True
         thread = threading.Thread(target=self._schedule_forever, args=())
-        thread.daemon = True
         thread.start()
 
     def stop(self):

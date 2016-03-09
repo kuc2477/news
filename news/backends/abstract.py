@@ -131,7 +131,6 @@ class AbstractBackend(object):
         :rtype: :class:`list`
 
         """
-
         raise NotImplementedError
 
     def schedule_exists(self, owner, url):

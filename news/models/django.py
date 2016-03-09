@@ -29,8 +29,8 @@ def create_abc_schedule(user_model=None):
     Abstract base schedule model factory.
 
     :param user_model: User model to use as schedule owners.
-    :type user_model: Any :class:`~django.contrib.auth.models.AbstractbaseUser`
-        implemenatation.
+    :type user_model: :class:`~news.models.abstract.AbstractModel`
+        implemenatation
     :returns: A abstract base schedule model.
     :rtype: Abstract base django model of
         :class:`~news.models.abstract.AbstractSchedule` implementation.
@@ -67,7 +67,7 @@ def create_abc_news(schedule_model):
         :func:`~create_abc_schedule` factory function.
     :returns: A abstract base news model.
     :rtype: Abstract base django model of
-        :class:`~news.models.abstract.AbstractNews` implementation.
+        :class:`~news.models.abstract.AbstractNews` implementation
 
     """
     class AbstractBaseNews(models.Model, AbstractNews):
@@ -90,8 +90,43 @@ def create_abc_news(schedule_model):
 
 
 class Schedule(create_abc_schedule()):
-    """Default django implementation of schedule model"""
+    """
+    Schedule model default django implementation.
+
+    :param owner: Owner of the schedule.
+    :type owner: :class:`~django.contrib.auth.models.User`
+    :param url: Url to subscribe.
+    :type url: :class:`str`
+    :param cycle: News update cycle in minutes.
+    :type cycle: :class:`int`
+    :param max_dist: Maximum distance to allow for reporters to discover news.
+        Defaults to `None`.
+    :type max_dist: :class:`int`
+    :param max_depth: Maximum depth to allow for reporters to discover news.
+        Defaults to `None`.
+    :type max_depth: :class:`int`
+    :param blacklist: Filetype blacklist for reporters to avoid visiting.
+        Carefully designed blacklist might improve performance of your
+        reporters.
+    :type blacklist: :class:`list`
+    :param brothers: Brother urls to allow for reporters to visit even if it
+        dosen't match other conditions(e.g. not in same domain).
+    :type brothers: :class:`list`
+
+    """
 
 
 class News(create_abc_news(Schedule)):
-    """Default django implementation of news model"""
+    """
+    News model default django implementation.
+
+    :param schedule: Schedule which news belongs to.
+    :type schedule: :class:`~news.models.django.Schedule`
+    :param src: Parent news from which the url of the news has been found.
+    :type src: :class:`~news.models.django.News`
+    :param url: Url of the news.
+    :type url: :class:`str`
+    :param content: Content of the news.
+    :type content: :class:`str`
+
+    """
