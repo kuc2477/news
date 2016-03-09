@@ -55,7 +55,8 @@ class Scheduler(object):
         self._scheduling = False
 
     def clear(self):
-        pass
+        for id in self.jobs.keys():
+            worker.cancel_job(self.jobs.pop(id))
 
     def _schedule_forever(self):
         while self._scheduling:
