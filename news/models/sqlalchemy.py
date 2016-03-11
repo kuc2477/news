@@ -63,9 +63,10 @@ def create_abc_schedule(user_model):
         def owner(cls):
             return relationship(user_model, backref='schedules')
 
-        def __init__(self, url='', cycle=DEFAULT_SCHEDULE_CYCLE,
+        def __init__(self, owner=None, url='', cycle=DEFAULT_SCHEDULE_CYCLE,
                      max_dist=DEFAULT_MAX_DIST, max_depth=DEFAULT_MAX_DEPTH,
                      blacklist=DEFAULT_BLACKLIST, brothers=DEFAULT_BROTHERS):
+            self.owner = owner
             self.url = url
             self.cycle = cycle
             self.max_dist = max_dist

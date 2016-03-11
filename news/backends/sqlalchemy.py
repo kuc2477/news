@@ -75,7 +75,7 @@ class SQLAlchemyBackend(AbstractBackend):
             self.Schedule.url == url
         ).first()
 
-    def get_schedule_list(self, owner=None, url=None):
+    def get_schedules(self, owner=None, url=None):
         query = self.session.query(self.Schedule)
 
         if owner:

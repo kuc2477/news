@@ -47,9 +47,9 @@ def test_get_schedule(sa_session, sa_backend, sa_schedule):
            sa_backend.get_schedule(sa_schedule.owner, sa_schedule.url))
 
 
-def test_get_schedule_list(sa_session, sa_backend,
-                           sa_schedule, sa_owner, url_root):
-    assert(sa_schedule in sa_backend.get_schedule_list(sa_owner, url_root))
+def test_get_schedules(sa_session, sa_backend, sa_schedule,
+                       sa_owner, url_root):
+    assert(sa_schedule in sa_backend.get_schedules(sa_owner, url_root))
 
 
 def test_set_schedule_save_listener_create(

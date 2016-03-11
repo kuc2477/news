@@ -108,6 +108,7 @@ class Scheduler(object):
 
     def _schedule_forever(self):
         while self._scheduling:
+            print('run pending schedule cover pushes')
             worker.run_pending()
             time.sleep(1)
 
@@ -135,7 +136,7 @@ class Scheduler(object):
     def _add_schedule(self, schedule):
         cover = self._get_cover(schedule)
         self.jobs[schedule.id] = \
-            worker.every(schedule.cycle).minutes.do(self.run, cover)
+            worker.every(schedule.cycle).minutes.do(self.run.delay, cover)
 
     def _remove_schedule(self, schedule):
         worker.cancel_job(self.jobs.pop(schedule.id))
