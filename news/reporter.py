@@ -14,6 +14,7 @@ from .utils.url import (
     normalize, depth
 )
 from .utils.python import importattr
+from .utils.logging import logger
 
 
 __all__ = ['ReporterMeta', 'Reporter']
@@ -185,6 +186,10 @@ class Reporter(object):
         :rtype: :class:`list`
 
         """
+        logger.info('[Reporter {} for {}] Dispatch start'.format(
+            self.schedule.id, self.url
+        ))
+
         news = await self.fetch(not bulk_report)
         urls = await self.get_worthy_urls(news) if news else []
 
@@ -214,10 +219,18 @@ class Reporter(object):
         :rtype: :class:`list`
 
         """
+        logger.info('[Reporter {} for {}] Dispatching reporters'.format(
+            self.schedule.id, self.url
+        ))
+
         reporters = self.call_up_reporters(urls, self.meta.exhaust_intel())
         dispatches = [r.dispatch(bulk_report=bulk_report) for r in reporters]
-        news_sets = await asyncio.gather(*dispatches)
-        news_list = itertools.chain(*news_sets)
+
+        news_sets = await asyncio.gather(*dispatches) or {}
+        import pprint
+        pprint.pprint(news_sets)
+        news_list = list(itertools.chain(*news_sets))
+
         return news_list
 
     async def fetch(self, immediate_report=True):
@@ -234,7 +247,14 @@ class Reporter(object):
         :rtype: :class:`~news.news.News`
 
         """
+        logger.info('[Reporter {} for {}] Fetch start'.format(
+            self.schedule.id, self.url
+        ))
         async with aiohttp.get(self.url) as response:
+            logger.info('[Reporter {} for {}] Fetch successed'.format(
+                self.schedule.id, self.url
+            ))
+
             # report to the chief reporter that we visited the url.
             await self.report_visited()
 
@@ -260,7 +280,7 @@ class Reporter(object):
             return self.fetched_news
 
         # create new news if reporter is making fresh news.
-        src = self.predecessor.fetched_news if not self.chief else None
+        src = self.predecessor.fetched_news if not self.is_chief else None
         news_class = self.backend.news_class
         return news_class.create_instance(
             self.schedule, self.url, content, src=src)
@@ -315,6 +335,9 @@ class Reporter(object):
     # ===================
 
     def report_news(self, *news):
+        logger.info('[Reporter {} for {}] Reporting {} news'.format(
+            self.schedule.id, self.url, len(news)
+        ))
         self.backend.save_news(*news)
 
     async def report_visited(self):

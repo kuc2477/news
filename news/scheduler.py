@@ -8,6 +8,7 @@ import time
 import threading
 import schedule as worker
 from .cover import Cover
+from .utils.logging import logger
 
 
 class Scheduler(object):
@@ -59,13 +60,12 @@ class Scheduler(object):
                  report_experience=None, fetch_experience=None,
                  dispatch_middlewares=None, fetch_middlewares=None):
         self.backend = backend
-        self.celery = celery
         self.jobs = dict()
 
         self._scheduling = False
 
         # reporter intel from past covers
-        self.intel_strategy = intel_strategy
+        self.intel_strategy = intel_strategy or (lambda backend, schedule: [])
 
         # middlewares
         self.dispatch_middlewares = dispatch_middlewares or []
@@ -76,7 +76,21 @@ class Scheduler(object):
         self.fetch_experience = fetch_experience
 
         # set run celery task
-        self.run = self.celery.task(lambda cover: cover.run())
+        @celery.task
+        def run(id):
+            schedule = self.backend.get_schedule_by_id(id)
+            intel = self.intel_strategy(backend, schedule)
+            cover = Cover.from_schedule(schedule, self.backend)
+            cover.prepare(
+                intel=intel,
+                report_experience=self.report_experience,
+                fetch_experience=self.fetch_experience,
+                dispatch_middlewares=self.dispatch_middlewares,
+                fetch_middlewares=self.fetch_middlewares
+            )
+            cover.run()
+
+        self.run = self.task = run
 
     def start(self):
         """Starts backend persistence and news cover scheduling on another
@@ -108,35 +122,22 @@ class Scheduler(object):
 
     def _schedule_forever(self):
         while self._scheduling:
-            print('run pending schedule cover pushes')
+            logger.info('running pending schedule cover pushes..')
             worker.run_pending()
-            time.sleep(1)
+            time.sleep(5)
 
     def _start_persistence(self):
         self.backend.set_schedule_save_listener(self._save_listener)
         self.backend.set_schedule_delete_listener(self._delete_listener)
-
-    def _get_cover(self, schedule):
-        intel = self.intel_strategy(schedule, self.backend) if \
-            self.intel_strategy else []
-        cover = Cover.from_schedule(schedule, self.backend)
-        cover.prepare(
-            intel,
-            report_experience=self.report_experience,
-            fetch_experience=self.fetch_experience,
-            dispatch_middlewares=self.dispatch_middlewares,
-            fetch_middlewares=self.fetch_middlewares
-        )
-        return cover
 
     # ==================
     # Schedule modifiers
     # ==================
 
     def _add_schedule(self, schedule):
-        cover = self._get_cover(schedule)
-        self.jobs[schedule.id] = \
-            worker.every(schedule.cycle).minutes.do(self.run.delay, cover)
+        self.jobs[schedule.id] = worker.every(schedule.cycle).minutes.do(
+            self.run.delay, schedule.id
+        )
 
     def _remove_schedule(self, schedule):
         worker.cancel_job(self.jobs.pop(schedule.id))

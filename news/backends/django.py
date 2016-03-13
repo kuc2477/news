@@ -56,6 +56,9 @@ class DjangoBackend(AbstractBackend):
         queryset = self.NewsManager.filter(id__in=[n.id for n in news])
         queryset.delete()
 
+    def get_schedule_by_id(self, id):
+        return self.ScheduleManager.get(id=id)
+
     def get_schedule(self, owner, url):
         return self.ScheduleManager\
             .filter(owner=owner)\

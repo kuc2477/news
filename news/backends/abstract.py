@@ -109,14 +109,26 @@ class AbstractBackend(object):
         """
         return self.get_news(owner, url) is not None
 
+    def get_schedule_by_id(self, id):
+        """
+        Should retrieve a schedule of given id from the backend.
+
+        :param id: Primary key of the schedule.
+        :type id: :class:`int`
+        :returns: Schedule of given id.
+        :rtype: :attr:`schedule_class`
+
+        """
+        raise NotImplementedError
+
     def get_schedule(owner, url):
         """
-        Should retrieve a schedule meta for owner from the backend.
+        Should retrieve a schedule for owner from the backend.
 
         :param owner: Owner of the schedule meta.
         :type owner: :attr:`owner_class`
         :return: Owner's schedule meta with given url.
-        :rtype: :attr:`schedule_meta_class`
+        :rtype: :attr:`schedule_class`
 
         """
         raise NotImplementedError

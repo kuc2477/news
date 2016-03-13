@@ -85,6 +85,14 @@ def test_delete_news(django_backend, django_news):
 
 
 @pytest.mark.django_db
+def test_get_schedule_by_id(django_backend, django_schedule):
+    assert(
+        django_schedule ==
+        django_backend.get_schedule_by_id(django_schedule.id)
+    )
+
+
+@pytest.mark.django_db
 def test_get_schedule(django_backend, django_schedule):
     assert(
         django_schedule ==

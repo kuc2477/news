@@ -42,6 +42,10 @@ def test_delete_news(sa_session, sa_backend, sa_news):
     assert(not sa_backend.news_exists(sa_news.owner, sa_news.url))
 
 
+def test_get_schedule_by_id(sa_session, sa_backend, sa_schedule):
+    assert(sa_schedule == sa_backend.get_schedule_by_id(sa_schedule.id))
+
+
 def test_get_schedule(sa_session, sa_backend, sa_schedule):
     assert(sa_schedule ==
            sa_backend.get_schedule(sa_schedule.owner, sa_schedule.url))

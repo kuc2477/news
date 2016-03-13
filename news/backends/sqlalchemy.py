@@ -56,7 +56,6 @@ class SQLAlchemyBackend(AbstractBackend):
                 previous = self.get_news(n.owner, n.url)
                 previous.content = n.content
                 previous.src = n.src
-                self.session.merge(previous)
                 self.session.commit()
 
     def cascade_save_news(self, news):
@@ -68,6 +67,9 @@ class SQLAlchemyBackend(AbstractBackend):
     def delete_news(self, *news):
         self.session.delete(*news)
         self.session.commit()
+
+    def get_schedule_by_id(self, id):
+        return self.session.query(self.Schedule).get(id)
 
     def get_schedule(self, owner, url):
         return self.session.query(self.Schedule).filter(
