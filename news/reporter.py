@@ -226,9 +226,7 @@ class Reporter(object):
         reporters = self.call_up_reporters(urls, self.meta.exhaust_intel())
         dispatches = [r.dispatch(bulk_report=bulk_report) for r in reporters]
 
-        news_sets = await asyncio.gather(*dispatches) or {}
-        import pprint
-        pprint.pprint(news_sets)
+        news_sets = (await asyncio.gather(*dispatches)) or set()
         news_list = list(itertools.chain(*news_sets))
 
         return news_list

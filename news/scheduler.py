@@ -101,6 +101,10 @@ class Scheduler(object):
         # start backend schedule persistence
         self._start_persistence()
 
+        logger.info('starting news scheduler with total {} schedules'.format(
+            len(self.backend.get_schedules())
+        ))
+
         # add periodic jobs to the worker(scheduler) to push covers to
         # celery server.
         for schedule in self.backend.get_schedules():
@@ -135,7 +139,7 @@ class Scheduler(object):
     # ==================
 
     def _add_schedule(self, schedule):
-        self.jobs[schedule.id] = worker.every(schedule.cycle).minutes.do(
+        self.jobs[schedule.id] = worker.every(schedule.cycle).seconds.do(
             self.run.delay, schedule.id
         )
 
@@ -143,8 +147,11 @@ class Scheduler(object):
         worker.cancel_job(self.jobs.pop(schedule.id))
 
     def _update_schedule(self, schedule):
-        self.remove(schedule)
-        self.add_schedule(schedule)
+        logger.info('updating schedule {}: {}'.format(
+            schedule.id, schedule.url
+        ))
+        self._remove_schedule(schedule)
+        self._add_schedule(schedule)
 
     # =============================================
     # Backend signal listeners to persist schedules

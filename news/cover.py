@@ -60,7 +60,7 @@ class Cover(object):
             schedule of the news and the news as it's arguments  and return
             `True` if the news is valuable.  Otherwise it should return
             `False`.
-        :type report_experience:  :class:`str`
+        :type report_experience: :class:`str`
         :param fetch_experience: Module qualified path to the fetch experience
             function. The fetch experience function should take a schedule of
             the news, the news and the url to be classified whether it is
