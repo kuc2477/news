@@ -28,8 +28,9 @@ def django_abc_news(django_schedule_model):
 
 
 @pytest.fixture(scope='session')
-def django_schedule_model(django_abc_schedule):
-    return django.create_schedule(django_abc_schedule)
+def django_schedule_model(django_abc_schedule, persister):
+    return django.create_schedule(django_abc_schedule,
+                                  persister=persister)
 
 
 @pytest.fixture(scope='session')
@@ -62,8 +63,9 @@ def sa_owner_model(sa_declarative_base):
 
 
 @pytest.fixture(scope='session')
-def sa_schedule_model(sa_abc_schedule, sa_declarative_base):
-    return sa.create_schedule(sa_abc_schedule, sa_declarative_base)
+def sa_schedule_model(sa_abc_schedule, sa_declarative_base, persister):
+    return sa.create_schedule(sa_abc_schedule, sa_declarative_base,
+                              persister=persister)
 
 
 @pytest.fixture(scope='session')

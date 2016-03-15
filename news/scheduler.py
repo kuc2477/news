@@ -160,6 +160,9 @@ class Scheduler(object):
         self.celery_task = run_cover
 
     def add_schedule(self, schedule):
+        if not self.celery_task:
+            self.register_celery_task()
+
         if isinstance(schedule, int):
             schedule = self.backend.get_schedule_by_id(schedule)
 
@@ -174,7 +177,10 @@ class Scheduler(object):
         except AttributeError:
             id = int(schedule)
 
-        self.pusher.cancel_job(self.jobs.pop(id))
+        try:
+            self.pusher.cancel_job(self.jobs.pop(id))
+        except KeyError:
+            pass
 
     def clear_schedules(self):
         [self.remove_schedule(id) for id in self.jobs.keys()]

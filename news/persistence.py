@@ -17,13 +17,13 @@ class SchedulePersister(object):
         self.scheduler = scheduler
         self.pubsub.subscribe(**{
             REDIS_SCHEDULE_CREATE_CHANNEL: lambda message:
-            self.persist_schedule_save(int(message), True),
+            self.persist_schedule_save(int(message['data']), True),
 
             REDIS_SCHEDULE_UPDATE_CHANNEL: lambda message:
-            self.persist_schedule_save(int(message), False),
+            self.persist_schedule_save(int(message['data']), False),
 
             REDIS_SCHEDULE_DELETE_CHANNEL: lambda message:
-            self.persist_schedule_delete(int(message))
+            self.persist_schedule_delete(int(message['data']))
         })
         self.thread = self.pubsub.run_in_thread(
             sleep_time=REDIS_PUBSUB_SLEEP_TIME)
@@ -40,9 +40,9 @@ class SchedulePersister(object):
     def persist_schedule_delete(self, id):
         self.scheduler and self.scheduler.remove_schedule(id)
 
-    def notify_schedule_saved(self, instance, created):
+    def notify_schedule_saved(self, instance, created, **kwargs):
         self.redis.publish(REDIS_SCHEDULE_CREATE_CHANNEL if created else
                            REDIS_SCHEDULE_UPDATE_CHANNEL, str(instance.id))
 
-    def notify_schedule_deleted(self, instance):
+    def notify_schedule_deleted(self, instance, **kwargs):
         self.redis.publish(REDIS_SCHEDULE_DELETE_CHANNEL, str(instance.id))

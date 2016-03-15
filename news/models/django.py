@@ -119,7 +119,7 @@ def create_schedule(abc_schedule, mixins=None, persister=None):
     # connect persister if given
     if persister:
         post_save.connect(
-            persister.nofify_schedule_saved,
+            persister.notify_schedule_saved,
             sender=Schedule, weak=False
         )
         post_delete.connect(

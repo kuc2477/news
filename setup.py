@@ -53,7 +53,6 @@ setup(
         'beautifulsoup4>=4.4.1',
         'extraction==0.2.1',
         'urltools>=0.3.2',
-        'click>=6.2',
         'colorlog>=2.6.0',
         'django>=1.7',
         'django-jsonfield>=0.9.16',
