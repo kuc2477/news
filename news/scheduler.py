@@ -21,6 +21,11 @@ class Scheduler(object):
         implementation.
     :param celery: Celery app instance to use as asynchronous job queue.
     :type celery: :class:`~celery.Celery`
+    :param persister: Persister that persists schedules via redis channel from
+        backend. The persister that has been used when creating Schedule model
+        with `create_schedule` factory method should be given. Note that the
+        scheduler will not persist schedule changes if not given a persister.
+    :type persister: :class:`news.persistence.SchedulePersister`
     :param intel_strategy: Intel strategy to use for a schedule. Using nicely
         implemented intel strategy function can be work as performance boost
         in news fetching processes since reporters in charge of the given
@@ -55,30 +60,32 @@ class Scheduler(object):
         the successor reporters of the chief reporter.
     :type  fetch_middlewares: :class:`list`
 
-    :Example:
+    *Example*::
 
-    >>> from celery import Celery
-    >>> from redis import Redis
-    >>> from django.contrib.auth.models import User
-    >>> from news.backends.django import DjangoBackend
-    >>> from news.models.django import (
-        create_abc_schedule, create_abc_news,
-        create_schedule, create_news
-    )
-    >>> from news.scheduler import Scheduler
-    >>> from news.persistence import Persister
-    >>>
-    >>>
-    >>> redis = Redis()
-    >>> celery = Celery()
-    >>> persister = Persister(redis)
-    >>>
-    >>> Schedule = create_schedule(create_abc_schedule(User), persister)
-    >>> News = create_news(create_abc_news(Schedule))
-    >>>
-    >>> backend = DjangoBackend(User, Schedule, News)
-    >>> scheduler = Scheduler(backend, celery)
-    >>> scheduler.run(persister)
+        from celery import Celery
+        from redis import Redis
+
+        from django.contrib.auth.models import User
+        from news.backends.django import DjangoBackend
+        from news.models.django import (
+            create_abc_schedule, create_abc_news,
+            create_schedule, create_news
+        )
+
+        from news.scheduler import Scheduler
+        from news.persistence import SchedulePersister
+
+
+        redis = Redis()
+        celery = Celery()
+        persister = SchedulePersister(redis)
+
+        Schedule = create_schedule(create_abc_schedule(User), persister)
+        News = create_news(create_abc_news(Schedule))
+
+        backend = DjangoBackend(User, Schedule, News)
+        scheduler = Scheduler(backend, celery, persister=persister)
+        scheduler.run()
 
     """
     def __init__(self, backend, celery, persister=None, intel_strategy=None,
@@ -88,10 +95,9 @@ class Scheduler(object):
         self.celery = celery
         self.celery_task = None
 
-        self.persister = None
+        self.persister = persister
         self.pusher = pusher
         self.jobs = dict()
-        self.thread = None
         self.running = False
 
         self.intel_strategy = intel_strategy or (lambda backend, schedule: [])
@@ -101,7 +107,13 @@ class Scheduler(object):
         self.fetch_experience = fetch_experience
 
     def run(self, persister=None):
-        """Start news cover scheduling"""
+        """
+        Starts news cover scheduling in another tiny thread.
+
+        :param persister: Persister that persists schedules from backend.
+        :type persister: :class:`news.persistence.SchedulePersister`
+
+        """
         if not self.celery_task:
             self.register_celery_task()
 
@@ -125,11 +137,11 @@ class Scheduler(object):
         threading.Thread(target=runschedule).start()
 
     def stop(self):
+        """Stop news cover scheduling thread and schedule persistence."""
         self.persister and self.persister.stop_persistence()
         self.running = False
 
     def register_celery_task(self):
-        """Register news cover celery task on scheduler's celery instance"""
         @self.celery.task
         def run_cover(id):
             schedule = self.backend.get_schedule_by_id(id)

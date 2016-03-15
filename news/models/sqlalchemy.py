@@ -147,7 +147,7 @@ def create_abc_news(schedule_model):
     return AbstractBaseNews
 
 
-def create_schedule(abc_schedule, base, mixins=None, notifier=None):
+def create_schedule(abc_schedule, base, mixins=None, persister=None):
     """
     Concrete schedule model factory.
 
@@ -159,8 +159,8 @@ def create_schedule(abc_schedule, base, mixins=None, notifier=None):
         :func:`sqlalchemy.ext.declarative.declarative_base` factory function
     :param mixins: Mixins to be mixed into concrete schedule model.
     :type mixins: Iterable mixin classes.
-    :param notifier: Notifier to use for the schedule persistence.
-    :type notifier: :class:`~news.persistence.ScheduleNotifier`
+    :param persister: Persister to use for the schedule persistence.
+    :type persister: :class:`~news.persistence.ScheduleNotifier`
     :returns: Concrete schedule model based on given abc schedule.
     :rtype: :class:`~news.models.abstract.AbstractSchedule` SQLAlchemy
         implementation based on given abc schedule, model base and mixins.
@@ -169,19 +169,19 @@ def create_schedule(abc_schedule, base, mixins=None, notifier=None):
     mixins = mixins or tuple()
     Schedule = type('Schedule', mixins + (abc_schedule, base), {})
 
-    # connect notifier if given
-    if notifier:
+    # connect persister if given
+    if persister:
         event.listens_for(Schedule, 'after_insert')(
             lambda mapper, connection, target:
-            notifier.notifiy_schedule_saved(target, created=True)
+            persister.notifiy_schedule_saved(target, created=True)
         )
         event.listens_for(Schedule, 'after_update')(
             lambda mapper, connection, target:
-            notifier.notifiy_schedule_saved(target, created=False)
+            persister.notifiy_schedule_saved(target, created=False)
         )
         event.listens_for(Schedule, 'after_delete')(
             lambda mapper, connection, target:
-            notifier.notify_schedule_deleted(target)
+            persister.notify_schedule_deleted(target)
         )
 
     return Schedule

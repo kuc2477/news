@@ -6,7 +6,7 @@ from .constants import (
 )
 
 
-class Persister(object):
+class SchedulePersister(object):
     def __init__(self, redis):
         self.scheduler = None
         self.redis = redis

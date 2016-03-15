@@ -94,7 +94,7 @@ def create_abc_news(schedule_model):
     return AbstractBaseNews
 
 
-def create_schedule(abc_schedule, mixins=None, notifier=None):
+def create_schedule(abc_schedule, mixins=None, persister=None):
     """
     Concrete schedule model factory.
 
@@ -103,8 +103,8 @@ def create_schedule(abc_schedule, mixins=None, notifier=None):
         factory function.
     :param mixins: Mixins to be mixed into concrete schedule model.
     :type mixins: Iterable mixin classes.
-    :param notifier: Notifier to use for the schedule persistence.
-    :type notifier: :class:`~news.persistence.ScheduleNotifier`
+    :param persister: Persister to use for the schedule persistence.
+    :type persister: :class:`~news.persistence.SchedulePersister`
     :returns: Concrete schedule model based on given abc schedule.
     :rtype: :class:`~news.models.abstract.AbstractSchedule` Django
         implementation based on given abc schedule and mixins.
@@ -112,18 +112,18 @@ def create_schedule(abc_schedule, mixins=None, notifier=None):
     """
     mixins = mixins or tuple()
     Schedule = type(
-        'Schedule', mixins + (abc_schedule,), 
+        'Schedule', mixins + (abc_schedule,),
         {'__module__': __name__}
     )
 
-    # connect notifier if given
-    if notifier:
+    # connect persister if given
+    if persister:
         post_save.connect(
-            notifier.nofify_schedule_saved,
+            persister.nofify_schedule_saved,
             sender=Schedule, weak=False
         )
         post_delete.connect(
-            notifier.notify_schedule_deleted,
+            persister.notify_schedule_deleted,
             sender=Schedule, weak=False
         )
 
