@@ -1,35 +1,40 @@
 import pytest
+from django.contrib.auth import get_user_model
 from sqlalchemy import (
     Column,
     Integer
 )
-from news.models.sqlalchemy import (
-    create_abc_schedule, create_abc_news,
-    create_schedule, create_news
-)
+from news.models import django
+from news.models import sqlalchemy as sa
 
 
 # =============
 # Django models
 # =============
 
-@pytest.fixture
-def django_owner_class():
-    from django.contrib.auth import get_user_model
-    usermodel = get_user_model()
-    return usermodel
+@pytest.fixture(scope='session')
+def django_owner_model():
+    return get_user_model()
 
 
-@pytest.fixture
-def django_schedule_class():
-    from news.models.django import Schedule
-    return Schedule
+@pytest.fixture(scope='session')
+def django_abc_schedule(django_owner_model):
+    return django.create_abc_schedule(django_owner_model)
 
 
-@pytest.fixture
-def django_news_class():
-    from news.models.django import News
-    return News
+@pytest.fixture(scope='session')
+def django_abc_news(django_schedule_model):
+    return django.create_abc_news(django_schedule_model)
+
+
+@pytest.fixture(scope='session')
+def django_schedule_model(django_abc_schedule):
+    return django.create_schedule(django_abc_schedule)
+
+
+@pytest.fixture(scope='session')
+def django_news_model(django_abc_news):
+    return django.create_news(django_abc_news)
 
 
 # =================
@@ -38,12 +43,12 @@ def django_news_class():
 
 @pytest.fixture(scope='session')
 def sa_abc_schedule(sa_owner_model):
-    return create_abc_schedule(sa_owner_model)
+    return sa.create_abc_schedule(sa_owner_model)
 
 
 @pytest.fixture(scope='session')
 def sa_abc_news(sa_schedule_model):
-    return create_abc_news(sa_schedule_model)
+    return sa.create_abc_news(sa_schedule_model)
 
 
 @pytest.fixture(scope='session')
@@ -58,12 +63,12 @@ def sa_owner_model(sa_declarative_base):
 
 @pytest.fixture(scope='session')
 def sa_schedule_model(sa_abc_schedule, sa_declarative_base):
-    return create_schedule(sa_abc_schedule, sa_declarative_base)
+    return sa.create_schedule(sa_abc_schedule, sa_declarative_base)
 
 
 @pytest.fixture(scope='session')
 def sa_news_model(sa_abc_news, sa_declarative_base):
-    return create_news(sa_abc_news, sa_declarative_base)
+    return sa.create_news(sa_abc_news, sa_declarative_base)
 
 
 # ======================
@@ -71,8 +76,8 @@ def sa_news_model(sa_abc_news, sa_declarative_base):
 # ======================
 
 @pytest.fixture
-def django_owner(django_owner_class):
-    owner = django_owner_class(
+def django_owner(django_owner_model):
+    owner = django_owner_model(
         username='testuser',
         password='testpassword',
         email='testemail@test.com',
@@ -84,16 +89,16 @@ def django_owner(django_owner_class):
 
 
 @pytest.fixture
-def django_schedule(db, django_schedule_class, django_owner, url_root):
-    schedule = django_schedule_class(owner=django_owner, url=url_root)
+def django_schedule(db, django_schedule_model, django_owner, url_root):
+    schedule = django_schedule_model(owner=django_owner, url=url_root)
     schedule.save()
     return schedule
 
 
 @pytest.fixture
-def django_root_news(db, django_news_class, django_schedule,
+def django_root_news(db, django_news_model, django_schedule,
                      url_root, content_root):
-    news = django_news_class(
+    news = django_news_model(
         schedule=django_schedule,
         url=url_root,
         content=content_root
@@ -103,9 +108,9 @@ def django_root_news(db, django_news_class, django_schedule,
 
 
 @pytest.fixture
-def django_news(db, django_news_class, django_schedule, django_root_news,
+def django_news(db, django_news_model, django_schedule, django_root_news,
                 url_child, content_child):
-    news = django_news_class(
+    news = django_news_model(
         schedule=django_schedule,
         src=django_root_news,
         url=url_child,

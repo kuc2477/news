@@ -5,10 +5,8 @@ Provides factory functions for both abstract and concrete News models.
 
 """
 from sqlalchemy import (
-    Column,
-    ForeignKey,
-    Integer,
-    Text
+    Column, ForeignKey, Integer, Text,
+    event
 )
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import relationship
@@ -149,7 +147,7 @@ def create_abc_news(schedule_model):
     return AbstractBaseNews
 
 
-def create_schedule(abc_schedule, base):
+def create_schedule(abc_schedule, base, mixins=None, notifier=None):
     """
     Concrete schedule model factory.
 
@@ -159,15 +157,37 @@ def create_schedule(abc_schedule, base):
     :param base: SQLAlchemy model base to use.
     :type base: Any SQLAlchemy model base from
         :func:`sqlalchemy.ext.declarative.declarative_base` factory function
+    :param mixins: Mixins to be mixed into concrete schedule model.
+    :type mixins: Iterable mixin classes.
+    :param notifier: Notifier to use for the schedule persistence.
+    :type notifier: :class:`~news.persistence.ScheduleNotifier`
     :returns: Concrete schedule model based on given abc schedule.
     :rtype: :class:`~news.models.abstract.AbstractSchedule` SQLAlchemy
-        implementation based on given abc schedule and model base.
+        implementation based on given abc schedule, model base and mixins.
 
     """
-    return type('Schedule', (abc_schedule, base), {})
+    mixins = mixins or tuple()
+    Schedule = type('Schedule', mixins + (abc_schedule, base), {})
+
+    # connect notifier if given
+    if notifier:
+        event.listens_for(Schedule, 'after_insert')(
+            lambda mapper, connection, target:
+            notifier.notifiy_schedule_saved(target, created=True)
+        )
+        event.listens_for(Schedule, 'after_update')(
+            lambda mapper, connection, target:
+            notifier.notifiy_schedule_saved(target, created=False)
+        )
+        event.listens_for(Schedule, 'after_delete')(
+            lambda mapper, connection, target:
+            notifier.notify_schedule_deleted(target)
+        )
+
+    return Schedule
 
 
-def create_news(abc_news, base):
+def create_news(abc_news, base, mixins=None):
     """
     Concrete news model factory.
 
@@ -177,9 +197,12 @@ def create_news(abc_news, base):
     :param base: SQLAlchemy model base to use.
     :type base: Any SQLAlchemy model base from
         :func:`sqlalchemy.ext.declarative.declarative_base` factory function
-    :returns: Concrete news model based on given abc news.
+    :param mixins: Mixins to be mixed into concrete news model.
+    :type mixins: Iterable mixin classes.
+    :returns: Concrete news model based on given abc news and mixins.
     :rtype: :class:`~news.models.abstract.AbstractNews` SQLAlchemy
         implementation based on given abc news and model base.
 
     """
-    return type('News', (abc_news, base), {})
+    mixins = mixins or tuple()
+    return type('News', mixins + (abc_news, base), {})

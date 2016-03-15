@@ -9,7 +9,6 @@ from .reporter import (
     ReporterMeta,
     Reporter
 )
-from .utils.logging import logger
 
 
 class Cover(object):
@@ -69,10 +68,6 @@ class Cover(object):
         :type fetch_experience: :class:`str`
 
         """
-        logger.info('[Cover {} for {}] Preparing reporter'.format(
-            self.schedule.id, self.schedule.url
-        ))
-
         reporter_url = self.schedule.url
         reporter_backend = self.backend
         reporter_meta = ReporterMeta(
@@ -95,10 +90,6 @@ class Cover(object):
         for middleware in (fetch_middlewares or []):
             self.reporter.enhance_fetch(middleware)
 
-        logger.info('[Cover {} for {}] Reporter ready to go'.format(
-            self.schedule.id, self.schedule.url
-        ))
-
     def run(self, bulk_report=True):
         """
         Run the news cover. News that has been fetched for the first time will
@@ -118,10 +109,6 @@ class Cover(object):
         # not ready to be dispatched yet.
         if not self.reporter:
             self.prepare()
-
-        logger.info('[Cover {} for {}] Cover start'.format(
-            self.schedule.id, self.schedule.url
-        ))
 
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.reporter.dispatch(bulk_report))

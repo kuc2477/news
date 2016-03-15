@@ -4,7 +4,6 @@
 Provides an implementation of news backend for sqlalchemy projects.
 
 """
-from sqlalchemy import event
 from sqlalchemy.orm import sessionmaker
 from .abstract import AbstractBackend
 
@@ -20,7 +19,6 @@ class HeterogenuousEngineError(Exception):
 class SQLAlchemyBackend(AbstractBackend):
     def __init__(self, bind=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         self.Owner = self.owner_class
         self.Schedule = self.schedule_class
         self.News = self.news_class
@@ -86,23 +84,6 @@ class SQLAlchemyBackend(AbstractBackend):
             query = query.filter(self.Schedule.url == url)
 
         return query.all()
-
-    def set_schedule_save_listener(self, listener):
-        event.listens_for(self.schedule_class, 'after_insert')(
-            lambda mapper, connection, target: listener(target, created=True)
-        )
-        event.listens_for(self.schedule_class, 'after_update')(
-            lambda mapper, connection, target: listener(target, created=False)
-        )
-
-    def set_schedule_delete_listener(self, listener):
-        event.listens_for(self.schedule_class, 'after_delete')(
-            lambda mapper, connection, target: listener(target)
-        )
-
-    # =====================
-    # Session configuration
-    # =====================
 
     def bind_session(self, session):
         self.session = session

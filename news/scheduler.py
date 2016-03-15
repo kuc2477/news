@@ -6,9 +6,9 @@ Provides scheduler that runs news cover celery tasks.
 """
 import time
 import threading
-import schedule as worker
+import schedule as pusher
+from .constants import COVER_PUSHER_CYCLE
 from .cover import Cover
-from .utils.logging import logger
 
 
 class Scheduler(object):
@@ -55,31 +55,85 @@ class Scheduler(object):
         the successor reporters of the chief reporter.
     :type  fetch_middlewares: :class:`list`
 
+    :Example:
+
+    >>> from celery import Celery
+    >>> from redis import Redis
+    >>> from django.contrib.auth.models import User
+    >>> from news.backends.django import DjangoBackend
+    >>> from news.models.django import (
+        create_abc_schedule, create_abc_news,
+        create_schedule, create_news
+    )
+    >>> from news.scheduler import Scheduler
+    >>> from news.persistence import Persister
+    >>>
+    >>>
+    >>> redis = Redis()
+    >>> celery = Celery()
+    >>> persister = Persister(redis)
+    >>>
+    >>> Schedule = create_schedule(create_abc_schedule(User), persister)
+    >>> News = create_news(create_abc_news(Schedule))
+    >>>
+    >>> backend = DjangoBackend(User, Schedule, News)
+    >>> scheduler = Scheduler(backend, celery)
+    >>> scheduler.run(persister)
+
     """
-    def __init__(self, backend, celery, intel_strategy=None,
+    def __init__(self, backend, celery, persister=None, intel_strategy=None,
                  report_experience=None, fetch_experience=None,
                  dispatch_middlewares=None, fetch_middlewares=None):
         self.backend = backend
+        self.celery = celery
+        self.celery_task = None
+
+        self.persister = None
+        self.pusher = pusher
         self.jobs = dict()
+        self.thread = None
+        self.running = False
 
-        self._scheduling = False
-
-        # reporter intel from past covers
         self.intel_strategy = intel_strategy or (lambda backend, schedule: [])
-
-        # middlewares
         self.dispatch_middlewares = dispatch_middlewares or []
         self.fetch_middlewares = fetch_middlewares or []
-
-        # reporter experience
         self.report_experience = report_experience
         self.fetch_experience = fetch_experience
 
-        # set run celery task
-        @celery.task
-        def run(id):
+    def run(self, persister=None):
+        """Start news cover scheduling"""
+        if not self.celery_task:
+            self.register_celery_task()
+
+        if self.running:
+            self.running = False
+            self.clear_schedules()
+
+        if persister:
+            self.persister and self.persister.stop_persistence()
+            self.persister = persister
+        self.persister and self.persister.start_persistence(self)
+
+        [self.add_schedule(s) for s in self.backend.get_schedules()]
+
+        def runschedule():
+            self.running = True
+            while self.running:
+                self.pusher.run_pending()
+                time.sleep(COVER_PUSHER_CYCLE)
+
+        threading.Thread(target=runschedule).start()
+
+    def stop(self):
+        self.persister and self.persister.stop_persistence()
+        self.running = False
+
+    def register_celery_task(self):
+        """Register news cover celery task on scheduler's celery instance"""
+        @self.celery.task
+        def run_cover(id):
             schedule = self.backend.get_schedule_by_id(id)
-            intel = self.intel_strategy(backend, schedule)
+            intel = self.intel_strategy(self.backend, schedule)
             cover = Cover.from_schedule(schedule, self.backend)
             cover.prepare(
                 intel=intel,
@@ -90,78 +144,29 @@ class Scheduler(object):
             )
             cover.run()
 
-        self.run = self.task = run
+        # expose celery task
+        self.celery_task = run_cover
 
-    def start(self):
-        """Starts backend persistence and news cover scheduling on another
-        thread"""
-        if self._scheduling:
-            return
+    def add_schedule(self, schedule):
+        if isinstance(schedule, int):
+            schedule = self.backend.get_schedule_by_id(schedule)
 
-        # start backend schedule persistence
-        self._start_persistence()
+        self.jobs[schedule.id] = self.pusher\
+            .every(schedule.cycle)\
+            .seconds\
+            .do(self.celery_task.delay, schedule.id)
 
-        logger.info('starting news scheduler with total {} schedules'.format(
-            len(self.backend.get_schedules())
-        ))
+    def remove_schedule(self, schedule):
+        try:
+            id = schedule.id
+        except AttributeError:
+            id = int(schedule)
 
-        # add periodic jobs to the worker(scheduler) to push covers to
-        # celery server.
-        for schedule in self.backend.get_schedules():
-            self._add_schedule(schedule)
+        self.pusher.cancel_job(self.jobs.pop(id))
 
-        # start scheduling
-        self._scheduling = True
-        thread = threading.Thread(target=self._schedule_forever, args=())
-        thread.start()
+    def clear_schedules(self):
+        [self.remove_schedule(id) for id in self.jobs.keys()]
 
-    def stop(self):
-        """Stops news cover scheduling that was running on another thread"""
-        self._scheduling = False
-
-    def clear(self):
-        """Clear all jobs that were scheduled and pending to be dispatched"""
-        for id in self.jobs.keys():
-            worker.cancel_job(self.jobs.pop(id))
-
-    def _schedule_forever(self):
-        while self._scheduling:
-            logger.info('running pending schedule cover pushes..')
-            worker.run_pending()
-            time.sleep(5)
-
-    def _start_persistence(self):
-        self.backend.set_schedule_save_listener(self._save_listener)
-        self.backend.set_schedule_delete_listener(self._delete_listener)
-
-    # ==================
-    # Schedule modifiers
-    # ==================
-
-    def _add_schedule(self, schedule):
-        self.jobs[schedule.id] = worker.every(schedule.cycle).seconds.do(
-            self.run.delay, schedule.id
-        )
-
-    def _remove_schedule(self, schedule):
-        worker.cancel_job(self.jobs.pop(schedule.id))
-
-    def _update_schedule(self, schedule):
-        logger.info('updating schedule {}: {}'.format(
-            schedule.id, schedule.url
-        ))
-        self._remove_schedule(schedule)
-        self._add_schedule(schedule)
-
-    # =============================================
-    # Backend signal listeners to persist schedules
-    # =============================================
-
-    def _save_listener(self, instance, created):
-        if created:
-            self._add_schedule(instance)
-        else:
-            self._update_schedule(instance)
-
-    def _delete_listener(self, instance):
-        self._remove_schedule(instance)
+    def update_schedule(self, schedule):
+        self.remove_schedule(schedule)
+        self.add_schedule(schedule)

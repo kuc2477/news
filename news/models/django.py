@@ -5,6 +5,10 @@ Provides factory functions and default News models.
 
 """
 from django.db import models
+from django.db.models.signals import (
+    post_save,
+    post_delete
+)
 from django.conf import settings
 from jsonfield import JSONField
 
@@ -21,7 +25,8 @@ from ..constants import (
 )
 
 
-__all__ = ['Schedule', 'News', 'create_abc_schedule', 'create_abc_news']
+__all__ = ['create_abc_schedule', 'create_abc_news',
+           'create_schedule', 'create_news']
 
 
 def create_abc_schedule(user_model=None):
@@ -89,44 +94,58 @@ def create_abc_news(schedule_model):
     return AbstractBaseNews
 
 
-class Schedule(create_abc_schedule()):
+def create_schedule(abc_schedule, mixins=None, notifier=None):
     """
-    Schedule model default django implementation.
+    Concrete schedule model factory.
 
-    :param owner: Owner of the schedule.
-    :type owner: :class:`~django.contrib.auth.models.User`
-    :param url: Url to subscribe.
-    :type url: :class:`str`
-    :param cycle: News update cycle in minutes.
-    :type cycle: :class:`int`
-    :param max_dist: Maximum distance to allow for reporters to discover news.
-        Defaults to `None`.
-    :type max_dist: :class:`int`
-    :param max_depth: Maximum depth to allow for reporters to discover news.
-        Defaults to `None`.
-    :type max_depth: :class:`int`
-    :param blacklist: Filetype blacklist for reporters to avoid visiting.
-        Carefully designed blacklist might improve performance of your
-        reporters.
-    :type blacklist: :class:`list`
-    :param brothers: Brother urls to allow for reporters to visit even if it
-        dosen't match other conditions(e.g. not in same domain).
-    :type brothers: :class:`list`
+    :param abc_schedule: Abstract base schedule to use as base.
+    :type abc_schedule: Any ABC schedule from :func:`~create_abc_schedule`
+        factory function.
+    :param mixins: Mixins to be mixed into concrete schedule model.
+    :type mixins: Iterable mixin classes.
+    :param notifier: Notifier to use for the schedule persistence.
+    :type notifier: :class:`~news.persistence.ScheduleNotifier`
+    :returns: Concrete schedule model based on given abc schedule.
+    :rtype: :class:`~news.models.abstract.AbstractSchedule` Django
+        implementation based on given abc schedule and mixins.
 
     """
+    mixins = mixins or tuple()
+    Schedule = type(
+        'Schedule', mixins + (abc_schedule,), 
+        {'__module__': __name__}
+    )
+
+    # connect notifier if given
+    if notifier:
+        post_save.connect(
+            notifier.nofify_schedule_saved,
+            sender=Schedule, weak=False
+        )
+        post_delete.connect(
+            notifier.notify_schedule_deleted,
+            sender=Schedule, weak=False
+        )
+
+    return Schedule
 
 
-class News(create_abc_news(Schedule)):
+def create_news(abc_news, mixins=None):
     """
-    News model default django implementation.
+    Concrete news model factory.
 
-    :param schedule: Schedule which news belongs to.
-    :type schedule: :class:`~news.models.django.Schedule`
-    :param src: Parent news from which the url of the news has been found.
-    :type src: :class:`~news.models.django.News`
-    :param url: Url of the news.
-    :type url: :class:`str`
-    :param content: Content of the news.
-    :type content: :class:`str`
+    :param abc_news: Abstract base news to use as base.
+    :type abc_news: Any ABC news from :func:`~create_abc_news` factory
+        function.
+    :param mixins: Mixins to be mixed into concrete news model.
+    :type mixins: Iterable mixin classes.
+    :returns: Concrete news model based on given abc news and mixins.
+    :rtype: :class:`~news.models.abstract.AbstractNews` Django implementation
+        based on given abc news and mixins.
 
     """
+    mixins = mixins or tuple()
+    return type(
+        'News', mixins + (abc_news,),
+        {'__module__': __name__}
+    )

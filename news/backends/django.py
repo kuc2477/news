@@ -5,10 +5,6 @@ Provides an implemenation of news backend for django projects.
 
 """
 from django.db import transaction
-from django.db.models.signals import (
-    post_save,
-    post_delete
-)
 from .abstract import AbstractBackend
 
 
@@ -74,9 +70,3 @@ class DjangoBackend(AbstractBackend):
             queryset = queryset.filter(url=url)
 
         return queryset.all()
-
-    def set_schedule_save_listener(self, listener):
-        post_save.connect(listener, sender=self.schedule_class, weak=False)
-
-    def set_schedule_delete_listener(self, listener):
-        post_delete.connect(listener, sender=self.schedule_class, weak=False)
