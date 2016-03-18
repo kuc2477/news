@@ -1,3 +1,4 @@
+from redis.exceptions import ConnectionError
 from .constants import (
     REDIS_PUBSUB_SLEEP_TIME,
     REDIS_SCHEDULE_CREATE_CHANNEL,
@@ -14,6 +15,9 @@ class SchedulePersister(object):
         self.thread = None
 
     def start_persistence(self, scheduler):
+        if not self._redis_available():
+            return
+
         self.scheduler = scheduler
         self.pubsub.subscribe(**{
             REDIS_SCHEDULE_CREATE_CHANNEL: lambda message:
@@ -41,8 +45,22 @@ class SchedulePersister(object):
         self.scheduler and self.scheduler.remove_schedule(id)
 
     def notify_schedule_saved(self, instance, created, **kwargs):
-        self.redis.publish(REDIS_SCHEDULE_CREATE_CHANNEL if created else
-                           REDIS_SCHEDULE_UPDATE_CHANNEL, str(instance.id))
+        if self._redis_available():
+            self.redis.publish(REDIS_SCHEDULE_CREATE_CHANNEL if created else
+                               REDIS_SCHEDULE_UPDATE_CHANNEL, str(instance.id))
 
     def notify_schedule_deleted(self, instance, **kwargs):
-        self.redis.publish(REDIS_SCHEDULE_DELETE_CHANNEL, str(instance.id))
+        if self._redis_available():
+            self.redis.publish(REDIS_SCHEDULE_DELETE_CHANNEL, str(instance.id))
+
+    def _redis_available(self):
+        try:
+            c = self._redis_available.c
+        except AttributeError:
+            c = self.redis.connection_pool.make_connection()
+
+        try:
+            c.connect()
+            return True
+        except ConnectionError:
+            return False
