@@ -67,6 +67,18 @@ class AbstractSchedule(AbstractModel):
             'brothers': self.brothers
         }
 
+    def get_state(self, scheduler):
+        """
+        Returns the current state of the schedule's celery task.
+
+        :param scheduler: The Scheduler to query schedule's celery task state.
+        :type scheduler: :class:`~news.scheduler.Scheduler`
+        :returns: Schedule's current celery task state.
+        :rtype: :class:`str`
+
+        """
+        return scheduler.get_state(self)
+
 
 class AbstractNews(AbstractModel):
     """

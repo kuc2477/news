@@ -28,6 +28,7 @@ class Cover(object):
         self.backend = backend
         self.schedule = schedule
         self.reporter = None
+        self.loop = None
 
     @classmethod
     def from_schedule(cls, schedule, backend):
@@ -90,6 +91,9 @@ class Cover(object):
         for middleware in (fetch_middlewares or []):
             self.reporter.enhance_fetch(middleware)
 
+        # set event loop for the reporter
+        self.loop = asyncio.get_event_loop()
+
     def run(self, bulk_report=True):
         """
         Run the news cover. News that has been fetched for the first time will
@@ -105,10 +109,12 @@ class Cover(object):
         :type bulK_report: :class:`bool`
 
         """
+        reporter = self.reporter
+        loop = self.loop
+
         # prepare the reporter with bare experience and middlewares if he is
         # not ready to be dispatched yet.
-        if not self.reporter:
+        if not reporter or not loop:
             self.prepare()
 
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.reporter.dispatch(bulk_report))
+        return loop.run_until_complete(reporter.dispatch(bulk_report))
