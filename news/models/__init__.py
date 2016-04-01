@@ -35,6 +35,9 @@ class AbstractSchedule(AbstractModel):
     #: (:class:`str`) Url of the schedule.
     url = NotImplementedError
 
+    #: (:class:`bool`) Schedule activation status.
+    enabled = NotImplementedError
+
     #: (:class:`int`) Schedule's news update cycle in minutes.
     cycle = NotImplementedError
 
