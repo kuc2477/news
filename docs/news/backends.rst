@@ -1,0 +1,2 @@
+.. automodule:: news.backends
+   :members:

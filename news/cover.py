@@ -17,11 +17,11 @@ class Cover(object):
     :class:`news.scheduler.Scheduler`'s celery task.
 
     :param backend: News backend to be used for news cover.
-    :type backend: :class:`~news.backends.abstract.AbstractBackend`
+    :type backend: :class:`~news.backends.AbstractBackend`
         implementation.
     :param schedule: Schedule that this cover is in charge of.
     :type schedule: Backend's
-        :attr:`~news.backend.abstract.AbstractBackend.schedule_class`
+        :attr:`~news.backend.AbstractBackend.schedule_class`
 
     """
     def __init__(self, backend, schedule):
@@ -36,10 +36,10 @@ class Cover(object):
         Factory method that instantiates cover from the schedule.
 
         :param schedule: The schedule of which the cover is in charge of.
-        :type schedule: :class:`~news.models.abstract.AbstractSchedule`
+        :type schedule: :class:`~news.models.AbstractSchedule`
             implementation.
         :param backend: The news backend to use for the cover.
-        :type backend: :class:`~news.backends.abstract.AbstractBackend`
+        :type backend: :class:`~news.backends.AbstractBackend`
             implementation.
         :returns: Cover job of the schedule.
         :rtype: :class:`~news.cover.Cover`
@@ -97,7 +97,7 @@ class Cover(object):
     def run(self, bulk_report=True):
         """
         Run the news cover. News that has been fetched for the first time will
-        be created in backend as :class:`~news.models.abstract.AbstractNews`
+        be created in backend as :class:`~news.models.AbstractNews`
         implemenattion's instance. News that already exists will be updated.
 
         Since the cover will be run in `asnycio`'s base event loop, this

@@ -68,7 +68,9 @@ setup(
         'pytest>=2.8.5',
         'pytest-asyncio>=0.3.0',
         'pytest-django>=2.9.1',
-        'pytest-mock>=0.11.0'
+        'pytest-mock>=0.11.0',
+        'celery>=3.1.23',
+        'redis>=2.10.5',
     ],
     cmdclass=cmdclass,
     classifiers=[

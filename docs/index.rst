@@ -41,10 +41,10 @@ References
    news/reporter
    news/scheduler
    news/cover
-   news/backends/abstract
+   news/backends
    news/backends/django
    news/backends/sqlalchemy
-   news/models/abstract
+   news/models
    news/models/django
    news/models/sqlalchemy
 

@@ -5,7 +5,7 @@ Provides an implemenation of news backend for django projects.
 
 """
 from django.db import transaction
-from .abstract import AbstractBackend
+from .import AbstractBackend
 
 
 class DjangoBackend(AbstractBackend):

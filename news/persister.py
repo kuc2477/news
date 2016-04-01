@@ -1,4 +1,5 @@
 from redis.exceptions import ConnectionError
+from .utils.logging import logger
 from .constants import (
     REDIS_PUBSUB_SLEEP_TIME,
     REDIS_SCHEDULE_CREATE_CHANNEL,
@@ -14,7 +15,9 @@ class SchedulePersister(object):
         self.pubsub = self.redis.pubsub()
         self.thread = None
 
-    def start_persistence(self, scheduler):
+        self._cache = {}
+
+    def start_persistence(self, scheduler, silent=False):
         if not self._redis_available():
             return
 
@@ -54,13 +57,23 @@ class SchedulePersister(object):
             self.redis.publish(REDIS_SCHEDULE_DELETE_CHANNEL, str(instance.id))
 
     def _redis_available(self):
-        try:
-            c = self._redis_available.c
-        except AttributeError:
-            c = self.redis.connection_pool.make_connection()
+        if 'redis_available' in self._cache:
+            return self._cache['redis_available']
 
         try:
-            c.connect()
-            return True
+            self.redis.get(None)
+            available = True
         except ConnectionError:
-            return False
+            logger.warning(
+                'Redis server for schedule persister is not available. This ' +
+                'result will be cached and persistence won\'t be activated ' +
+                'until you launch redis server for persister and restart ' +
+                'your application'
+            )
+            available = False
+
+        self._cache['redis_available'] = available
+        return available
+
+    def _flush_cache(self, name):
+        return self._cache.pop(name)

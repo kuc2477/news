@@ -12,7 +12,7 @@ from django.db.models.signals import (
 from django.conf import settings
 from jsonfield import JSONField
 
-from .abstract import (
+from .import (
     AbstractSchedule,
     AbstractNews
 )
@@ -34,11 +34,11 @@ def create_abc_schedule(user_model=None):
     Abstract base schedule model factory.
 
     :param user_model: User model to use as schedule owners.
-    :type user_model: :class:`~news.models.abstract.AbstractModel`
+    :type user_model: :class:`~news.models.AbstractModel`
         implemenatation
     :returns: A abstract base schedule model.
     :rtype: Abstract base django model of
-        :class:`~news.models.abstract.AbstractSchedule` implementation.
+        :class:`~news.models.AbstractSchedule` implementation.
 
     """
     user_model = user_model or settings.AUTH_USER_MODEL
@@ -47,6 +47,7 @@ def create_abc_schedule(user_model=None):
         owner = models.ForeignKey(
             user_model, related_name='schedules', db_index=True)
 
+        enabled = models.BooleanField(default=False)
         url = models.URLField()
         cycle = models.IntegerField(default=DEFAULT_SCHEDULE_CYCLE)
 
@@ -72,7 +73,7 @@ def create_abc_news(schedule_model):
         :func:`~create_abc_schedule` factory function.
     :returns: A abstract base news model.
     :rtype: Abstract base django model of
-        :class:`~news.models.abstract.AbstractNews` implementation
+        :class:`~news.models.AbstractNews` implementation
 
     """
     class AbstractBaseNews(models.Model, AbstractNews):
@@ -106,7 +107,7 @@ def create_schedule(abc_schedule, mixins=None, persister=None):
     :param persister: Persister to use for the schedule persistence.
     :type persister: :class:`~news.persistence.SchedulePersister`
     :returns: Concrete schedule model based on given abc schedule.
-    :rtype: :class:`~news.models.abstract.AbstractSchedule` Django
+    :rtype: :class:`~news.models.AbstractSchedule` Django
         implementation based on given abc schedule and mixins.
 
     """
@@ -140,7 +141,7 @@ def create_news(abc_news, mixins=None):
     :param mixins: Mixins to be mixed into concrete news model.
     :type mixins: Iterable mixin classes.
     :returns: Concrete news model based on given abc news and mixins.
-    :rtype: :class:`~news.models.abstract.AbstractNews` Django implementation
+    :rtype: :class:`~news.models.AbstractNews` Django implementation
         based on given abc news and mixins.
 
     """

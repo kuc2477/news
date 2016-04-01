@@ -4,7 +4,7 @@ from redis import Redis
 from news.cover import Cover
 from news.reporter import ReporterMeta, Reporter
 from news.scheduler import Scheduler
-from news.persistence import SchedulePersister
+from news.persister import SchedulePersister
 
 
 @pytest.fixture

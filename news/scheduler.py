@@ -22,7 +22,7 @@ class Scheduler(object):
     backend schedules.
 
     :param backend: News backend to use.
-    :type backend: :class:`news.backends.abstract.AbstractBackend`
+    :type backend: :class:`news.backends.AbstractBackend`
         implementation.
     :param celery: Celery app instance to use as asynchronous job queue.
     :type celery: :class:`~celery.Celery`

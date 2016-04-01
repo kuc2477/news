@@ -5,7 +5,7 @@ Provides an implementation of news backend for sqlalchemy projects.
 
 """
 from sqlalchemy.orm import sessionmaker
-from .abstract import AbstractBackend
+from . import AbstractBackend
 
 
 class HeterogenuousEngineError(Exception):

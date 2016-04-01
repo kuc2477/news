@@ -5,7 +5,11 @@ Provides factory functions for both abstract and concrete News models.
 
 """
 from sqlalchemy import (
-    Column, ForeignKey, Integer, Text,
+    Column,
+    ForeignKey,
+    Integer,
+    Text,
+    Boolean,
     event
 )
 from sqlalchemy.schema import UniqueConstraint
@@ -15,7 +19,7 @@ from sqlalchemy_utils.types import (
     URLType,
     JSONType
 )
-from .abstract import (
+from . import (
     AbstractSchedule,
     AbstractNews
 )
@@ -37,11 +41,11 @@ def create_abc_schedule(user_model):
     Abstract base schedule model factory
 
     :param user_model: User model to use as schedule owners.
-    :type user_model: :class:`~news.models.abstract.AbstractModel`
+    :type user_model: :class:`~news.models.AbstractModel`
         implementation.
     :returns: A abstract base schedule model.
     :rtype: Abstract base sqlalchemy model of
-        :class:`~news.models.abstract.AbstractSchedule` implementation
+        :class:`~news.models.AbstractSchedule` implementation
 
     """
     class AbstractBaseSchedule(AbstractSchedule):
@@ -61,10 +65,16 @@ def create_abc_schedule(user_model):
         def owner(cls):
             return relationship(user_model, backref='schedules')
 
-        def __init__(self, owner=None, url='', cycle=DEFAULT_SCHEDULE_CYCLE,
+        def __init__(self, owner=None, url='',
+                     cycle=DEFAULT_SCHEDULE_CYCLE, enabled=False,
                      max_dist=DEFAULT_MAX_DIST, max_depth=DEFAULT_MAX_DEPTH,
                      blacklist=DEFAULT_BLACKLIST, brothers=DEFAULT_BROTHERS):
-            self.owner = owner
+            # support both foreign key and model instance
+            if isinstance(owner, int):
+                self.owner_id = owner
+            else:
+                self.owner = owner
+
             self.url = url
             self.cycle = cycle
             self.max_dist = max_dist
@@ -74,6 +84,7 @@ def create_abc_schedule(user_model):
 
         id = Column(Integer, primary_key=True)
         url = Column(URLType, nullable=False)
+        enabled = Column(Boolean, nullable=False, default=False)
         cycle = Column(Integer, default=DEFAULT_SCHEDULE_CYCLE, nullable=False)
         max_dist = Column(Integer, default=DEFAULT_MAX_DIST)
         max_depth = Column(Integer, default=DEFAULT_MAX_DEPTH)
@@ -92,7 +103,7 @@ def create_abc_news(schedule_model):
         :func:`~create_abc_schedule` factory function.
     :returns: A abstract base news model.
     :rtype: Abstract base sqlalchemy model of
-        :class:`~news.models.abstract.Abstractnews` implementation
+        :class:`~news.models.Abstractnews` implementation
 
     """
     class AbstractBaseNews(AbstractNews):
@@ -162,7 +173,7 @@ def create_schedule(abc_schedule, base, mixins=None, persister=None):
     :param persister: Persister to use for the schedule persistence.
     :type persister: :class:`~news.persistence.ScheduleNotifier`
     :returns: Concrete schedule model based on given abc schedule.
-    :rtype: :class:`~news.models.abstract.AbstractSchedule` SQLAlchemy
+    :rtype: :class:`~news.models.AbstractSchedule` SQLAlchemy
         implementation based on given abc schedule, model base and mixins.
 
     """
@@ -200,7 +211,7 @@ def create_news(abc_news, base, mixins=None):
     :param mixins: Mixins to be mixed into concrete news model.
     :type mixins: Iterable mixin classes.
     :returns: Concrete news model based on given abc news and mixins.
-    :rtype: :class:`~news.models.abstract.AbstractNews` SQLAlchemy
+    :rtype: :class:`~news.models.AbstractNews` SQLAlchemy
         implementation based on given abc news and model base.
 
     """
