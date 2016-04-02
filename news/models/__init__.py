@@ -54,7 +54,11 @@ class AbstractSchedule(AbstractModel):
     #: other conditions are not met (e.g. not under same domain).
     brothers = NotImplementedError
 
-    def get_filter_options(self):
+    #: (:class:`str`) UUID of the latest celery task that has been run.
+    latest_task = NotImplementedError
+
+    @property
+    def filter_options(self):
         """
         Returns filter options (:attr:`max_dist`, :attr:`max_depth` ...) of
         the schedule.
@@ -70,17 +74,12 @@ class AbstractSchedule(AbstractModel):
             'brothers': self.brothers
         }
 
-    def get_state(self, scheduler):
-        """
-        Returns the current state of the schedule's celery task.
+    def update_latest_task(self, task_id):
+        """Updates the current schedule's latest run task."""
+        raise NotImplementedError
 
-        :param scheduler: The Scheduler to query schedule's celery task state.
-        :type scheduler: :class:`~news.scheduler.Scheduler`
-        :returns: Schedule's current celery task state.
-        :rtype: :class:`str`
-
-        """
-        return scheduler.get_state(self)
+    def get_state(self, celery):
+        return celery.AsyncResult(self.latest_task).state
 
 
 class AbstractNews(AbstractModel):

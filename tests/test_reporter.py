@@ -1,5 +1,5 @@
 import pytest
-from news.models.abstract import AbstractSchedule
+from news.models import AbstractSchedule
 from news.reporter import Reporter, ReporterMeta
 
 

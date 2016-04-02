@@ -20,7 +20,7 @@ else:
     class pytest(test):
         """cmdclass for test runner."""
         def finalize_options(self):
-            self.test_args = []
+            self.test_args = ['--cov=news']
             self.test_suite = True
 
         def run_tests(self):
@@ -69,6 +69,7 @@ setup(
         'pytest-asyncio>=0.3.0',
         'pytest-django>=2.9.1',
         'pytest-mock>=0.11.0',
+        'pytest-cov>=2.2.1',
         'celery>=3.1.23',
         'redis>=2.10.5',
     ],

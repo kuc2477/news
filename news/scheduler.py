@@ -108,13 +108,12 @@ class Scheduler(object):
         self.celery = celery
         self.celery_task = None
 
-        # persister and pusher
+        # schedule persister and pusher
         self.persister = persister
         self.pusher = pusher
 
         # scheduler state
         self.jobs = dict()
-        self.tasks = dict()
         self.running = False
 
         # scheduler configurations
@@ -154,13 +153,13 @@ class Scheduler(object):
 
         [self.add_schedule(s) for s in self.backend.get_schedules()]
 
-        def runschedule():
+        def schedule_forever():
             self.running = True
             while self.running:
                 self.pusher.run_pending()
                 time.sleep(COVER_PUSHER_CYCLE)
 
-        threading.Thread(target=runschedule).start()
+        threading.Thread(target=schedule_forever).start()
 
     def stop(self):
         """Stop news cover scheduling thread and schedule persistence."""
@@ -168,11 +167,15 @@ class Scheduler(object):
         self.running = False
 
     def register_celery_task(self):
-        @self.celery.task
-        def run_cover(id):
+        """Register news cover task on celery task registry."""
+        @self.celery.task(bind=True)
+        def run_cover(task, id):
+            # update latest task
             schedule = self.backend.get_schedule_by_id(id)
-            intel = self.intel_strategy(self.backend, schedule)
+            schedule.update_latest_task(task.request.id)
 
+            # prepare news cover with preconfigured experience and middlewares.
+            intel = self.intel_strategy(self.backend, schedule)
             cover = Cover.from_schedule(schedule, self.backend)
             cover.prepare(
                 intel=intel,
@@ -181,35 +184,12 @@ class Scheduler(object):
                 dispatch_middlewares=self.dispatch_middlewares,
                 fetch_middlewares=self.fetch_middlewares
             )
-
+            # run news cover along with registered callbacks
             self.on_cover_start(schedule)
             self.on_cover_finished(schedule, cover.run())
 
         # expose celery task
         self.celery_task = run_cover
-
-    # TODO: implemented in naive manner.
-    def get_state(self, schedule):
-        def reducer(previous, state):
-            if previous == STARTED:
-                return previous
-            if previous == PENDING and state in [SUCCESS, FAILURE]:
-                return previous
-            else:
-                return state
-
-        results = [AsyncResult(id) for id in self.tasks[schedule.id]]
-        return reduce(reducer, results, initial=PENDING)
-
-    # TODO: task dictionary cleanup should be implemented
-    def push_cover(self, schedule):
-        try:
-            tasks = self.tasks[schedule.id]
-        except KeyError:
-            tasks = self.tasks[schedule.id] = []
-
-        # push cover to the task queue and append it's task id
-        tasks.append(self.celery_task.delay(schedule.id).task_id)
 
     # ======================
     # Schedule manipulations
@@ -225,7 +205,7 @@ class Scheduler(object):
         self.jobs[schedule.id] = self.pusher\
             .every(schedule.cycle)\
             .seconds\
-            .do(self.push_cover, schedule)
+            .do(self.celery_task.delay, schedule.id)
 
     def remove_schedule(self, schedule):
         try:
