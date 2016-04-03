@@ -130,7 +130,7 @@ class Scheduler(object):
     # Scheduler actions
     # =================
 
-    def run(self, persister=None):
+    def start(self, persister=None):
         """
         Starts news cover scheduling in another tiny thread.
 
