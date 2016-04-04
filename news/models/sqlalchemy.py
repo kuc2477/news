@@ -65,8 +65,8 @@ def create_abc_schedule(user_model):
         def owner(cls):
             return relationship(user_model, backref='schedules')
 
-        def __init__(self, owner=None, url='',
-                     cycle=DEFAULT_SCHEDULE_CYCLE, enabled=False,
+        def __init__(self, owner=None, url='', enabled=False,
+                     cycle=DEFAULT_SCHEDULE_CYCLE,
                      max_dist=DEFAULT_MAX_DIST, max_depth=DEFAULT_MAX_DEPTH,
                      blacklist=DEFAULT_BLACKLIST, brothers=DEFAULT_BROTHERS):
             # support both foreign key and model instance
@@ -76,6 +76,7 @@ def create_abc_schedule(user_model):
                 self.owner = owner
 
             self.url = url
+            self.enabled = enabled
             self.cycle = cycle
             self.max_dist = max_dist
             self.max_depth = max_depth
