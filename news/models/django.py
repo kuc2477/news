@@ -47,9 +47,10 @@ def create_abc_schedule(user_model=None):
         owner = models.ForeignKey(
             user_model, related_name='schedules', db_index=True)
 
-        enabled = models.BooleanField(default=False)
         url = models.URLField()
         cycle = models.IntegerField(default=DEFAULT_SCHEDULE_CYCLE)
+        enabled = models.BooleanField(default=False)
+        latest_task = models.UUIDField(null=True)
 
         max_dist = models.IntegerField(
             blank=True, null=True, default=DEFAULT_MAX_DIST)
@@ -57,6 +58,10 @@ def create_abc_schedule(user_model=None):
             blank=True, null=True, default=DEFAULT_MAX_DEPTH)
         blacklist = JSONField(default=DEFAULT_BLACKLIST)
         brothers = JSONField(default=DEFAULT_BROTHERS)
+
+        def update_latest_task(self, task_id):
+            self.latest_task = task_id
+            self.save()
 
         class Meta:
             abstract = True

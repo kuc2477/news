@@ -13,11 +13,15 @@ from sqlalchemy import (
     event
 )
 from sqlalchemy.schema import UniqueConstraint
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import (
+    relationship,
+    Session,
+)
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy_utils.types import (
     URLType,
-    JSONType
+    JSONType,
+    UUIDType,
 )
 from . import (
     AbstractSchedule,
@@ -78,6 +82,7 @@ def create_abc_schedule(user_model):
             self.url = url
             self.enabled = enabled
             self.cycle = cycle
+            self.enabled = enabled
             self.max_dist = max_dist
             self.max_depth = max_depth
             self.blacklist = blacklist
@@ -86,11 +91,16 @@ def create_abc_schedule(user_model):
         id = Column(Integer, primary_key=True)
         url = Column(URLType, nullable=False)
         enabled = Column(Boolean, nullable=False, default=False)
+        latest_task = Column(UUIDType(binary=False), default=None)
         cycle = Column(Integer, default=DEFAULT_SCHEDULE_CYCLE, nullable=False)
         max_dist = Column(Integer, default=DEFAULT_MAX_DIST)
         max_depth = Column(Integer, default=DEFAULT_MAX_DEPTH)
         blacklist = Column(JSONType, default=DEFAULT_BLACKLIST, nullable=False)
         brothers = Column(JSONType, default=DEFAULT_BROTHERS, nullable=False)
+
+        def update_latest_task(self, task_id):
+            self.latest_task = task_id
+            Session.object_session(self).commit()
 
     return AbstractBaseSchedule
 

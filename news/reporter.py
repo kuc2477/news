@@ -81,11 +81,8 @@ class ReporterMeta(object):
 
     @property
     def filter_options(self):
-        """
-        (:class:`dict`) Filter options to be used by reporters.
-
-        """
-        return self.schedule.get_filter_options()
+        """(:class:`dict`) Filter options to be used by reporters."""
+        return self.schedule.filter_options
 
 
 class Reporter(object):
