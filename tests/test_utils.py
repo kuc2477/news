@@ -95,8 +95,10 @@ def test_issuburl(index, suburl, nonsuburl):
 
 
 def test_fillurl(index, relpath, abspath):
-    assert(url.fillurl(index, relpath) ==
-           url.normalize(index + '/' + relpath))
+    assert(
+        url.fillurl(index, relpath) ==
+        url.normalize(index + '/' + relpath)
+    )
     parsedi = urlparse(index)
     parsedu = urlparse(abspath)
     assert(
@@ -104,7 +106,8 @@ def test_fillurl(index, relpath, abspath):
         url.normalize(
             '%s://%s/%s%s' % (
                 parsedi.scheme, parsedi.hostname, parsedu.path.lstrip('/'),
-                '?' + parsedu.query if parsedu.query else '')
+                '?' + parsedu.query if parsedu.query else ''
+            )
         )
     )
 
@@ -122,11 +125,11 @@ def test_normalize():
 
 def test_depth():
     assert(url.depth('http://www.naver.com/a/',
-                       'http://www.naver.com/a/b/c') == 2)
+                     'http://www.naver.com/a/b/c') == 2)
     assert(url.depth('http://www.naver.com/a/',
-                       'http://www.naver.com/a') == 0)
+                     'http://www.naver.com/a') == 0)
     assert(url.depth('http://www.naver.com/a/b',
-                       'http://www.naver.com/a/b//c') == 1)
+                     'http://www.naver.com/a/b//c') == 1)
     assert(url.depth('http://www.naver.com/a/b/c', '/a/b/c/d/../d') == 1)
     assert(url.depth('http://www.naver.com/a/b', '/b/c/d/') == -1)
     assert(url.depth('http://www.naver.com/a/b', 'c/d') == 2)

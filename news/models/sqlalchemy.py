@@ -1,20 +1,29 @@
+""":mod:`news.models.sqlalchemy` --- News model SQLAlchemy implementations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Provides factory functions for both abstract and concrete News models.
+
+"""
 from sqlalchemy import (
     Column,
     ForeignKey,
     Integer,
-    Text
+    Text,
+    Boolean,
+    event
 )
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import (
     relationship,
-    backref
+    Session,
 )
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy_utils.types import (
     URLType,
-    JSONType
+    JSONType,
+    UUIDType,
 )
-from .abstract import (
+from . import (
     AbstractSchedule,
     AbstractNews
 )
@@ -32,7 +41,17 @@ __all__ = ['create_abc_schedule', 'create_abc_news',
 
 
 def create_abc_schedule(user_model):
-    """Abstract base schedule model factory"""
+    """
+    Abstract base schedule model factory
+
+    :param user_model: User model to use as schedule owners.
+    :type user_model: :class:`~news.models.AbstractModel`
+        implementation.
+    :returns: A abstract base schedule model.
+    :rtype: Abstract base sqlalchemy model of
+        :class:`~news.models.AbstractSchedule` implementation
+
+    """
     class AbstractBaseSchedule(AbstractSchedule):
         @declared_attr
         def __tablename__(cls):
@@ -50,19 +69,53 @@ def create_abc_schedule(user_model):
         def owner(cls):
             return relationship(user_model, backref='schedules')
 
+        def __init__(self, owner=None, url='',
+                     cycle=DEFAULT_SCHEDULE_CYCLE, enabled=False,
+                     max_dist=DEFAULT_MAX_DIST, max_depth=DEFAULT_MAX_DEPTH,
+                     blacklist=DEFAULT_BLACKLIST, brothers=DEFAULT_BROTHERS):
+            # support both foreign key and model instance
+            if isinstance(owner, int):
+                self.owner_id = owner
+            else:
+                self.owner = owner
+
+            self.url = url
+            self.cycle = cycle
+            self.enabled = enabled
+            self.max_dist = max_dist
+            self.max_depth = max_depth
+            self.blacklist = blacklist
+            self.brothers = brothers
+
         id = Column(Integer, primary_key=True)
         url = Column(URLType, nullable=False)
+        enabled = Column(Boolean, nullable=False, default=False)
+        latest_task = Column(UUIDType(binary=False), default=None)
         cycle = Column(Integer, default=DEFAULT_SCHEDULE_CYCLE, nullable=False)
         max_dist = Column(Integer, default=DEFAULT_MAX_DIST)
         max_depth = Column(Integer, default=DEFAULT_MAX_DEPTH)
         blacklist = Column(JSONType, default=DEFAULT_BLACKLIST, nullable=False)
         brothers = Column(JSONType, default=DEFAULT_BROTHERS, nullable=False)
 
+        def update_latest_task(self, task_id):
+            self.latest_task = task_id
+            Session.object_session(self).commit()
+
     return AbstractBaseSchedule
 
 
 def create_abc_news(schedule_model):
-    """Abstract base news model factory"""
+    """
+    Abstract base news model factory
+
+    :param schedule_model: Schedule model to use as news's schedule.
+    :type schedule_model: Any concrete schedule model of abc models from
+        :func:`~create_abc_schedule` factory function.
+    :returns: A abstract base news model.
+    :rtype: Abstract base sqlalchemy model of
+        :class:`~news.models.Abstractnews` implementation
+
+    """
     class AbstractBaseNews(AbstractNews):
         @declared_attr
         def __tablename__(cls):
@@ -115,9 +168,62 @@ def create_abc_news(schedule_model):
     return AbstractBaseNews
 
 
-def create_schedule(abc_schedule, base):
-    return type('Schedule', (abc_schedule, base), {})
+def create_schedule(abc_schedule, base, mixins=None, persister=None):
+    """
+    Concrete schedule model factory.
+
+    :param abc_schedule: Abstract base schedule to use as base.
+    :type abc_schedule: Any ABC schedule from :func:`~create_abc_schedule`
+        factory function.
+    :param base: SQLAlchemy model base to use.
+    :type base: Any SQLAlchemy model base from
+        :func:`sqlalchemy.ext.declarative.declarative_base` factory function
+    :param mixins: Mixins to be mixed into concrete schedule model.
+    :type mixins: Iterable mixin classes.
+    :param persister: Persister to use for the schedule persistence.
+    :type persister: :class:`~news.persistence.ScheduleNotifier`
+    :returns: Concrete schedule model based on given abc schedule.
+    :rtype: :class:`~news.models.AbstractSchedule` SQLAlchemy
+        implementation based on given abc schedule, model base and mixins.
+
+    """
+    mixins = mixins or tuple()
+    Schedule = type('Schedule', mixins + (abc_schedule, base), {})
+
+    # connect persister if given
+    if persister:
+        event.listens_for(Schedule, 'after_insert')(
+            lambda mapper, connection, target:
+            persister.notify_schedule_saved(target, created=True)
+        )
+        event.listens_for(Schedule, 'after_update')(
+            lambda mapper, connection, target:
+            persister.notify_schedule_saved(target, created=False)
+        )
+        event.listens_for(Schedule, 'after_delete')(
+            lambda mapper, connection, target:
+            persister.notify_schedule_deleted(target)
+        )
+
+    return Schedule
 
 
-def create_news(abc_news, base):
-    return type('News', (abc_news, base), {})
+def create_news(abc_news, base, mixins=None):
+    """
+    Concrete news model factory.
+
+    :param abc_news: Abstract base news to use as base.
+    :type abc_news: Any ABC news from :func:`~create_abc_news` factory
+        function.
+    :param base: SQLAlchemy model base to use.
+    :type base: Any SQLAlchemy model base from
+        :func:`sqlalchemy.ext.declarative.declarative_base` factory function
+    :param mixins: Mixins to be mixed into concrete news model.
+    :type mixins: Iterable mixin classes.
+    :returns: Concrete news model based on given abc news and mixins.
+    :rtype: :class:`~news.models.AbstractNews` SQLAlchemy
+        implementation based on given abc news and model base.
+
+    """
+    mixins = mixins or tuple()
+    return type('News', mixins + (abc_news, base), {})

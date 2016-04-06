@@ -1,3 +1,6 @@
+import uuid
+
+
 def test_abstract_model_implementations(sa_session, sa_schedule, sa_news):
     assert(isinstance(sa_schedule.id, int))
     assert(isinstance(sa_news.id, int))
@@ -8,7 +11,13 @@ def test_abstract_schedule_implementation(
     assert(isinstance(sa_schedule.owner, sa_owner_model))
     assert(isinstance(sa_schedule.url, str))
     assert(isinstance(sa_schedule.cycle, int))
-    assert(isinstance(sa_schedule.get_filter_options(), dict))
+    assert(isinstance(sa_schedule.filter_options, dict))
+    assert(isinstance(sa_schedule.latest_task, str) or
+           sa_schedule.latest_task is None)
+
+    task_id = uuid.uuid4()
+    sa_schedule.update_latest_task(task_id)
+    assert(sa_schedule.latest_task == task_id)
 
 
 def test_abstract_news_implementation(

@@ -1,2 +1,2 @@
-.. autumodule:: news.models.sqlalchemy
+.. automodule:: news.models.sqlalchemy
    :members:
