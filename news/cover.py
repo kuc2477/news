@@ -109,12 +109,11 @@ class Cover(object):
         :type bulK_report: :class:`bool`
 
         """
-        reporter = self.reporter
-        loop = self.loop
-
         # prepare the reporter with bare experience and middlewares if he is
         # not ready to be dispatched yet.
-        if not reporter or not loop:
+        if not self.reporter or not self.loop:
             self.prepare()
 
-        return loop.run_until_complete(reporter.dispatch(bulk_report))
+        return self.loop.run_until_complete(
+            self.reporter.dispatch(bulk_report)
+        )
