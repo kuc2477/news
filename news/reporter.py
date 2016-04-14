@@ -191,7 +191,7 @@ class Reporter(object):
         urls = await self.get_worthy_urls(news) if news else []
 
         news_linked = await self.dispatch_reporters(urls, bulk_report)
-        news_total = news_linked.append(news)
+        news_total = news_linked + [news] if news else news_linked
 
         # Bulk report news if the flag is set to `True`. We don't have to
         # take care of `False` case since news should be reported on `fetch()`
@@ -223,8 +223,10 @@ class Reporter(object):
         reporters = self.call_up_reporters(urls, self.meta.exhaust_intel())
         dispatches = [r.dispatch(bulk_report=bulk_report) for r in reporters]
 
-        news_sets = (await asyncio.gather(*dispatches)) or set()
-        news_list = list(itertools.chain(*news_sets))
+        news_sets = await asyncio.gather(*dispatches, return_exceptions=True)
+        news_list = list(itertools.chain(*[
+            ns for ns in news_sets if ns and not isinstance(ns, Exception)
+        ]))
 
         return news_list
 
@@ -333,7 +335,7 @@ class Reporter(object):
         logger.info('[Reporter {} for {}] Reporting {} news'.format(
             self.schedule.id, self.url, len(news)
         ))
-        self.backend.save_news(*news)
+        self.backend.save_news(*set(news))
 
     async def report_visited(self):
         with (await self.chief._visited_urls_lock):

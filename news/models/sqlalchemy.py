@@ -158,6 +158,17 @@ def create_abc_news(schedule_model):
             self.content = content
             self.src = src
 
+        def __repr__(self):
+            return 'News {} of schedule {}: {}'.format(
+                self.id, self.schedule_id, self.url
+            )
+
+        def __hash__(self):
+            return hash(self.__repr__())
+
+        def __eq__(self, other):
+            return self.__hash__() == other.__hash__()
+
         @classmethod
         def create_instance(cls, schedule, url, content, src=None):
             return cls(schedule=schedule, url=url, content=content, src=src)
