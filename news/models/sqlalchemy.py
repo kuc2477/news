@@ -16,6 +16,7 @@ from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import (
     relationship,
     Session,
+    backref,
 )
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy_utils.types import (
@@ -132,7 +133,10 @@ def create_abc_news(schedule_model):
 
         @declared_attr
         def schedule(cls):
-            return relationship(schedule_model, backref='news_list')
+            return relationship(
+                schedule_model,
+                backref='news_list'
+            )
 
         @declared_attr
         def src_id(cls):
@@ -141,7 +145,8 @@ def create_abc_news(schedule_model):
         @declared_attr
         def src(cls):
             return relationship(
-                'News', backref='children',
+                'News',
+                backref=backref('children', cascade='delete, delete-orphan'),
                 remote_side=[cls.id]
             )
 
@@ -159,8 +164,8 @@ def create_abc_news(schedule_model):
             self.src = src
 
         def __repr__(self):
-            return 'News {} of schedule {}: {}'.format(
-                self.id, self.schedule_id, self.url
+            return 'News {} of schedule {}'.format(
+                self.url, self.schedule_id
             )
 
         def __hash__(self):
@@ -175,7 +180,8 @@ def create_abc_news(schedule_model):
 
         @property
         def owner(self):
-            return self._schedule and self._schedule.owner
+            return self.schedule.owner if self.schedule else \
+                self._schedule and self._schedule.owner
 
     return AbstractBaseNews
 

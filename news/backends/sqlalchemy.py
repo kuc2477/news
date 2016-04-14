@@ -33,7 +33,7 @@ class SQLAlchemyBackend(AbstractBackend):
             .join(self.Schedule)\
             .filter(
                 self.News.url == url,
-                self.Schedule.owner == owner
+                self.Schedule.owner_id == owner.id
             ).first()
 
     def get_news_list(self, owner=None, root_url=None):
@@ -47,20 +47,21 @@ class SQLAlchemyBackend(AbstractBackend):
         return query.all()
 
     def save_news(self, *news):
-        for n in news:
-            if not self.news_exists(n.owner, n.url):
-                self.cascade_save_news(n)
-            else:
-                previous = self.get_news(n.owner, n.url)
-                previous.content = n.content
-                previous.src = n.src
-                self.session.commit()
+        [self.cascade_save_news(n) for n in news]
 
     def cascade_save_news(self, news):
-        if news.src and news.src.id is None:
+        if not news.is_root:
             self.cascade_save_news(news.src)
-        self.session.add(news)
-        self.session.commit()
+
+        previous = self.get_news(news.owner, news.url)
+
+        if previous:
+            previous.content = news.content
+            previous.src = news.src
+            self.session.commit()
+        else:
+            self.session.add(news)
+            self.session.commit()
 
     def delete_news(self, *news):
         self.session.delete(*news)

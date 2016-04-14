@@ -44,7 +44,7 @@ class DjangoBackend(AbstractBackend):
 
     @transaction.atomic
     def cascade_save_news(self, news):
-        if news.src and news.src.id is None:
+        if news.src and news.src.is_root:
             self.cascade_save_news(news.src)
         news.save()
 

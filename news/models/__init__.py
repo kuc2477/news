@@ -5,6 +5,7 @@ Provides abstract common news model interfaces that should be implemeted
 backends.
 
 """
+from celery import states
 from extraction import Extractor
 from ..utils import url
 
@@ -79,7 +80,10 @@ class AbstractSchedule(AbstractModel):
         raise NotImplementedError
 
     def get_state(self, celery):
-        return celery.AsyncResult(self.latest_task).state
+        try:
+            return celery.AsyncResult(self.latest_task).state
+        except Exception:
+            return states.PENDING
 
 
 class AbstractNews(AbstractModel):

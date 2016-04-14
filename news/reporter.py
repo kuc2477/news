@@ -271,16 +271,21 @@ class Reporter(object):
     # ====
 
     def make_news(self, content):
-        # update content if reporter is updating the news.
-        if self.fetched_news:
-            self.fetched_news.content = content
-            return self.fetched_news
+        src = self.predecessor.fetched_news if not self.is_chief else None
+        fetched = self.fetched_news
+        stored = self.backend.get_news(self.owner, self.url)
 
         # create new news if reporter is making fresh news.
-        src = self.predecessor.fetched_news if not self.is_chief else None
-        news_class = self.backend.news_class
-        return news_class.create_instance(
-            self.schedule, self.url, content, src=src)
+        if not fetched and not stored:
+            return self.backend.news_class.create_instance(
+                self.schedule, self.url, content, src=src
+            )
+        # update content and source if the reporter is updating the news.
+        else:
+            news = fetched or stored
+            news.content = content
+            news.src = src
+            return news
 
     # =========
     # Enhancers
