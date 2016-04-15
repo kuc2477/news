@@ -47,6 +47,7 @@ class ReporterMeta(object):
     :type fetch_experience: :func:
 
     """
+
     def __init__(self, schedule, intel=None,
                  report_experience=None,
                  fetch_experience=None,):
@@ -76,7 +77,6 @@ class ReporterMeta(object):
         is used to instantiate this reporter meta.
 
         """
-
         return self.schedule.owner
 
     @property
@@ -183,19 +183,24 @@ class Reporter(object):
         :rtype: :class:`list`
 
         """
-        logger.info('[Reporter {} for {}] Dispatch start'.format(
-            self.schedule.id, self.url
-        ))
+        self._log('Dispatch start')
 
+        # fetch news from the url and determine whether it is worthy or not
         news = await self.fetch(not bulk_report)
-        urls = await self.get_worthy_urls(news) if news else []
+        news = news if news and self.worth_to_report(news) else None
 
+        # report fetched news immediately if we are not going to report bulk
+        if news and not bulk_report:
+            self.report_news(news)
+
+        urls = await self.get_worthy_urls(news) if news else []
         news_linked = await self.dispatch_reporters(urls, bulk_report)
         news_total = news_linked + [news] if news else news_linked
 
         # Bulk report news if the flag is set to `True`. We don't have to
-        # take care of `False` case since news should be reported on `fetch()`
-        # calls of each successors already.
+        # take care of case of `False` since news should be reported on
+        # `dispatch()` calls of each successor reporters already if
+        # `bulk_report` flag was given `True`.
         if bulk_report and self.is_chief:
             self.report_news(*news_total)
 
@@ -216,9 +221,7 @@ class Reporter(object):
         :rtype: :class:`list`
 
         """
-        logger.info('[Reporter {} for {}] Dispatching reporters'.format(
-            self.schedule.id, self.url
-        ))
+        self._log('Dispatching reporters')
 
         reporters = self.call_up_reporters(urls, self.meta.exhaust_intel())
         dispatches = [r.dispatch(bulk_report=bulk_report) for r in reporters]
@@ -230,7 +233,7 @@ class Reporter(object):
 
         return news_list
 
-    async def fetch(self, immediate_report=True):
+    async def fetch(self):
         """
         Dispatch the reporter to the web and fetch a news of the url assigned
         to him. Note that the url will be marked as visited whether the
@@ -244,27 +247,18 @@ class Reporter(object):
         :rtype: :class:`~news.news.News`
 
         """
-        logger.info('[Reporter {} for {}] Fetch start'.format(
-            self.schedule.id, self.url
-        ))
+        self._log('Fetch started')
+
         async with aiohttp.get(self.url) as response:
-            logger.info('[Reporter {} for {}] Fetch successed'.format(
-                self.schedule.id, self.url
-            ))
+
+            self._log('Fetch successed')
 
             # report to the chief reporter that we visited the url.
             await self.report_visited()
 
             # make news from response and set fetched
-            self.fetched_news = news = self.make_news(await response.text())
-
-            if not self.worth_to_report(news):
-                return None
-
-            if immediate_report:
-                self.report_news(news)
-
-            return news
+            self.fetched_news = self.make_news(await response.text())
+            return self.fetched_news
 
     # ====
     # News
@@ -272,6 +266,8 @@ class Reporter(object):
 
     def make_news(self, content):
         src = self.predecessor.fetched_news if not self.is_chief else None
+
+        # we might already have previously fetched or stored news.
         fetched = self.fetched_news
         stored = self.backend.get_news(self.owner, self.url)
 
@@ -337,10 +333,8 @@ class Reporter(object):
     # ===================
 
     def report_news(self, *news):
-        logger.info('[Reporter {} for {}] Reporting {} news'.format(
-            self.schedule.id, self.url, len(news)
-        ))
-        self.backend.save_news(*set(news))
+        self._log('Reporting {}'.format(len(news)))
+        self.backend.save_news(*news)
 
     async def report_visited(self):
         with (await self.chief._visited_urls_lock):
@@ -400,7 +394,7 @@ class Reporter(object):
     def inherit_meta(self, url, predecessor=None):
         reporter = Reporter(url, self.meta, self.backend)
         reporter.enhance_fetch(*self._applied_fetch_middlewares)
-        reporter.predecessor = predecessor if predecessor else self
+        reporter.predecessor = predecessor or self
         return reporter
 
     def summon_reporter_for(self, news):
@@ -438,3 +432,15 @@ class Reporter(object):
         summoned = self.summon_reporters_for_intel(intel)
 
         return recruited + summoned
+
+    # =======
+    # Logging
+    # =======
+
+    def _log(self, message, tag='info'):
+        title = '[Reporter of schedule {} for {}]'.format(
+            self.schedule.id, self.url
+        )
+
+        logging_method = getattr(logger, tag)
+        logging_method('{}: {}'.format(title, message))

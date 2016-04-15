@@ -6,12 +6,7 @@ Provides scheduler that runs news cover celery tasks.
 """
 import time
 import threading
-from functools import reduce
 import schedule as pusher
-from celery.states import (
-    PENDING, STARTED, SUCCESS, FAILURE
-)
-from celery.result import AsyncResult
 from .constants import COVER_PUSHER_CYCLE
 from .cover import Cover
 
@@ -30,7 +25,7 @@ class Scheduler(object):
         backend. The persister that has been used when creating Schedule model
         with `create_schedule` factory method should be given. Note that the
         scheduler will not persist schedule changes if not given a persister.
-    :type persister: :class:`news.persistence.SchedulePersister`
+    :type persister: :class:`news.persister.Persister`
     :param intel_strategy: Intel strategy to use for a schedule. Using nicely
         implemented intel strategy function can be work as performance boost
         in news fetching processes since reporters in charge of the given
@@ -116,13 +111,19 @@ class Scheduler(object):
         self.jobs = dict()
         self.running = False
 
-        # scheduler configurations
+        # scheduler intel strategy
         self.intel_strategy = intel_strategy or (lambda backend, schedule: [])
+
+        # scheduler cover callbacks
         self.on_cover_start = on_cover_start or (lambda schedule: None)
-        self.on_cover_finished = on_cover_finished or \
-            (lambda schedule, news_list: None)
+        self.on_cover_finished = \
+            on_cover_finished or (lambda schedule, news_list: None)
+
+        # scheduler middlewares
         self.dispatch_middlewares = dispatch_middlewares or []
         self.fetch_middlewares = fetch_middlewares or []
+
+        # reporter experience to use
         self.report_experience = report_experience
         self.fetch_experience = fetch_experience
 
@@ -135,11 +136,11 @@ class Scheduler(object):
         Starts news cover scheduling in another tiny thread.
 
         :param persister: Persister that persists schedules from backend.
-        :type persister: :class:`news.persistence.SchedulePersister`
+        :type persister: :class:`news.persister.Persister`
 
         """
         if not self.celery_task:
-            self.register_celery_task()
+            self._register_celery_task()
 
         if self.running:
             self.running = False
@@ -166,7 +167,7 @@ class Scheduler(object):
         self.persister and self.persister.stop_persistence()
         self.running = False
 
-    def register_celery_task(self):
+    def _register_celery_task(self):
         """Register news cover task on celery task registry."""
         @self.celery.task(bind=True)
         def run_cover(task, id):
@@ -197,7 +198,7 @@ class Scheduler(object):
 
     def add_schedule(self, schedule):
         if not self.celery_task:
-            self.register_celery_task()
+            self._register_celery_task()
 
         if isinstance(schedule, int):
             schedule = self.backend.get_schedule_by_id(schedule)

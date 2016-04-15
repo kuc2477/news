@@ -8,7 +8,7 @@ from .constants import (
 )
 
 
-class SchedulePersister(object):
+class Persister(object):
     def __init__(self, redis):
         self.scheduler = None
         self.redis = redis
@@ -45,7 +45,8 @@ class SchedulePersister(object):
             not created and self.scheduler.update_schedule(id)
 
     def persist_schedule_delete(self, id):
-        self.scheduler and self.scheduler.remove_schedule(id)
+        if self.scheduler:
+            self.scheduler.remove_schedule(id)
 
     def notify_schedule_saved(self, instance, created, **kwargs):
         if self._redis_available():

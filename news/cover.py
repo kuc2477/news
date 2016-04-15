@@ -33,7 +33,7 @@ class Cover(object):
     @classmethod
     def from_schedule(cls, schedule, backend):
         """
-        Factory method that instantiates cover from the schedule.
+        Factory method that instantiates a cover from the schedule.
 
         :param schedule: The schedule of which the cover is in charge of.
         :type schedule: :class:`~news.models.AbstractSchedule`
@@ -53,19 +53,20 @@ class Cover(object):
         Prepare a reporter with experience and middlewares for the cover.
 
         :param intel: News intel that will be used to boost performance of the
-            cover. News in the intel list will be fetched in parallel.
+            cover. Each news of the intel will be fetched in parallel.
         :type intel: :class:`list`
         :param report_experience: Module qualified path to the report
             experience function. The report experience function should take a
-            schedule of the news and the news as it's arguments  and return
-            `True` if the news is valuable.  Otherwise it should return
-            `False`.
+            schedule of the news and the news as it's arguments and return
+            `True` if the news is expected to be valuable. Otherwise it should
+            return `False`.
         :type report_experience: :class:`str`
         :param fetch_experience: Module qualified path to the fetch experience
             function. The fetch experience function should take a schedule of
             the news, the news and the url to be classified whether it is
             worth to visit or not. The function should return `True` if the
-            url is expected to be worthy. Otherwise it should return `False`.
+            url is expected to be worth to visit. Otherwise it should return
+            `False`.
         :type fetch_experience: :class:`str`
 
         """
