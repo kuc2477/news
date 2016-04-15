@@ -19,9 +19,6 @@ class HeterogenuousEngineError(Exception):
 class SQLAlchemyBackend(AbstractBackend):
     def __init__(self, bind=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.Owner = self.owner_class
-        self.Schedule = self.schedule_class
-        self.News = self.news_class
 
         # use given session if available. otherwise try to retrieve session
         # from the engine bound to models if exists.

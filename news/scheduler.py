@@ -94,7 +94,8 @@ class Scheduler(object):
         scheduler.run()
 
     """
-    def __init__(self, backend, celery, persister=None, intel_strategy=None,
+    def __init__(self, backend=None, celery=None,
+                 persister=None, intel_strategy=None,
                  on_cover_start=None, on_cover_finished=None,
                  report_experience=None, fetch_experience=None,
                  dispatch_middlewares=None, fetch_middlewares=None):
@@ -131,6 +132,9 @@ class Scheduler(object):
     # Scheduler actions
     # =================
 
+    def configure(self, **kwargs):
+        self.__init__(**kwargs)
+
     def start(self, persister=None):
         """
         Starts news cover scheduling in another tiny thread.
@@ -140,7 +144,7 @@ class Scheduler(object):
 
         """
         if not self.celery_task:
-            self._register_celery_task()
+            self.register_celery_task()
 
         if self.running:
             self.running = False
@@ -167,9 +171,9 @@ class Scheduler(object):
         self.persister and self.persister.stop_persistence()
         self.running = False
 
-    def _register_celery_task(self):
+    def register_celery_task(self):
         """Register news cover task on celery task registry."""
-        @self.celery.task(bind=True)
+        @self.celery(bind=True)
         def run_cover(task, id):
             # update latest task
             schedule = self.backend.get_schedule_by_id(id)
@@ -198,7 +202,7 @@ class Scheduler(object):
 
     def add_schedule(self, schedule):
         if not self.celery_task:
-            self._register_celery_task()
+            self.register_celery_task()
 
         if isinstance(schedule, int):
             schedule = self.backend.get_schedule_by_id(schedule)

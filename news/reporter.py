@@ -186,7 +186,7 @@ class Reporter(object):
         self._log('Dispatch start')
 
         # fetch news from the url and determine whether it is worthy or not
-        news = await self.fetch(not bulk_report)
+        news = await self.fetch()
         news = news if news and self.worth_to_report(news) else None
 
         # report fetched news immediately if we are not going to report bulk
@@ -273,7 +273,7 @@ class Reporter(object):
 
         # create new news if reporter is making fresh news.
         if not fetched and not stored:
-            return self.backend.news_class.create_instance(
+            return self.backend.News.create_instance(
                 self.schedule, self.url, content, src=src
             )
         # update content and source if the reporter is updating the news.

@@ -11,40 +11,40 @@ class AbstractBackend(object):
     """
     Abstract news backend that should be implemented in orm specific ways.
 
-    :param owner_class: Owner class to use with backend.
-    :type owner_class: Implementation of :class:`~news.models.AbstractModel`.
-    :param schedule_class: Schedule class to use with backend.
-    :type schedule_class: Implementation of
+    :param owner_model: Owner class to use with backend.
+    :type owner_model: Implementation of :class:`~news.models.AbstractModel`.
+    :param schedule_model: Schedule class to use with backend.
+    :type schedule_model: Implementation of
         :class:`~news.models.AbstractSchedule`.
-    :param news_class: News class to use with backend.
-    :type news_class: Implementation of :class:`~news.models.AbstractNews`.
+    :param news_model: News class to use with backend.
+    :type news_model: Implementation of :class:`~news.models.AbstractNews`.
 
     """
 
     combinations = {}
 
-    def __init__(self, owner_class=None, schedule_class=None, news_class=None,
+    def __init__(self, owner_model=None, schedule_model=None, news_model=None,
                  *args, **kwargs):
-        self.owner_class = owner_class
-        self.schedule_class = schedule_class
-        self.news_class = news_class
+        self.owner_model = self.Owner = owner_model
+        self.schedule_model = self.Schedule = schedule_model
+        self.news_model = self.News = news_model
 
     @classmethod
     def create_backend(
-            cls, owner_class=None, schedule_class=None, news_class=None,
+            cls, owner_model=None, schedule_model=None, news_model=None,
             *args, **kwargs):
         # make combination of model classes and check if same type of backend
         # with same combination of model classes ever been instantiated or
         # not.
         C = collections.namedtuple('Combination', 'owner schedule news')
-        c = C(owner=owner_class, schedule=schedule_class, news=news_class)
+        c = C(owner=owner_model, schedule=schedule_model, news=news_model)
 
         if c in cls.combinations:
             return cls.combinations[c]
         else:
-            return cls(owner_class=owner_class,
-                       schedule_class=schedule_class,
-                       news_class=news_class,
+            return cls(owner_model=owner_model,
+                       schedule_model=schedule_model,
+                       news_model=news_model,
                        *args, **kwargs)
 
     def get_news(self, owner=None, url=None):
@@ -52,11 +52,11 @@ class AbstractBackend(object):
         Should retrive a news for owner from backend.
 
         :param owner: Owner of the news.
-        :type owner: :attr: `owner_class`
+        :type owner: :attr: `owner_model`
         :param url: Url of the news.
         :type url: :class:`str`
         :return: Owner's news with given url.
-        :rtype: :attr: `news_class`
+        :rtype: :attr: `news_model`
 
         """
         raise NotImplementedError
@@ -66,7 +66,7 @@ class AbstractBackend(object):
         Should retrieve  a list of news for owner from backend.
 
         :param owner: Owner of the news.
-        :type owner: :attr:`owner_class`
+        :type owner: :attr:`owner_model`
         :param root_url: Url of the root news.
         :type root_url: :class:`str`
         :return: A list of news under the given root url.
@@ -80,7 +80,7 @@ class AbstractBackend(object):
         Should save news to the backend.
 
         :param news: News to save.
-        :type news: :attr:`news_class`
+        :type news: :attr:`news_model`
 
         """
         raise NotImplementedError
@@ -90,7 +90,7 @@ class AbstractBackend(object):
         Delete news in the backend.
 
         :param news: News to delete.
-        :type news: :attr:`news_class`
+        :type news: :attr:`news_model`
 
         """
         raise NotImplementedError
@@ -100,7 +100,7 @@ class AbstractBackend(object):
         Should check existance of the news in the backend.
 
         :param owner: Owner of the news.
-        :type owner: :attr:`owner_class`
+        :type owner: :attr:`owner_model`
         :param url: Url of the news.
         :type url: :class:`str`
         :return: Whether the news exists in the backend or not.
@@ -116,7 +116,7 @@ class AbstractBackend(object):
         :param id: Primary key of the schedule.
         :type id: :class:`int`
         :returns: Schedule of given id.
-        :rtype: :attr:`schedule_class`
+        :rtype: :attr:`schedule_model`
 
         """
         raise NotImplementedError
@@ -126,9 +126,9 @@ class AbstractBackend(object):
         Should retrieve a schedule for owner from the backend.
 
         :param owner: Owner of the schedule meta.
-        :type owner: :attr:`owner_class`
+        :type owner: :attr:`owner_model`
         :return: Owner's schedule meta with given url.
-        :rtype: :attr:`schedule_class`
+        :rtype: :attr:`schedule_model`
 
         """
         raise NotImplementedError

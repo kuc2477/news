@@ -4,7 +4,7 @@ from redis import Redis
 from news.cover import Cover
 from news.reporter import ReporterMeta, Reporter
 from news.scheduler import Scheduler
-from news.persister import SchedulePersister
+from news.persister import Persister
 
 
 @pytest.fixture
@@ -57,7 +57,7 @@ def successor_reporter_fetched(successor_reporter, content_child):
 
 @pytest.fixture(scope='session')
 def persister():
-    return SchedulePersister(Redis())
+    return Persister(Redis())
 
 
 @pytest.fixture

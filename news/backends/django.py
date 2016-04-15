@@ -9,12 +9,6 @@ from .import AbstractBackend
 
 
 class DjangoBackend(AbstractBackend):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.OwnerManager = self.owner_class.objects
-        self.ScheduleManager = self.schedule_class.objects
-        self.NewsManager = self.news_class.objects
-
     def get_news(self, owner, url):
         return self.NewsManager\
             .filter(schedule__owner=owner)\
