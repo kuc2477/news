@@ -26,6 +26,9 @@ class SQLAlchemyBackend(AbstractBackend):
             self.Owner, self.Schedule, self.News)
 
     def get_news(self, owner, url):
+        if not owner or not url:
+            return None
+
         return self.session.query(self.News)\
             .join(self.Schedule)\
             .filter(

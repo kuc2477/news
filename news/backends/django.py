@@ -10,13 +10,13 @@ from .import AbstractBackend
 
 class DjangoBackend(AbstractBackend):
     def get_news(self, owner, url):
-        return self.NewsManager\
+        return self.News.objects\
             .filter(schedule__owner=owner)\
             .filter(url=url)\
             .first()
 
     def get_news_list(self, owner=None, root_url=None):
-        news_list = self.NewsManager.all()
+        news_list = self.News.objects.all()
 
         if owner:
             news_list = news_list.filter(schedule__owner=owner)
@@ -43,20 +43,20 @@ class DjangoBackend(AbstractBackend):
         news.save()
 
     def delete_news(self, *news):
-        queryset = self.NewsManager.filter(id__in=[n.id for n in news])
+        queryset = self.News.objects.filter(id__in=[n.id for n in news])
         queryset.delete()
 
     def get_schedule_by_id(self, id):
-        return self.ScheduleManager.get(id=id)
+        return self.Schedule.objects.get(id=id)
 
     def get_schedule(self, owner, url):
-        return self.ScheduleManager\
+        return self.Schedule.objects\
             .filter(owner=owner)\
             .filter(url=url)\
             .first()
 
     def get_schedules(self, owner=None, url=None):
-        queryset = self.ScheduleManager.all()
+        queryset = self.Schedule.objects.all()
 
         if owner:
             queryset = queryset.filter(owner=owner)

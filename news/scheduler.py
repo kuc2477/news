@@ -144,7 +144,7 @@ class Scheduler(object):
 
         """
         if not self.celery_task:
-            self.register_celery_task()
+            self.set_task()
 
         if self.running:
             self.running = False
@@ -171,10 +171,13 @@ class Scheduler(object):
         self.persister and self.persister.stop_persistence()
         self.running = False
 
-    def register_celery_task(self):
-        """Register news cover task on celery task registry."""
-        @self.celery(bind=True)
+    # ===================
+    # Celery integration
+    # ===================
+
+    def make_run_cover(self):
         def run_cover(task, id):
+            print(self)
             # update latest task
             schedule = self.backend.get_schedule_by_id(id)
             schedule.update_latest_task(task.request.id)
@@ -192,9 +195,13 @@ class Scheduler(object):
             # run news cover along with registered callbacks
             self.on_cover_start(schedule)
             self.on_cover_finished(schedule, cover.run())
+        return run_cover
 
-        # expose celery task
-        self.celery_task = run_cover
+    def make_task(self):
+        return self.celery.task(bind=True)(self.make_run_cover())
+
+    def set_task(self):
+        self.celery_task = self.make_task()
 
     # ======================
     # Schedule manipulations
@@ -202,7 +209,7 @@ class Scheduler(object):
 
     def add_schedule(self, schedule):
         if not self.celery_task:
-            self.register_celery_task()
+            self.set_task()
 
         if isinstance(schedule, int):
             schedule = self.backend.get_schedule_by_id(schedule)

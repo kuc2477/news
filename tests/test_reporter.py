@@ -65,7 +65,7 @@ def test_successor_reporter_fetched_attrs(chief_reporter_fetched,
 
 def test_make_news(chief_reporter, content_root):
     news = chief_reporter.make_news(content_root)
-    assert(isinstance(news, chief_reporter.backend.news_class))
+    assert(isinstance(news, chief_reporter.backend.News))
     assert(news.url == chief_reporter.url)
     assert(news.content == content_root)
     assert(news.schedule == chief_reporter.schedule)
@@ -225,7 +225,7 @@ def test_summon_reporter_for(chief_reporter, django_news):
     assert(reporter.fetched_news == django_news)
     assert(reporter.predecessor == chief_reporter)
 
-    news = reporter.backend.news_class.create_instance(
+    news = reporter.backend.News.create_instance(
         django_news.schedule, django_news.url + '/child', 'content',
         src=django_news
     )
@@ -239,7 +239,7 @@ def test_summon_reporter_for(chief_reporter, django_news):
 @pytest.mark.django_db
 def test_summon_reporters_for_intel(chief_reporter, django_news):
     backend = chief_reporter.backend
-    create_instance = backend.news_class.create_instance
+    create_instance = backend.News.create_instance
 
     news0 = create_instance(
         django_news.schedule, django_news.url + '/child0', 'content0',

@@ -9,9 +9,9 @@ def django_backend(
         django_schedule_model,
         django_news_model):
     return DjangoBackend.create_backend(
-        owner_class=django_owner_model,
-        schedule_class=django_schedule_model,
-        news_class=django_news_model
+        owner_model=django_owner_model,
+        schedule_model=django_schedule_model,
+        news_model=django_news_model
     )
 
 
@@ -20,8 +20,8 @@ def sa_backend(sa_owner_model, sa_schedule_model,
                sa_news_model, sa_session):
     backend = SQLAlchemyBackend.create_backend(
         bind=sa_session,
-        owner_class=sa_owner_model,
-        schedule_class=sa_schedule_model,
-        news_class=sa_news_model
+        owner_model=sa_owner_model,
+        schedule_model=sa_schedule_model,
+        news_model=sa_news_model
     )
     return backend
