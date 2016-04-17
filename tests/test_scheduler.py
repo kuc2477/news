@@ -5,7 +5,7 @@ import pytest
 @pytest.mark.skipif(platform.system().lower() == 'windows',
                     reason='celery service test won\'t run in windows')
 def test_run(scheduler, django_schedule):
-    scheduler.register_celery_task()
+    scheduler.set_task()
     scheduler.celery_task.delay(django_schedule.id)
 
 
