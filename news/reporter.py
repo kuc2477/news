@@ -50,7 +50,7 @@ class ReporterMeta(object):
 
     def __init__(self, schedule, intel=None,
                  report_experience=None,
-                 fetch_experience=None,):
+                 fetch_experience=None):
         # Schedule meta that contains information about owner and
         # filter options.
         self.schedule = schedule
@@ -344,6 +344,10 @@ class Reporter(object):
         with (await self.chief._visited_urls_lock):
             return url in self.chief._visited_urls
 
+    async def get_visited_urls(self):
+        with (await self.chief._visited_urls_lock):
+            return self.chief._visited_urls
+
     async def get_worthy_urls(self, news):
         atags = BeautifulSoup(news.content, 'html.parser')('a')
 
@@ -364,6 +368,7 @@ class Reporter(object):
             if self.meta.fetch_experience else lambda s, n, u: True
 
         brothers = filter_options.get('brothers')
+        max_visit = filter_options.get('max_visit')
         max_depth = filter_options.get('max_depth')
         max_dist = filter_options.get('max_dist')
         blacklist = filter_options.get('blacklist')
@@ -371,6 +376,7 @@ class Reporter(object):
         is_child = issuburl(root_url, url)
         is_relative = any([issuburl(b, url) for b in brothers])
         blacklist_ok = ext(url) not in blacklist
+        visit_count_ok = len(self.get_visited_urls()) <= max_visit
         depth_ok = depth(root_url, url) <= max_depth if max_depth else True
         dist_ok = self.distance < max_dist if max_dist else True
 
@@ -378,7 +384,7 @@ class Reporter(object):
         # allowed depth from the root url.
         format_ok = (is_child and depth_ok) or is_relative
 
-        return format_ok and dist_ok and blacklist_ok and \
+        return format_ok and dist_ok and visit_count_ok and blacklist_ok and \
             not await self.already_visited(url) and \
             experience(self.schedule, news, url) if experience else True
 

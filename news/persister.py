@@ -9,13 +9,22 @@ from .constants import (
 
 
 class Persister(object):
-    def __init__(self, redis):
+    def __init__(self, redis, context=None):
         self.scheduler = None
         self.redis = redis
         self.pubsub = self.redis.pubsub()
         self.thread = None
 
+        self._context = context
         self._cache = {}
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, ctx):
+        self._context = ctx
 
     def start_persistence(self, scheduler, silent=False):
         if not self._redis_available():
@@ -39,14 +48,39 @@ class Persister(object):
         self.scheduler = None
         self.thread and self.thread.stop()
 
+    # =====================
+    # Scheduler persistence
+    # =====================
+
     def persist_schedule_save(self, id, created):
-        if self.scheduler:
-            created and self.scheduler.add_schedule(id)
+        if not self.scheduler:
+            return
+
+        # persist schedule in app context if given any
+        if self.context:
+            with self.context:
+                created and self.scheduler.add_schedule(id, silent=False)
+                not created and self.scheduler.update_schedule(id)
+        # otherwise persist schedule without any context
+        else:
+            created and self.scheduler.add_schedule(id, silent=False)
             not created and self.scheduler.update_schedule(id)
 
     def persist_schedule_delete(self, id):
-        if self.scheduler:
-            self.scheduler.remove_schedule(id)
+        if not self.scheduler:
+            return
+
+        # persist schedule in app context if given any
+        if self.context:
+            with self.context:
+                self.scheduler.remove_schedule(id, silent=False)
+        # otherwise persist schedule without any context
+        else:
+            self.scheduler.remove_schedule(id, silent=False)
+
+    # ============================
+    # Schedule change notification
+    # ============================
 
     def notify_schedule_saved(self, instance, created, **kwargs):
         if self._redis_available():

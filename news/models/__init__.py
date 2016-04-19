@@ -69,6 +69,7 @@ class AbstractSchedule(AbstractModel):
 
         """
         return {
+            'max_visit': self.max_visit,
             'max_dist': self.max_dist,
             'max_depth': self.max_depth,
             'blacklist': self.blacklist,

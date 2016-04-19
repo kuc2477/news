@@ -30,6 +30,7 @@ from . import (
 )
 from ..constants import (
     DEFAULT_SCHEDULE_CYCLE,
+    DEFAULT_MAX_VISIT,
     DEFAULT_MAX_DIST,
     DEFAULT_MAX_DEPTH,
     DEFAULT_BLACKLIST,
@@ -94,6 +95,7 @@ def create_abc_schedule(user_model):
         enabled = Column(Boolean, nullable=False, default=False)
         latest_task = Column(UUIDType(binary=False), default=None)
         cycle = Column(Integer, default=DEFAULT_SCHEDULE_CYCLE, nullable=False)
+        max_visit = Column(Integer, default=DEFAULT_MAX_VISIT)
         max_dist = Column(Integer, default=DEFAULT_MAX_DIST)
         max_depth = Column(Integer, default=DEFAULT_MAX_DEPTH)
         blacklist = Column(JSONType, default=DEFAULT_BLACKLIST, nullable=False)

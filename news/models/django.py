@@ -18,6 +18,7 @@ from .import (
 )
 from ..constants import (
     DEFAULT_SCHEDULE_CYCLE,
+    DEFAULT_MAX_VISIT,
     DEFAULT_MAX_DIST,
     DEFAULT_MAX_DEPTH,
     DEFAULT_BLACKLIST,
@@ -52,6 +53,8 @@ def create_abc_schedule(user_model=None):
         enabled = models.BooleanField(default=False)
         latest_task = models.UUIDField(null=True)
 
+        max_visit = models.IntegerField(
+            default=DEFAULT_MAX_VISIT)
         max_dist = models.IntegerField(
             blank=True, null=True, default=DEFAULT_MAX_DIST)
         max_depth = models.IntegerField(

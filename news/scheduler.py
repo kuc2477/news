@@ -9,6 +9,7 @@ import threading
 import schedule as pusher
 from .constants import COVER_PUSHER_CYCLE
 from .cover import Cover
+from .utils.logging import logger
 
 
 class Scheduler(object):
@@ -156,11 +157,14 @@ class Scheduler(object):
             self.persister = persister
         self.persister and self.persister.start_persistence(self)
 
-        [self.add_schedule(s) for s in self.backend.get_schedules()]
+        schedules = self.backend.get_schedules()
+        [self.add_schedule(s) for s in schedules]
+        self._log('Starting with {} schedule(s)'.format(len(schedules)))
 
         def schedule_forever():
             self.running = True
             while self.running:
+                self._log('Flush pending covers', tag='debug')
                 self.pusher.run_pending()
                 time.sleep(COVER_PUSHER_CYCLE)
 
@@ -177,10 +181,10 @@ class Scheduler(object):
 
     def make_run_cover(self):
         def run_cover(task, id):
-            print(self)
             # update latest task
             schedule = self.backend.get_schedule_by_id(id)
             schedule.update_latest_task(task.request.id)
+            self._log('Cover for schedule {} starting'.format(schedule.id))
 
             # prepare news cover with preconfigured experience and middlewares.
             intel = self.intel_strategy(self.backend, schedule)
@@ -195,6 +199,7 @@ class Scheduler(object):
             # run news cover along with registered callbacks
             self.on_cover_start(schedule)
             self.on_cover_finished(schedule, cover.run())
+            self._log('Cover for schedule {} finished'.format(schedule.id))
         return run_cover
 
     def make_task(self):
@@ -207,23 +212,29 @@ class Scheduler(object):
     # Schedule manipulations
     # ======================
 
-    def add_schedule(self, schedule):
+    def add_schedule(self, schedule, silent=True):
         if not self.celery_task:
             self.set_task()
 
         if isinstance(schedule, int):
             schedule = self.backend.get_schedule_by_id(schedule)
 
+        if not silent:
+            self._log('Adding schedule {}'.format(schedule.id))
+
         self.jobs[schedule.id] = self.pusher\
             .every(schedule.cycle)\
             .seconds\
             .do(self.celery_task.delay, schedule.id)
 
-    def remove_schedule(self, schedule):
+    def remove_schedule(self, schedule, silent=True):
         try:
             id = schedule.id
         except AttributeError:
             id = int(schedule)
+
+        if not silent:
+            self._log('Removing schedule {}'.format(id))
 
         try:
             self.pusher.cancel_job(self.jobs.pop(id))
@@ -231,8 +242,15 @@ class Scheduler(object):
             pass
 
     def clear_schedules(self):
+        self._log('Clearing {} schedules'.format(len(self.jobs.keys())))
         [self.remove_schedule(id) for id in self.jobs.keys()]
 
     def update_schedule(self, schedule):
+        self._log('Updating schedule {}'.format(
+            schedule if isinstance(schedule, int) else schedule.id))
         self.remove_schedule(schedule)
         self.add_schedule(schedule)
+
+    def _log(self, message, tag='info'):
+        logging_method = getattr(logger, tag)
+        logging_method('[Scheduler]: {}'.format(message))
