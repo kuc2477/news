@@ -376,7 +376,7 @@ class Reporter(object):
         is_child = issuburl(root_url, url)
         is_relative = any([issuburl(b, url) for b in brothers])
         blacklist_ok = ext(url) not in blacklist
-        visit_count_ok = len(self.get_visited_urls()) <= max_visit
+        visit_count_ok = len(await self.get_visited_urls()) <= max_visit
         depth_ok = depth(root_url, url) <= max_depth if max_depth else True
         dist_ok = self.distance < max_dist if max_dist else True
 

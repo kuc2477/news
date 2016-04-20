@@ -157,7 +157,13 @@ class AbstractNews(AbstractModel):
 
     @property
     def extracted(self):
-        return Extractor().extract(self.content)
+        try:
+            extracted = self._cached_extracted
+        except AttributeError:
+            extracted = self._cached_extracted = \
+                Extractor().extract(self.content)
+
+        return extracted
 
     @property
     def title(self):

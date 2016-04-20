@@ -246,10 +246,17 @@ class Scheduler(object):
         [self.remove_schedule(id) for id in self.jobs.keys()]
 
     def update_schedule(self, schedule):
-        self._log('Updating schedule {}'.format(
-            schedule if isinstance(schedule, int) else schedule.id))
-        self.remove_schedule(schedule)
-        self.add_schedule(schedule)
+        self._log(
+            'Updating schedule {}'
+            .format(schedule if isinstance(schedule, int)
+                    else schedule.id)
+        )
+
+        if not schedule.enabled:
+            self.remove_schedule(schedule)
+        else:
+            self.remove_schedule(schedule)
+            self.add_schedule(schedule)
 
     def _log(self, message, tag='info'):
         logging_method = getattr(logger, tag)
