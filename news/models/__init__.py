@@ -128,6 +128,14 @@ class AbstractNews(AbstractModel):
     #: Parent news from which the url of the news has been found.
     src = NotImplementedError
 
+    #: (:class: `~datetime.datetime`)
+    #: Created datetime.
+    created = NotImplementedError
+
+    #: (:class: `~datetime.datetime`)
+    #: Updated datetime.
+    updated = NotImplementedError
+
     @property
     def owner(self):
         """(:class:`~news.models.abstract.AbstractModel` implementation) Owner

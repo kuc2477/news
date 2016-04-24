@@ -4,12 +4,14 @@
 Provides factory functions for both abstract and concrete News models.
 
 """
+from datetime import datetime
 from sqlalchemy import (
     Column,
     ForeignKey,
     Integer,
     Text,
     Boolean,
+    DateTime,
     event
 )
 from sqlalchemy.schema import UniqueConstraint
@@ -155,6 +157,8 @@ def create_abc_news(schedule_model):
         id = Column(Integer, primary_key=True)
         url = Column(URLType, nullable=False)
         content = Column(Text, nullable=False)
+        created = Column(DateTime, default=datetime.now)
+        updated = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
         def __init__(self, schedule=None, url='', content='', src=None):
             # avoid save-update cascade

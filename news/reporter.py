@@ -202,7 +202,7 @@ class Reporter(object):
         # `dispatch()` calls of each successor reporters already if
         # `bulk_report` flag was given `True`.
         if bulk_report and self.is_chief:
-            self.report_news(*news_total)
+            self.report_news(*set(news_total))
 
         return news_total
 
@@ -250,6 +250,9 @@ class Reporter(object):
         self._log('Fetch started')
 
         async with aiohttp.get(self.url) as response:
+            # return nothing if status code is not OK
+            if response.status != 200:
+                return None
 
             self._log('Fetch successed')
 

@@ -224,7 +224,7 @@ class Scheduler(object):
 
         self.jobs[schedule.id] = self.pusher\
             .every(schedule.cycle)\
-            .seconds\
+            .minutes\
             .do(self.celery_task.delay, schedule.id)
 
     def remove_schedule(self, schedule, silent=True):
@@ -251,6 +251,9 @@ class Scheduler(object):
             .format(schedule if isinstance(schedule, int)
                     else schedule.id)
         )
+
+        if isinstance(schedule, int):
+            schedule = self.backend.get_schedule_by_id(schedule)
 
         if not schedule.enabled:
             self.remove_schedule(schedule)
