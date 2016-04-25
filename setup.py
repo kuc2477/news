@@ -20,7 +20,7 @@ else:
     class pytest(test):
         """cmdclass for test runner."""
         def finalize_options(self):
-            self.test_args = []
+            self.test_args = ['--cov=news']
             self.test_suite = True
 
         def run_tests(self):
@@ -53,7 +53,6 @@ setup(
         'beautifulsoup4>=4.4.1',
         'extraction==0.2.1',
         'urltools>=0.3.2',
-        'click>=6.2',
         'colorlog>=2.6.0',
         'django>=1.7',
         'django-jsonfield>=0.9.16',
@@ -69,7 +68,10 @@ setup(
         'pytest>=2.8.5',
         'pytest-asyncio>=0.3.0',
         'pytest-django>=2.9.1',
-        'pytest-mock>=0.11.0'
+        'pytest-mock>=0.11.0',
+        'pytest-cov>=2.2.1',
+        'celery>=3.1.23',
+        'redis>=2.10.5',
     ],
     cmdclass=cmdclass,
     classifiers=[

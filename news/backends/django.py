@@ -1,27 +1,22 @@
-""":mod:`news.backends.django` --- Django backend. """
+""":mod:`news.backends.django` --- News backend Django implementations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Provides an implemenation of news backend for django projects.
+
+"""
 from django.db import transaction
-from django.db.models.signals import (
-    post_save,
-    post_delete
-)
-from .abstract import AbstractBackend
+from .import AbstractBackend
 
 
 class DjangoBackend(AbstractBackend):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.OwnerManager = self.owner_class.objects
-        self.ScheduleManager = self.schedule_class.objects
-        self.NewsManager = self.news_class.objects
-
     def get_news(self, owner, url):
-        return self.NewsManager\
+        return self.News.objects\
             .filter(schedule__owner=owner)\
             .filter(url=url)\
             .first()
 
     def get_news_list(self, owner=None, root_url=None):
-        news_list = self.NewsManager.all()
+        news_list = self.News.objects.all()
 
         if owner:
             news_list = news_list.filter(schedule__owner=owner)
@@ -43,22 +38,25 @@ class DjangoBackend(AbstractBackend):
 
     @transaction.atomic
     def cascade_save_news(self, news):
-        if news.src and news.src.id is None:
+        if news.src and news.src.is_root:
             self.cascade_save_news(news.src)
         news.save()
 
     def delete_news(self, *news):
-        queryset = self.NewsManager.filter(id__in=[n.id for n in news])
+        queryset = self.News.objects.filter(id__in=[n.id for n in news])
         queryset.delete()
 
+    def get_schedule_by_id(self, id):
+        return self.Schedule.objects.get(id=id)
+
     def get_schedule(self, owner, url):
-        return self.ScheduleManager\
+        return self.Schedule.objects\
             .filter(owner=owner)\
             .filter(url=url)\
             .first()
 
     def get_schedules(self, owner=None, url=None):
-        queryset = self.ScheduleManager.all()
+        queryset = self.Schedule.objects.all()
 
         if owner:
             queryset = queryset.filter(owner=owner)
@@ -66,9 +64,3 @@ class DjangoBackend(AbstractBackend):
             queryset = queryset.filter(url=url)
 
         return queryset.all()
-
-    def set_schedule_save_listener(self, listener):
-        post_save.connect(listener, sender=self.schedule_class, weak=False)
-
-    def set_schedule_delete_listener(self, listener):
-        post_delete.connect(listener, sender=self.schedule_class, weak=False)

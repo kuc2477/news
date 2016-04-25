@@ -1,21 +1,30 @@
+import uuid
+
+
 def test_abstract_model_implementations(django_schedule, django_news):
     assert(isinstance(django_schedule.id, int))
     assert(isinstance(django_news.id, int))
 
 
 def test_abstract_schedule_implementation(django_backend, django_schedule):
-    assert(isinstance(django_schedule.owner, django_backend.owner_class))
+    assert(isinstance(django_schedule.owner, django_backend.Owner))
     assert(isinstance(django_schedule.url, str))
     assert(isinstance(django_schedule.cycle, int))
-    assert(isinstance(django_schedule.get_filter_options(), dict))
+    assert(isinstance(django_schedule.latest_task, str) or
+           django_schedule.latest_task is None)
+    assert(isinstance(django_schedule.filter_options, dict))
+
+    task_id = uuid.uuid4()
+    django_schedule.update_latest_task(task_id)
+    assert(django_schedule.latest_task == task_id)
 
 
 def test_abstract_news_implementation(django_backend, django_schedule,
                                       django_news, django_root_news):
     assert(isinstance(django_news.url, str))
     assert(isinstance(django_news.content, str))
-    assert(isinstance(django_news.schedule, django_backend.schedule_class))
-    assert(isinstance(django_news.src, django_backend.news_class))
+    assert(isinstance(django_news.schedule, django_backend.Schedule))
+    assert(isinstance(django_news.src, django_backend.News))
     assert(django_news.src == django_root_news)
     assert(django_root_news.src is None)
     assert(django_news.owner == django_schedule.owner)

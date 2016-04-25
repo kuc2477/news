@@ -1,4 +1,3 @@
-import re
 import os.path
 from urllib.parse import urlparse
 import urltools
@@ -39,16 +38,28 @@ def fillurl(index, url):
     parsedu = urlparse(url)
 
     if not ispath(url):
-        filled = parsedu.geturl()
-
-    elif isabspath(url):
-        filled = '%s://%s/%s%s' % (
-            parsedi.scheme, parsedi.hostname, parsedu.path.lstrip('/'),
-            '?' + parsedu.query if parsedu.query else ''
+        filled = '{scheme}://{hostname}{path}{query}'.format(
+            scheme=parsedu.scheme,
+            hostname=parsedu.hostname,
+            path=parsedu.path,
+            query='?' + parsedu.query if parsedu.query else ''
         )
 
+    # absoulte path
+    elif isabspath(url):
+        filled = '{scheme}://{hostname}{path}{query}'.format(
+            scheme=parsedi.scheme,
+            hostname=parsedi.hostname,
+            path=parsedu.path,
+            query='?' + parsedu.query if parsedu.query else ''
+        )
+
+    # relative path
     else:
-        filled = '%s/%s' % (parsedi.geturl(), url)
+        filled = '{index}/{path}'.format(
+            index=parsedi.geturl(),
+            path=parsedu.path
+        )
 
     return normalize(filled)
 

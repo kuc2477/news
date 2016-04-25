@@ -62,4 +62,10 @@ target/
 .ipynb_checkpoints
 *.json
 *.eggs
+
+# Venv
 .venv/
+
+# Redis
+*.rdb
+>>>>>>> dev

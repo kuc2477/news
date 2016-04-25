@@ -42,11 +42,8 @@ __NEWS_LOG_STREAM_HANDLER__.setFormatter(__NEWS_LOG_FORMATTER__)
 __NEWS_LOGGER__ = logging.getLogger('NEWS')
 __NEWS_LOGGER__.addHandler(__NEWS_LOG_STREAM_HANDLER__)
 
-
-def _set_mode(self, silent):
-    self.propagate = not silent
-    self.setLevel(logging.DEBUG if not silent else logging.CRITICAL)
-
 # Export logger alias
 logger = __NEWS_LOGGER__
-logger.set_mode = partial(_set_mode, logger)
+logger.enable = lambda: logger.setLevel('DEBUG')
+logger.disable = lambda: logger.setLevel('CRITICAL')
+logger.enable()

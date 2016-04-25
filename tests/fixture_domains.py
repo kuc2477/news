@@ -1,8 +1,10 @@
 import pytest
+from celery import Celery
+from redis import Redis
 from news.cover import Cover
 from news.reporter import ReporterMeta, Reporter
 from news.scheduler import Scheduler
-from celery import Celery
+from news.persister import Persister
 
 
 @pytest.fixture
@@ -53,10 +55,26 @@ def successor_reporter_fetched(successor_reporter, content_child):
     return reporter
 
 
+@pytest.fixture(scope='session')
+def persister():
+    return Persister(Redis())
+
+
 @pytest.fixture
 def scheduler(django_backend):
     return Scheduler(
         django_backend, Celery(),
+        report_experience='experiences.report_experience',
+        fetch_experience='experiences.fetch_experience',
+        dispatch_middlewares=['middlewares.dispatch_middleware'],
+        fetch_middlewares=['middlewares.fetch_middleware']
+    )
+
+
+@pytest.fixture
+def sa_scheduler(sa_backend):
+    return Scheduler(
+        sa_backend, Celery(),
         report_experience='experiences.report_experience',
         fetch_experience='experiences.fetch_experience',
         dispatch_middlewares=['middlewares.dispatch_middleware'],

@@ -1,7 +1,3 @@
-from django.db.models.signals import (
-    post_save,
-    post_delete
-)
 import pytest
 
 
@@ -38,9 +34,9 @@ def test_news_exists(django_backend, django_news):
 
 
 @pytest.mark.django_db
-def test_save_news(django_backend, django_schedule, django_news_class,
+def test_save_news(django_backend, django_schedule, django_news_model,
                    url, content):
-    news = django_news_class(
+    news = django_news_model(
         schedule=django_schedule,
         url=url,
         content=content
@@ -54,14 +50,14 @@ def test_save_news(django_backend, django_schedule, django_news_class,
 
 
 @pytest.mark.django_db
-def test_cascade_save_news(django_backend, django_schedule, django_news_class,
+def test_cascade_save_news(django_backend, django_schedule, django_news_model,
                            url_root, content_root, url_child, content_child):
-    root = django_news_class(
+    root = django_news_model(
         schedule=django_schedule,
         url=url_root,
         content=content_root
     )
-    child = django_news_class(
+    child = django_news_model(
         schedule=django_schedule,
         src=root,
         url=url_child,
@@ -85,6 +81,14 @@ def test_delete_news(django_backend, django_news):
 
 
 @pytest.mark.django_db
+def test_get_schedule_by_id(django_backend, django_schedule):
+    assert(
+        django_schedule ==
+        django_backend.get_schedule_by_id(django_schedule.id)
+    )
+
+
+@pytest.mark.django_db
 def test_get_schedule(django_backend, django_schedule):
     assert(
         django_schedule ==
@@ -104,56 +108,3 @@ def test_get_schedules(django_backend, django_schedule):
     assert(django_schedule in django_backend.get_schedules(
         owner=django_schedule.owner, url=django_schedule.url
     ))
-
-
-@pytest.mark.django_db
-def test_set_schedule_save_listener_create(
-        mocker, django_backend, django_owner, django_schedule_class,
-        url):
-    stub = mocker.stub()
-    django_backend.set_schedule_save_listener(stub)
-    schedule = django_schedule_class(url=url, owner=django_owner)
-    schedule.save()
-
-    stub.assert_called_once_with(
-        instance=schedule,
-        sender=django_backend.schedule_class,
-        signal=post_save,
-        created=True,
-        raw=False,
-        update_fields=None,
-        using='default'
-    )
-
-
-@pytest.mark.django_db
-def test_set_schedule_save_listener_update(mocker, django_backend,
-                                           django_schedule):
-    stub = mocker.stub()
-    django_backend.set_schedule_save_listener(stub)
-    django_schedule.url = 'changed url'
-    django_schedule.save()
-
-    stub.assert_called_once_with(
-        instance=django_schedule,
-        sender=django_backend.schedule_class,
-        signal=post_save,
-        created=False,
-        raw=False,
-        update_fields=None,
-        using='default'
-    )
-
-
-@pytest.mark.django_db
-def test_set_schedule_delete_listener(mocker, django_backend, django_schedule):
-    stub = mocker.stub()
-    django_backend.set_schedule_delete_listener(stub)
-    django_schedule.delete()
-
-    stub.assert_called_once_with(
-        instance=django_schedule,
-        sender=django_backend.schedule_class,
-        signal=post_delete,
-        using='default'
-    )
