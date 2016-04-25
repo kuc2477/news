@@ -11,7 +11,7 @@ services:
     - redis-server
 
 script:
-    - coverage run --source=news setup.py test
+    - python setup.py test
 
 after_success:
     - coveralls
