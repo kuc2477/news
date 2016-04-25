@@ -1,12 +1,9 @@
-import platform
-import pytest
+import celery
 
 
-@pytest.mark.skipif(platform.system().lower() == 'windows',
-                    reason='celery service test won\'t run in windows')
 def test_run(scheduler, django_schedule):
     scheduler.set_task()
-    scheduler.celery_task.delay(django_schedule.id)
+    assert(isinstance(scheduler.celery_task, celery.Task))
 
 
 def test_add_schedule(scheduler, django_schedule):
