@@ -221,9 +221,10 @@ class Reporter(object):
         :rtype: :class:`list`
 
         """
-        self._log('Dispatching reporters')
 
         reporters = self.call_up_reporters(urls, self.meta.exhaust_intel())
+
+        self._log('Dispatching {} reporters'.format(len(reporters)))
         dispatches = [r.dispatch(bulk_report=bulk_report) for r in reporters]
 
         news_sets = await asyncio.gather(*dispatches, return_exceptions=True)
