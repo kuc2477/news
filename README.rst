@@ -14,7 +14,7 @@ Author
 Requirements
 ============
 * Python 3.5+
-* Redis [optional for schedule persistence]
+* Redis (optional)
 
 
 Documentation
