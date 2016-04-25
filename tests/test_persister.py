@@ -15,7 +15,7 @@ def test_schedule_update(mocker, sa_session, sa_schedule,
     sa_schedule.url = 'changed'
     sa_session.commit()
 
-    sleep(REDIS_PUBSUB_SLEEP_TIME * 5)
+    sleep(REDIS_PUBSUB_SLEEP_TIME * 20)
     assert(persister.notify_schedule_saved.called)
     assert(persister.persist_schedule_save.called)
     persister.stop_persistence()
@@ -35,7 +35,7 @@ def test_schedule_create(mocker, sa_session, sa_schedule_model, sa_owner,
     sa_session.add(schedule)
     sa_session.commit()
 
-    sleep(REDIS_PUBSUB_SLEEP_TIME * 5)
+    sleep(REDIS_PUBSUB_SLEEP_TIME * 20)
     assert(persister.notify_schedule_saved.called)
     assert(persister.persist_schedule_save.called)
     persister.stop_persistence()
@@ -54,7 +54,7 @@ def test_schedule_delete(mocker, sa_session, sa_schedule,
     sa_session.delete(sa_schedule)
     sa_session.commit()
 
-    sleep(REDIS_PUBSUB_SLEEP_TIME * 5)
+    sleep(REDIS_PUBSUB_SLEEP_TIME * 20)
     assert(persister.notify_schedule_deleted.called)
     assert(persister.persist_schedule_delete.called)
     persister.stop_persistence()
