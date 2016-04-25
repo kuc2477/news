@@ -7,6 +7,9 @@ install:
     - pip install coveralls
     - python setup.py install
 
+services:
+    - redis-server
+
 script:
     - coverage run --source=news setup.py test
 
