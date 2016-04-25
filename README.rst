@@ -1,5 +1,5 @@
 ================
-:newspaper: News 
+News :newspaper:
 ================
 
 .. image:: https://travis-ci.org/kuc2477/news.svg?branch=dev
