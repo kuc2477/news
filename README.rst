@@ -17,4 +17,12 @@ Requirements
 * Redis [optional for schedule persistence]
 
 
+Documentation
+=============
+* `Read the Docs <http://news.readthedocs.org/en/latest>`
+
+
+Note
+====
 - You can see the project roadmap in `ROADMAP.org`
+- Public API can be changed at any time since the project is still under heavy development.
