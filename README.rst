@@ -4,8 +4,8 @@ News
 
 .. image:: https://travis-ci.org/kuc2477/news.svg?branch=dev
    :target: https://travis-ci.org/kuc2477/news
-.. image:: https://coveralls.io/repos/github/kuc2477/news/badge.svg?branch=master
-   :target: https://coveralls.io/github/kuc2477/news?branch=master
+.. image:: https://coveralls.io/repos/github/kuc2477/news/badge.svg?branch=dev
+   :target: https://coveralls.io/github/kuc2477/news?branch=dev
 
 
 Author
