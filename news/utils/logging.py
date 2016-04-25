@@ -44,6 +44,7 @@ __NEWS_LOGGER__.addHandler(__NEWS_LOG_STREAM_HANDLER__)
 
 # Export logger alias
 logger = __NEWS_LOGGER__
+logger.propagate = False
 logger.enable = lambda: logger.setLevel('DEBUG')
 logger.disable = lambda: logger.setLevel('CRITICAL')
 logger.enable()
