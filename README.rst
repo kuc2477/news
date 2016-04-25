@@ -8,7 +8,7 @@ News
 
 Author
 ======
-* `Ha Junsoo <kuc2477@gmail.com`_
+* `Ha Junsoo <kuc2477@gmail.com>`_
 
 
 Requirements
@@ -19,7 +19,7 @@ Requirements
 
 Documentation
 =============
-* `Read the Docs <http://news.readthedocs.org/en/latest>`
+* `Read the Docs <http://news.readthedocs.org/en/latest>`_
 
 
 Note
