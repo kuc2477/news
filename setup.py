@@ -48,6 +48,8 @@ setup(
     maintainer_email='kuc2477@gmail.com',
     url='https://github.com/kuc2477/news',
     install_requires=[
+        'celery',
+        'redis',
         'aiohttp>=0.19.0',
         'schedule>=0.3.2',
         'beautifulsoup4>=4.4.1',
