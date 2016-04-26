@@ -69,30 +69,42 @@ class Scheduler(object):
 
     *Example*::
 
-        from celery import Celery
         from redis import Redis
-
+        from celery import Celery
         from django.contrib.auth.models import User
+
         from news.backends.django import DjangoBackend
+        from news.scheduler import Scheduler
+        from news.persister import Persister
         from news.models.django import (
             create_abc_schedule, create_abc_news,
             create_schedule, create_news
         )
 
-        from news.scheduler import Scheduler
-        from news.persistence import SchedulePersister
-
-
+        # create a celery instance and a redis instance
         redis = Redis()
         celery = Celery()
-        persister = SchedulePersister(redis)
 
-        Schedule = create_schedule(create_abc_schedule(User), persister)
-        News = create_news(create_abc_news(Schedule))
+        # create persister for schedule persistence (optional)
+        persister = Persister(redis)
 
-        backend = DjangoBackend(User, Schedule, News)
+        # define schedule model
+        ABCSchedule = create_abc_schedule(user_model=User)
+        Schedule = create_schedule(ABCSchedule)
+
+        # define news model
+        ABCNews = create_abc_news(schedule_model=Schedule)
+        News = create_news(ABCNews)
+
+        # create a schedule backend
+        backend = DjangoBackend(
+                user_model=User, 
+                schedule_model=Schedule, 
+                news_model=News)
+
+        # run scheduler (persisted)
         scheduler = Scheduler(backend, celery, persister=persister)
-        scheduler.run()
+        scheduler.start()
 
     """
     def __init__(self, backend=None, celery=None,

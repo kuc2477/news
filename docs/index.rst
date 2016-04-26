@@ -10,21 +10,30 @@ News is a schedulable url subscription engine based on :mod:`asnycio`. ::
 
     from celery import Celery
     from django.contrib.auth.models import User
+
     from news.backends.django import DjangoBackend
     from news.scheduler import Scheduler
-    from news.models.django import Schedule, News
+    from news.models.django import (
+        create_abc_schedule, create_schedule, 
+        create_abc_news, create_news
+    )
 
-    # create a url subscription schedule
-    owner = User.objects.first()
-    Schedule.objects.create(owner=owner, url='http://httpbin.org')
+    # define schedule model
+    ABCSchedule = create_abc_schedule(user_model=User)
+    Schedule = create_schedule(ABCSchedule)
 
-    # create a news backend
+    # define news model
+    ABCNews = create_abc_news(schedule_model=Schedule)
+    News = create_news(ABCNews)
+
+    # create a celery instance
     celery = Celery()
+
+    # create a schedule backend
     backend = DjangoBackend(
-            user_class=User,
-            schedule_class=Schedule,
-            news_class=News
-        )
+            user_model=User,
+            schedule_model=Schedule,
+            news_model=News)
 
     # run news scheduler
     scheduler = Scheduler(backend, celery)
