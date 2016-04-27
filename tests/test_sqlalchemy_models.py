@@ -12,7 +12,7 @@ def test_abstract_schedule_implementation(
     assert(isinstance(sa_schedule.url, str))
     assert(isinstance(sa_schedule.cycle, int))
     assert(isinstance(sa_schedule.filter_options, dict))
-    assert(sa_scheduler.get_state(sa_scheduler.celery) in ALL_STATES)
+    assert(sa_schedule.get_state(sa_scheduler.celery) in ALL_STATES)
 
 
 def test_abstract_news_implementation(
