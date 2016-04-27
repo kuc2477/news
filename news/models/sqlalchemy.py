@@ -17,7 +17,6 @@ from sqlalchemy import (
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import (
     relationship,
-    Session,
     backref,
 )
 from sqlalchemy.ext.declarative import declared_attr
@@ -102,10 +101,6 @@ def create_abc_schedule(user_model):
         max_depth = Column(Integer, default=DEFAULT_MAX_DEPTH)
         blacklist = Column(JSONType, default=DEFAULT_BLACKLIST, nullable=False)
         brothers = Column(JSONType, default=DEFAULT_BROTHERS, nullable=False)
-
-        def update_latest_task(self, task_id):
-            self.latest_task = task_id
-            Session.object_session(self).commit()
 
     return AbstractBaseSchedule
 

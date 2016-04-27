@@ -62,13 +62,10 @@ def create_abc_schedule(user_model=None):
         blacklist = JSONField(default=DEFAULT_BLACKLIST)
         brothers = JSONField(default=DEFAULT_BROTHERS)
 
-        def update_latest_task(self, task_id):
-            self.latest_task = task_id
-            self.save()
-
         class Meta:
             abstract = True
             unique_together = (('owner', 'url'),)
+
     return AbstractBaseSchedule
 
 

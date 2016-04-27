@@ -98,8 +98,8 @@ class Scheduler(object):
 
         # create a schedule backend
         backend = DjangoBackend(
-                user_model=User, 
-                schedule_model=Schedule, 
+                user_model=User,
+                schedule_model=Schedule,
                 news_model=News)
 
         # run scheduler (persisted)
@@ -123,6 +123,7 @@ class Scheduler(object):
 
         # scheduler state
         self.jobs = dict()
+        self.queued = set()
         self.running = False
 
         # scheduler intel strategy
@@ -187,15 +188,14 @@ class Scheduler(object):
         self.persister and self.persister.stop_persistence()
         self.running = False
 
-    # ===================
+    # ==================
     # Celery integration
-    # ===================
+    # ==================
 
-    def make_run_cover(self):
+    def _make_run_cover(self):
         def run_cover(task, id):
             # update latest task
             schedule = self.backend.get_schedule_by_id(id)
-            schedule.update_latest_task(task.request.id)
             self._log('Cover for schedule {} starting'.format(schedule.id))
 
             # prepare news cover with preconfigured experience and middlewares.
@@ -209,13 +209,21 @@ class Scheduler(object):
                 fetch_middlewares=self.fetch_middlewares
             )
             # run news cover along with registered callbacks
+            self.queued.remove(id)
             self.on_cover_start(schedule)
             self.on_cover_finished(schedule, cover.run())
             self._log('Cover for schedule {} finished'.format(schedule.id))
         return run_cover
 
+    def _push_cover(self, id):
+        if not self.celery_task or id in self.queue:
+            return
+
+        self.celery_task.apply_async(id, task_id=id)
+        self.queued.add(id)
+
     def make_task(self):
-        return self.celery.task(bind=True)(self.make_run_cover())
+        return self.celery.task(bind=True)(self._make_run_cover())
 
     def set_task(self):
         self.celery_task = self.make_task()
@@ -237,7 +245,7 @@ class Scheduler(object):
         self.jobs[schedule.id] = self.pusher\
             .every(schedule.cycle)\
             .minutes\
-            .do(self.celery_task.delay, schedule.id)
+            .do(self._push_cover, schedule.id)
 
     def remove_schedule(self, schedule, silent=True):
         try:

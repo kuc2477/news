@@ -76,13 +76,9 @@ class AbstractSchedule(AbstractModel):
             'brothers': self.brothers
         }
 
-    def update_latest_task(self, task_id):
-        """Updates the current schedule's latest run task."""
-        raise NotImplementedError
-
     def get_state(self, celery):
         try:
-            return celery.AsyncResult(self.latest_task).state
+            return celery.AsyncResult(self.id).state
         except Exception:
             return states.PENDING
 
