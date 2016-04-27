@@ -1,4 +1,4 @@
-import uuid
+from celery.states import ALL_STATES
 
 
 def test_abstract_model_implementations(django_schedule, django_news):
@@ -6,17 +6,15 @@ def test_abstract_model_implementations(django_schedule, django_news):
     assert(isinstance(django_news.id, int))
 
 
-def test_abstract_schedule_implementation(django_backend, django_schedule):
+def test_abstract_schedule_implementation(
+        scheduler, django_backend, django_schedule):
     assert(isinstance(django_schedule.owner, django_backend.Owner))
     assert(isinstance(django_schedule.url, str))
     assert(isinstance(django_schedule.cycle, int))
     assert(isinstance(django_schedule.latest_task, str) or
            django_schedule.latest_task is None)
     assert(isinstance(django_schedule.filter_options, dict))
-
-    task_id = uuid.uuid4()
-    django_schedule.update_latest_task(task_id)
-    assert(django_schedule.latest_task == task_id)
+    assert(django_schedule.get_state(scheduler.celery) in ALL_STATES)
 
 
 def test_abstract_news_implementation(django_backend, django_schedule,
