@@ -1,2 +1,2 @@
-.. automodule:: news.models.abstract
+.. automodule:: news.models
    :members:
