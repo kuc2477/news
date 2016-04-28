@@ -44,7 +44,7 @@ References
 ----------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    news
    news/reporter
