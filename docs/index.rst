@@ -6,7 +6,7 @@
 News
 ====
 
-News is a schedulable url subscription engine based on :mod:`asnycio`. ::
+News is a schedulable url subscription engine built on top of :mod:`asnycio` and `aiohttp`. ::
 
     from celery import Celery
     from django.contrib.auth.models import User
@@ -44,7 +44,7 @@ References
 ----------
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    news
    news/reporter
