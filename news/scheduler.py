@@ -7,6 +7,7 @@ Provides scheduler that runs news cover celery tasks.
 import time
 import threading
 import schedule as pusher
+from celery import states
 from .constants import COVER_PUSHER_CYCLE
 from .cover import Cover
 from .utils.logging import logger
@@ -36,9 +37,9 @@ class Scheduler(object):
         the scheduler as positional arguments and return a list of news.
     :param on_cover_start: Callback function that will be fired on cover start.
     :type on_cover_start: A function that takes a schedule
-    :param on_cover_finished: Callback function taht will be fired on cover
+    :param on_cover_finish: Callback function taht will be fired on cover
         finish.
-    :type on_cover_finished: A function that takes a schedule and a list of
+    :type on_cover_finish: A function that takes a schedule and a list of
         result news of the cover.
     :param report_experience: Module qualified path to the report experience
         function. The report experience function should take a schedule of the
@@ -109,7 +110,7 @@ class Scheduler(object):
     """
     def __init__(self, backend=None, celery=None,
                  persister=None, intel_strategy=None,
-                 on_cover_start=None, on_cover_finished=None,
+                 on_cover_start=None, on_cover_finish=None,
                  report_experience=None, fetch_experience=None,
                  dispatch_middlewares=None, fetch_middlewares=None):
         # backend & celery
@@ -131,8 +132,8 @@ class Scheduler(object):
 
         # scheduler cover callbacks
         self.on_cover_start = on_cover_start or (lambda schedule: None)
-        self.on_cover_finished = \
-            on_cover_finished or (lambda schedule, news_list: None)
+        self.on_cover_finish = \
+            on_cover_finish or (lambda schedule, news_list: None)
 
         # scheduler middlewares
         self.dispatch_middlewares = dispatch_middlewares or []
@@ -192,38 +193,50 @@ class Scheduler(object):
     # Celery integration
     # ==================
 
+    def _make_cover(self, schedule):
+        intel = self.intel_strategy(self.backend, schedule)
+        cover = Cover.from_schedule(schedule, self.backend)
+        cover.prepare(
+            intel=intel,
+            report_experience=self.report_experience,
+            fetch_experience=self.fetch_experience,
+            dispatch_middlewares=self.dispatch_middlewares,
+            fetch_middlewares=self.fetch_middlewares
+        )
+        return cover
+
     def _make_run_cover(self):
         def run_cover(task, id):
-            # update latest task
-            schedule = self.backend.get_schedule_by_id(id)
-            self._log('Cover for schedule {} starting'.format(schedule.id))
+            # mark task state started
+            task.update_state(states.STARTED)
 
-            # prepare news cover with preconfigured experience and middlewares.
-            intel = self.intel_strategy(self.backend, schedule)
-            cover = Cover.from_schedule(schedule, self.backend)
-            cover.prepare(
-                intel=intel,
-                report_experience=self.report_experience,
-                fetch_experience=self.fetch_experience,
-                dispatch_middlewares=self.dispatch_middlewares,
-                fetch_middlewares=self.fetch_middlewares
-            )
+            # retrieve a schedule and make cover from it
+            schedule = self.backend.get_schedule_by_id(id)
+            cover = self._make_cover(schedule)
+
+            # pop from task queue indicator
+            if id in self.queued:
+                self.queued.remove(id)
+
             # run news cover along with registered callbacks
-            self.queued.remove(id)
+            self._log('Cover for schedule {} starting'.format(id), tag='debug')
             self.on_cover_start(schedule)
-            self.on_cover_finished(schedule, cover.run())
-            self._log('Cover for schedule {} finished'.format(schedule.id))
+            self.on_cover_finish(schedule, cover.run())
+            self._log('Cover for schedule {} finished'.format(id), tag='debug')
         return run_cover
 
     def _push_cover(self, id):
-        if not self.celery_task or id in self.queue:
+        # do not push cover into task queue if already exists
+        if not self.celery_task or id in self.queued:
             return
 
-        self.celery_task.apply_async(id, task_id=id)
+        self.celery_task.apply_async((id,), task_id=str(id))
         self.queued.add(id)
 
     def make_task(self):
-        return self.celery.task(bind=True)(self._make_run_cover())
+        # make `run_cover` method into a celery task
+        run_cover = self._make_run_cover()
+        return self.celery.task(bind=True)(run_cover)
 
     def set_task(self):
         self.celery_task = self.make_task()
@@ -266,19 +279,16 @@ class Scheduler(object):
         [self.remove_schedule(id) for id in self.jobs.keys()]
 
     def update_schedule(self, schedule):
-        self._log(
-            'Updating schedule {}'
-            .format(schedule if isinstance(schedule, int)
-                    else schedule.id)
-        )
-
         if isinstance(schedule, int):
             schedule = self.backend.get_schedule_by_id(schedule)
 
-        if not schedule.enabled:
-            self.remove_schedule(schedule)
-        else:
-            self.remove_schedule(schedule)
+        # log
+        self._log('Updating schedule {}'.format(
+            schedule if isinstance(schedule, int) else schedule.id))
+
+        # remove schedule from job queue and add it if it's now enabled
+        self.remove_schedule(schedule)
+        if schedule.enabled:
             self.add_schedule(schedule)
 
     def _log(self, message, tag='info'):

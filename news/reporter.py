@@ -15,6 +15,7 @@ from .utils.url import (
 )
 from .utils.python import importattr
 from .utils.logging import logger
+from .constants import LOG_URL_MAX_LENGTH
 
 
 __all__ = ['ReporterMeta', 'Reporter']
@@ -183,8 +184,6 @@ class Reporter(object):
         :rtype: :class:`list`
 
         """
-        self._log('Dispatch start')
-
         # fetch news from the url and determine whether it is worthy or not
         news = await self.fetch()
         news = news if news and self.worth_to_report(news) else None
@@ -221,10 +220,14 @@ class Reporter(object):
         :rtype: :class:`list`
 
         """
-
         reporters = self.call_up_reporters(urls, self.meta.exhaust_intel())
 
-        self._log('Dispatching {} reporters'.format(len(reporters)))
+        # return empty list if no reporters has been called up
+        if not reporters:
+            return []
+
+        self._log('Dispatching {} reporters'.format(len(reporters)),
+                  tag='warning')
         dispatches = [r.dispatch(bulk_report=bulk_report) for r in reporters]
 
         news_sets = await asyncio.gather(*dispatches, return_exceptions=True)
@@ -248,8 +251,6 @@ class Reporter(object):
         :rtype: :class:`~news.news.News`
 
         """
-        self._log('Fetch started')
-
         async with aiohttp.get(self.url) as response:
             # return nothing if status code is not OK
             if response.status != 200:
@@ -337,7 +338,7 @@ class Reporter(object):
     # ===================
 
     def report_news(self, *news):
-        self._log('Reporting {}'.format(len(news)))
+        self._log('Reporting {} news to backend'.format(len(news)))
         self.backend.save_news(*news)
 
     async def report_visited(self):
@@ -381,6 +382,7 @@ class Reporter(object):
         is_relative = any([issuburl(b, url) for b in brothers])
         blacklist_ok = ext(url) not in blacklist
         visit_count_ok = len(await self.get_visited_urls()) <= max_visit
+        already_visited = await self.already_visited(url)
         depth_ok = depth(root_url, url) <= max_depth if max_depth else True
         dist_ok = self.distance < max_dist if max_dist else True
 
@@ -388,9 +390,14 @@ class Reporter(object):
         # allowed depth from the root url.
         format_ok = (is_child and depth_ok) or is_relative
 
-        return format_ok and dist_ok and visit_count_ok and blacklist_ok and \
-            not await self.already_visited(url) and \
-            experience(self.schedule, news, url) if experience else True
+        result = format_ok and dist_ok and visit_count_ok and blacklist_ok and\
+            not already_visited and \
+            (experience(self.schedule, news, url) if experience else True)
+
+        if result and already_visited:
+            print('fuck!!!')
+
+        return result
 
     def worth_to_report(self, news):
         experience = importattr(self.meta.report_experience) \
@@ -448,9 +455,10 @@ class Reporter(object):
     # =======
 
     def _log(self, message, tag='info'):
-        title = '[Reporter of schedule {} for {}]'.format(
-            self.schedule.id, self.url
-        )
+        id = self.schedule.id
+        url = self.url[:LOG_URL_MAX_LENGTH] + '...' \
+            if len(self.url) > LOG_URL_MAX_LENGTH else self.url
 
+        title = '[Reporter of schedule {} for {}]'.format(id, url)
         logging_method = getattr(logger, tag)
         logging_method('{}: {}'.format(title, message))

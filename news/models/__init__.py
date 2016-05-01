@@ -6,6 +6,7 @@ backends.
 
 """
 from celery import states
+from bs4 import BeautifulSoup
 from extraction import Extractor
 from ..utils import url
 
@@ -41,6 +42,9 @@ class AbstractSchedule(AbstractModel):
 
     #: (:class:`int`) Schedule's news update cycle in minutes.
     cycle = NotImplementedError
+
+    #: (:class:`int`) Maximum urls allowed for reporters to discover.
+    max_visit = NotImplementedError
 
     #: (:class:`int`) Maximum distance allowed for reporters to discover.
     max_dist = NotImplementedError
@@ -78,7 +82,7 @@ class AbstractSchedule(AbstractModel):
 
     def get_state(self, celery):
         try:
-            return celery.AsyncResult(self.id).state
+            return celery.AsyncResult(str(self.id)).state
         except Exception:
             return states.PENDING
 
@@ -168,6 +172,44 @@ class AbstractNews(AbstractModel):
                 Extractor().extract(self.content)
 
         return extracted
+
+    @property
+    def soup(self):
+        try:
+            soup = self._cached_soup
+        except AttributeError:
+            soup = self._cached_soup = BeautifulSoup(self.content)
+
+        return soup
+
+    @property
+    def text(self):
+        try:
+            return self._cached_text
+
+        except AttributeError:
+            # kill all script and style elements
+            for script in self.soup(["script", "style"]):
+                script.extract()    # rip it out
+
+            # get text
+            text = self.soup.get_text()
+
+            # break into lines and remove leading and trailing space on each
+            lines = (line.strip() for line in text.splitlines())
+            # break multi-headlines into a line each
+            chunks = (phrase.strip() for line in lines for
+                      phrase in line.split("  "))
+            # drop blank lines
+            self._cached_text = '\n'.join(chunk for chunk in chunks if chunk)
+
+        finally:
+            return self._cached_text
+
+    @property
+    def words(self):
+        tokenized = self.text.replace('\n', ' ').split(' ')
+        return (w for w in tokenized if w.isalpha())
 
     @property
     def title(self):
