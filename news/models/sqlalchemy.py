@@ -179,7 +179,7 @@ def create_abc_news(schedule_model):
         def owner(self):
             if self.schedule:
                 return self.schedule.owner
-            elif self._schedule:
+            elif hasattr(self, '_schedule'):
                 return self._schedule.owner
             else:
                 return None
