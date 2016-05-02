@@ -36,9 +36,9 @@ class Scheduler(object):
         the scheduler as positional arguments and return a list of news.
     :param on_cover_start: Callback function that will be fired on cover start.
     :type on_cover_start: A function that takes a schedule
-    :param on_cover_finished: Callback function taht will be fired on cover
+    :param on_cover_finish: Callback function taht will be fired on cover
         finish.
-    :type on_cover_finished: A function that takes a schedule and a list of
+    :type on_cover_finish: A function that takes a schedule and a list of
         result news of the cover.
     :param report_experience: Module qualified path to the report experience
         function. The report experience function should take a schedule of the
@@ -109,7 +109,7 @@ class Scheduler(object):
     """
     def __init__(self, backend=None, celery=None,
                  persister=None, intel_strategy=None,
-                 on_cover_start=None, on_cover_finished=None,
+                 on_cover_start=None, on_cover_finish=None,
                  report_experience=None, fetch_experience=None,
                  dispatch_middlewares=None, fetch_middlewares=None):
         # backend & celery
@@ -131,8 +131,8 @@ class Scheduler(object):
 
         # scheduler cover callbacks
         self.on_cover_start = on_cover_start or (lambda schedule: None)
-        self.on_cover_finished = \
-            on_cover_finished or (lambda schedule, news_list: None)
+        self.on_cover_finish = \
+            on_cover_finish or (lambda schedule, news_list: None)
 
         # scheduler middlewares
         self.dispatch_middlewares = dispatch_middlewares or []
@@ -211,7 +211,7 @@ class Scheduler(object):
             # run news cover along with registered callbacks
             self.queued.remove(id)
             self.on_cover_start(schedule)
-            self.on_cover_finished(schedule, cover.run())
+            self.on_cover_finish(schedule, cover.run())
             self._log('Cover for schedule {} finished'.format(schedule.id))
         return run_cover
 
