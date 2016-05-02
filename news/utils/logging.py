@@ -2,7 +2,6 @@ import logging
 
 from timeit import default_timer
 from contextlib import contextmanager
-from functools import partial
 
 from colorlog import ColoredFormatter
 

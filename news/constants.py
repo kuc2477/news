@@ -10,3 +10,5 @@ DEFAULT_MAX_DIST = None
 DEFAULT_MAX_DEPTH = None
 DEFAULT_BLACKLIST = ['png', 'jpg', 'gif', 'pdf', 'svg', 'zip']
 DEFAULT_BROTHERS = []
+
+LOG_URL_MAX_LENGTH = 40

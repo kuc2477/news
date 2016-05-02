@@ -56,9 +56,7 @@ def create_abc_schedule(user_model):
 
     """
     class AbstractBaseSchedule(AbstractSchedule):
-        @declared_attr
-        def __tablename__(cls):
-            return 'schedule'
+        __tablename__ = 'schedule'
 
         @declared_attr
         def __table_args__(cls):
@@ -118,9 +116,7 @@ def create_abc_news(schedule_model):
 
     """
     class AbstractBaseNews(AbstractNews):
-        @declared_attr
-        def __tablename__(cls):
-            return 'news'
+        __tablename__ = 'news'
 
         @declared_attr
         def __table_args__(cls):

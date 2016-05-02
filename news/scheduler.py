@@ -7,6 +7,7 @@ Provides scheduler that runs news cover celery tasks.
 import time
 import threading
 import schedule as pusher
+from celery import states
 from .constants import COVER_PUSHER_CYCLE
 from .cover import Cover
 from .utils.logging import logger
@@ -192,38 +193,50 @@ class Scheduler(object):
     # Celery integration
     # ==================
 
+    def _make_cover(self, schedule):
+        intel = self.intel_strategy(self.backend, schedule)
+        cover = Cover.from_schedule(schedule, self.backend)
+        cover.prepare(
+            intel=intel,
+            report_experience=self.report_experience,
+            fetch_experience=self.fetch_experience,
+            dispatch_middlewares=self.dispatch_middlewares,
+            fetch_middlewares=self.fetch_middlewares
+        )
+        return cover
+
     def _make_run_cover(self):
         def run_cover(task, id):
-            # update latest task
-            schedule = self.backend.get_schedule_by_id(id)
-            self._log('Cover for schedule {} starting'.format(schedule.id))
+            # mark task state started
+            task.update_state(states.STARTED)
 
-            # prepare news cover with preconfigured experience and middlewares.
-            intel = self.intel_strategy(self.backend, schedule)
-            cover = Cover.from_schedule(schedule, self.backend)
-            cover.prepare(
-                intel=intel,
-                report_experience=self.report_experience,
-                fetch_experience=self.fetch_experience,
-                dispatch_middlewares=self.dispatch_middlewares,
-                fetch_middlewares=self.fetch_middlewares
-            )
+            # retrieve a schedule and make cover from it
+            schedule = self.backend.get_schedule_by_id(id)
+            cover = self._make_cover(schedule)
+
+            # pop from task queue indicator
+            if id in self.queued:
+                self.queued.remove(id)
+
             # run news cover along with registered callbacks
-            self.queued.remove(id)
+            self._log('Cover for schedule {} starting'.format(id), tag='debug')
             self.on_cover_start(schedule)
             self.on_cover_finish(schedule, cover.run())
-            self._log('Cover for schedule {} finished'.format(schedule.id))
+            self._log('Cover for schedule {} finished'.format(id), tag='debug')
         return run_cover
 
     def _push_cover(self, id):
-        if not self.celery_task or id in self.queue:
+        # do not push cover into task queue if already exists
+        if not self.celery_task or id in self.queued:
             return
 
-        self.celery_task.apply_async(id, task_id=id)
+        self.celery_task.apply_async((id,), task_id=str(id))
         self.queued.add(id)
 
     def make_task(self):
-        return self.celery.task(bind=True)(self._make_run_cover())
+        # make `run_cover` method into a celery task
+        run_cover = self._make_run_cover()
+        return self.celery.task(bind=True)(run_cover)
 
     def set_task(self):
         self.celery_task = self.make_task()
@@ -266,19 +279,16 @@ class Scheduler(object):
         [self.remove_schedule(id) for id in self.jobs.keys()]
 
     def update_schedule(self, schedule):
-        self._log(
-            'Updating schedule {}'
-            .format(schedule if isinstance(schedule, int)
-                    else schedule.id)
-        )
-
         if isinstance(schedule, int):
             schedule = self.backend.get_schedule_by_id(schedule)
 
-        if not schedule.enabled:
-            self.remove_schedule(schedule)
-        else:
-            self.remove_schedule(schedule)
+        # log
+        self._log('Updating schedule {}'.format(
+            schedule if isinstance(schedule, int) else schedule.id))
+
+        # remove schedule from job queue and add it if it's now enabled
+        self.remove_schedule(schedule)
+        if schedule.enabled:
             self.add_schedule(schedule)
 
     def _log(self, message, tag='info'):
