@@ -177,8 +177,12 @@ def create_abc_news(schedule_model):
 
         @property
         def owner(self):
-            return self.schedule.owner if self.schedule else \
-                self._schedule and self._schedule.owner
+            if self.schedule:
+                return self.schedule.owner
+            elif self._schedule:
+                return self._schedule.owner
+            else:
+                return None
 
     return AbstractBaseNews
 
