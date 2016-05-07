@@ -25,7 +25,13 @@ class SQLAlchemyBackend(AbstractBackend):
         self.session = bind or self.retrieve_session(
             self.Owner, self.Schedule, self.News)
 
-    def get_news(self, owner, url):
+    def get_news(self, id):
+        if not id:
+            return None
+        else:
+            return self.session.query(self.News).get(id)
+
+    def get_news_by(self, owner, url):
         if not owner or not url:
             return None
 
@@ -53,7 +59,7 @@ class SQLAlchemyBackend(AbstractBackend):
         if not news.is_root:
             self.cascade_save_news(news.src)
 
-        previous = self.get_news(news.owner, news.url)
+        previous = self.get_news(news.id)
 
         if previous:
             previous.content = news.content
@@ -67,14 +73,8 @@ class SQLAlchemyBackend(AbstractBackend):
         self.session.delete(*news)
         self.session.commit()
 
-    def get_schedule_by_id(self, id):
+    def get_schedule(self, id):
         return self.session.query(self.Schedule).get(id)
-
-    def get_schedule(self, owner, url):
-        return self.session.query(self.Schedule).filter(
-            self.Schedule.owner == owner,
-            self.Schedule.url == url
-        ).first()
 
     def get_schedules(self, owner=None, url=None):
         query = self.session.query(self.Schedule)

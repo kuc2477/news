@@ -47,16 +47,26 @@ class AbstractBackend(object):
                        news_model=news_model,
                        *args, **kwargs)
 
-    def get_news(self, owner=None, url=None):
+    def get_news(self, id):
         """
-        Should retrive a news for owner from backend.
+        Should retrive a news with given id.
+
+        :param id: Id of the news.
+        :type id: :attr: `int`
+        :return: News of the given id.
+        :rtype: :attr: `news_model`
+
+        """
+        raise NotImplementedError
+
+    def get_news_by(self, owner, url):
+        """
+        Should return a news for owner from backend.
 
         :param owner: Owner of the news.
-        :type owner: :attr: `owner_model`
+        :type owner: :attr:`owner_model`
         :param url: Url of the news.
         :type url: :class:`str`
-        :return: Owner's news with given url.
-        :rtype: :attr: `news_model`
 
         """
         raise NotImplementedError
@@ -95,31 +105,20 @@ class AbstractBackend(object):
         """
         raise NotImplementedError
 
-    def news_exists(self, owner, url):
+    def news_exists(self, id):
         """
         Should check existance of the news in the backend.
 
-        :param owner: Owner of the news.
-        :type owner: :attr:`owner_model`
-        :param url: Url of the news.
-        :type url: :class:`str`
+        :param id: Id of the news.
+        :type id: :class:`int`
         :return: Whether the news exists in the backend or not.
         :rtype: :class:`bool`
 
         """
-        return self.get_news(owner, url) is not None
+        return self.get_news(id) is not None
 
-    def get_schedule_by_id(self, id):
-        """
-        Should retrieve a schedule of given id from the backend.
-
-        :param id: Primary key of the schedule.
-        :type id: :class:`int`
-        :returns: Schedule of given id.
-        :rtype: :attr:`schedule_model`
-
-        """
-        raise NotImplementedError
+    def news_exists_by(self, owner, url):
+        return self.get_news_by(owner, url) is not None
 
     def get_schedule(owner, url):
         """
@@ -145,7 +144,7 @@ class AbstractBackend(object):
         """
         raise NotImplementedError
 
-    def schedule_exists(self, owner, url):
+    def schedule_exists(self, id):
         """
         Should check existance of the schedule meta in the backend.
 
@@ -157,4 +156,4 @@ class AbstractBackend(object):
         :rtype: :class:`bool`
 
         """
-        return self.get_schedule(owner, url) is not None
+        return self.get_schedule(id) is not None

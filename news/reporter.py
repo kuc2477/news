@@ -274,7 +274,7 @@ class Reporter(object):
 
         # we might already have previously fetched or stored news.
         fetched = self.fetched_news
-        stored = self.backend.get_news(self.owner, self.url)
+        stored = self.backend.get_news_by(owner=self.owner, url=self.url)
 
         # create new news if reporter is making fresh news.
         if not fetched and not stored:

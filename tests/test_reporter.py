@@ -94,9 +94,9 @@ def test_enhance_fetch(mocker, chief_reporter):
 
 def test_report_news(chief_reporter, content_root):
     news = chief_reporter.make_news(content_root)
-    assert(not chief_reporter.backend.news_exists(news.owner, news.url))
+    assert(not chief_reporter.backend.news_exists_by(news.owner, news.url))
     chief_reporter.report_news(news)
-    assert(chief_reporter.backend.news_exists(news.owner, news.url))
+    assert(chief_reporter.backend.news_exists_by(news.owner, news.url))
 
 
 @pytest.mark.asyncio

@@ -1,8 +1,6 @@
 def test_get_news(sa_session, sa_backend, sa_news):
-    url = sa_news.url
-    owner = sa_news.owner
-    assert(sa_news == sa_backend.get_news(owner, url))
-    assert(sa_backend.get_news(None, '') is None)
+    assert(sa_news == sa_backend.get_news(sa_news.id))
+    assert(sa_backend.get_news(None) is None)
 
 
 def test_get_news_list(sa_session, sa_backend, sa_news):
@@ -16,12 +14,9 @@ def test_get_news_list(sa_session, sa_backend, sa_news):
 
 
 def test_news_exists(sa_session, sa_backend, sa_news):
-    url = sa_news.url
-    owner = sa_news.owner
-
-    assert(sa_backend.news_exists(owner, url))
+    assert(sa_backend.news_exists(sa_news.id))
     sa_backend.delete_news(sa_news)
-    assert(not sa_backend.news_exists(owner, url))
+    assert(not sa_backend.news_exists(sa_news.id))
 
 
 def test_save_news(sa_session, sa_backend,
@@ -31,24 +26,19 @@ def test_save_news(sa_session, sa_backend,
         url=url_root,
         content=content_root
     )
-    assert(sa_backend.get_news(sa_schedule.owner, url_root) is None)
+    assert(news not in sa_backend.get_news_list(sa_schedule.owner, url_root))
     sa_backend.save_news(news)
     assert(news in sa_backend.get_news_list(sa_schedule.owner, url_root))
 
 
 def test_delete_news(sa_session, sa_backend, sa_news):
-    assert(sa_backend.news_exists(sa_news.owner, sa_news.url))
+    assert(sa_backend.news_exists(sa_news.id))
     sa_backend.delete_news(sa_news)
-    assert(not sa_backend.news_exists(sa_news.owner, sa_news.url))
-
-
-def test_get_schedule_by_id(sa_session, sa_backend, sa_schedule):
-    assert(sa_schedule == sa_backend.get_schedule_by_id(sa_schedule.id))
+    assert(not sa_backend.news_exists(sa_news.id))
 
 
 def test_get_schedule(sa_session, sa_backend, sa_schedule):
-    assert(sa_schedule ==
-           sa_backend.get_schedule(sa_schedule.owner, sa_schedule.url))
+    assert(sa_schedule == sa_backend.get_schedule(sa_schedule.id))
 
 
 def test_get_schedules(sa_session, sa_backend, sa_schedule,
