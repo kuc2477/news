@@ -189,7 +189,7 @@ class AbstractNews(AbstractModel):
 
         except AttributeError:
             # kill all script and style elements
-            for script in self.soup(["script", "style"]):
+            for script in self.soup(['script', 'style']):
                 script.extract()    # rip it out
 
             # get text

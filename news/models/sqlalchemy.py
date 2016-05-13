@@ -44,8 +44,7 @@ __all__ = ['create_abc_schedule', 'create_abc_news',
 
 
 def create_abc_schedule(user_model):
-    """
-    Abstract base schedule model factory
+    """Abstract base schedule model factory
 
     :param user_model: User model to use as schedule owners.
     :type user_model: :class:`~news.models.AbstractModel`
@@ -130,7 +129,7 @@ def create_abc_news(schedule_model):
         def schedule(cls):
             return relationship(
                 schedule_model,
-                backref='news_list'
+                backref=backref('news_list', cascade='all, delete-orphan')
             )
 
         @declared_attr
@@ -141,7 +140,7 @@ def create_abc_news(schedule_model):
         def src(cls):
             return relationship(
                 'News',
-                backref=backref('children', cascade='delete, delete-orphan'),
+                backref=backref('children', cascade='all, delete-orphan'),
                 remote_side=[cls.id]
             )
 
@@ -152,10 +151,7 @@ def create_abc_news(schedule_model):
         updated = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
         def __init__(self, schedule=None, url='', content='', src=None):
-            # avoid save-update cascade
-            self._schedule = schedule
-            self.schedule_id = schedule and schedule.id
-
+            self.schedule = schedule
             self.url = url
             self.content = content
             self.src = src
@@ -188,8 +184,7 @@ def create_abc_news(schedule_model):
 
 
 def create_schedule(abc_schedule, base, mixins=None, persister=None):
-    """
-    Concrete schedule model factory.
+    """Concrete schedule model factory.
 
     :param abc_schedule: Abstract base schedule to use as base.
     :type abc_schedule: Any ABC schedule from :func:`~create_abc_schedule`
@@ -228,8 +223,7 @@ def create_schedule(abc_schedule, base, mixins=None, persister=None):
 
 
 def create_news(abc_news, base, mixins=None):
-    """
-    Concrete news model factory.
+    """Concrete news model factory.
 
     :param abc_news: Abstract base news to use as base.
     :type abc_news: Any ABC news from :func:`~create_abc_news` factory

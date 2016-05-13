@@ -53,21 +53,14 @@ class SQLAlchemyBackend(AbstractBackend):
         return query.all()
 
     def save_news(self, *news):
-        [self.cascade_save_news(n) for n in news]
+        try:
+            root = [n for n in news if n.is_root][0]
+        except IndexError:
+            raise
 
-    def cascade_save_news(self, news):
-        if not news.is_root:
-            self.cascade_save_news(news.src)
-
-        previous = self.get_news(news.id)
-
-        if previous:
-            previous.content = news.content
-            previous.src = news.src
-            self.session.commit()
-        else:
-            self.session.add(news)
-            self.session.commit()
+        # save-update cascade will do heavy lifting
+        self.session.add(root)
+        self.session.commit()
 
     def delete_news(self, *news):
         self.session.delete(*news)

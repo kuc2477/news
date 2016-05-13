@@ -394,9 +394,6 @@ class Reporter(object):
             not already_visited and \
             (experience(self.schedule, news, url) if experience else True)
 
-        if result and already_visited:
-            print('fuck!!!')
-
         return result
 
     def worth_to_report(self, news):
