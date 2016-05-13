@@ -14,8 +14,6 @@ from .utils.url import (
     normalize, depth
 )
 from .utils.python import importattr
-from .utils.logging import logger
-from .constants import LOG_URL_MAX_LENGTH
 
 
 __all__ = ['ReporterMeta', 'Reporter']
@@ -226,8 +224,6 @@ class Reporter(object):
         if not reporters:
             return []
 
-        self._log('Dispatching {} reporters'.format(len(reporters)),
-                  tag='warning')
         dispatches = [r.dispatch(bulk_report=bulk_report) for r in reporters]
 
         news_sets = await asyncio.gather(*dispatches, return_exceptions=True)
@@ -255,8 +251,6 @@ class Reporter(object):
             # return nothing if status code is not OK
             if response.status != 200:
                 return None
-
-            self._log('Fetch successed')
 
             # report to the chief reporter that we visited the url.
             await self.report_visited()
@@ -338,7 +332,6 @@ class Reporter(object):
     # ===================
 
     def report_news(self, *news):
-        self._log('Reporting {} news to backend'.format(len(news)))
         self.backend.save_news(*news)
 
     async def report_visited(self):
@@ -446,16 +439,3 @@ class Reporter(object):
         summoned = self.summon_reporters_for_intel(intel)
 
         return recruited + summoned
-
-    # =======
-    # Logging
-    # =======
-
-    def _log(self, message, tag='info'):
-        id = self.schedule.id
-        url = self.url[:LOG_URL_MAX_LENGTH] + '...' \
-            if len(self.url) > LOG_URL_MAX_LENGTH else self.url
-
-        title = '[Reporter of schedule {} for {}]'.format(id, url)
-        logging_method = getattr(logger, tag)
-        logging_method('{}: {}'.format(title, message))
