@@ -2,10 +2,20 @@ from . import FeedReporter
 
 
 class RSSReporter(FeedReporter):
-    # TODO: NOT IMPLEMENTED YET
-    pass
+    def parse(self, content):
+        # TODO: NOT IMPLEMENTED YET
+        pass
+
+    def make_news(self, item):
+        # TODO: NOT IMPLEMENTED YET
+        pass
 
 
 class AtomReporter(FeedReporter):
-    # TODO: NOT IMPLEMENTED YET
-    pass
+    def parse(self, content):
+        # TODO: NOT IMPLEMENTED YET
+        pass
+
+    def make_news(self, item):
+        # TODO: NOT IMPLEMENTED YET
+        pass

@@ -1,7 +1,7 @@
 from .generics import TraversingReporter
 
 
-class InteligentReporterMixin(object):
+class BatchTraversingMixin(object):
     def __init__(self, intel=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._intel = intel or []
@@ -32,3 +32,9 @@ class InteligentReporterMixin(object):
                 target=news.target, parent=parent
             )
             return reporter
+
+
+class DomainTraversingMixin(object):
+    def worth_to_visit(self, news, target):
+        # TODO: NOT IMPLEMENTED YET
+        pass
