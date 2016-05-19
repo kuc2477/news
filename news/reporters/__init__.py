@@ -9,35 +9,35 @@ class ReporterMeta(object):
 
     @property
     def owner(self):
-        """(:class:`~news.models.AbstractSchedule` implemntation)Owner of the
+        """(:class:`~news.models.AbstractSchedule` implemntation) Owner of the
         reporter's schedule."""
         return self.schedule.owner
 
     @property
     def options(self):
-        """(:class:`dict`)Reporter options."""
+        """(:class:`dict`) Reporter options."""
         return self.schedule.options
 
 
 class Reporter(object):
     """Abstract base class for all reporters."""
 
-    def __init__(self, target, meta, backend,
+    def __init__(self, url, meta, backend,
                  dispatch_middlewares=None,
                  fetch_middlewares=None,
                  *args, **kwargs):
-        self.target = target
+        self.url = url
         self.meta = meta
         self.backend = backend
         self._fetch_middlewares = fetch_middlewares or []
         self._dispatch_middlewares = dispatch_middlewares or []
 
     @classmethod
-    def create_instance(cls, target, meta, backend, *args, **kwargs):
+    def create_instance(cls, url, meta, backend, *args, **kwargs):
         """Create an reporter.
 
-        :param target: A target to assign to a reporter.
-        :type target: :class:`str`
+        :param url: A url to assign to a reporter.
+        :type url: :class:`str`
         :param meta: Meta information of a reporter.
         :type meta: :class:`ReporterMeta`
         :param backend: A news backend to be used.
@@ -47,7 +47,7 @@ class Reporter(object):
         :rtype: `Reporter` implementation.
 
         """
-        return cls(target, meta, backend, *args, **kwargs)
+        return cls(url, meta, backend, *args, **kwargs)
 
     @property
     def schedule(self):
@@ -76,7 +76,7 @@ class Reporter(object):
         self.backend.save_news(*news)
 
     async def fetch(self):
-        """Fetches target of the reporter and returns news.
+        """Fetches url of the reporter and returns news.
 
         :returns: Either a list of news or a news.
         :rtype: :class:`list` or `~news.models.AbstractNews` implemnetation.
@@ -100,7 +100,7 @@ class Reporter(object):
                 return news
 
     async def dispatch(self):
-        """Dispatches the reporter to it's target and returns a list of news.
+        """Dispatches the reporter to it's url and returns a list of news.
 
         Should be implemented by all reporter subclasses.  Defaults to rasing
         `NotImplementedError`.
@@ -156,5 +156,5 @@ class Reporter(object):
     def worth_to_report(self, news):
         return True
 
-    def worth_to_visit(self, news, target):
+    def worth_to_visit(self, news, url):
         return True

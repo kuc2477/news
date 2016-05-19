@@ -123,7 +123,7 @@ def create_abc_news(schedule_model):
         title = Column(Text, nullable=False)
         summary = Column(Text, nullable=False)
         image = Column(Text, nullable=True)
-        published = Column(DateTime, nullable=False)
+        published = Column(DateTime, nullable=True)
         created = Column(DateTime, default=datetime.now)
         updated = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 

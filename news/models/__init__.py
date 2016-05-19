@@ -27,12 +27,16 @@ class AbstractSchedule(AbstractModel):
     """Provides schedule meta model interface that should be implemented by
     backends."""
 
-    #: (class:`~news.models.abstract.AbstractModel` implementation) Owner of
+    #: (:class:`str`) Url of the schedule.
+    url = NotImplementedError
+
+    #: (:class:`~news.models.abstract.AbstractModel` implementation) Owner of
     #: the schedule.
     owner = NotImplementedError
 
-    #: (:class:`str`) Url of the schedule.
-    url = NotImplementedError
+    #: (:class:`str`) A type of news to fetch. This field is used when mapping
+    #: a schedule to a desired reporter class to be used fetching process.
+    news_type = NotImplementedError
 
     #: (:class:`bool`) Schedule activation status.
     enabled = NotImplementedError
@@ -64,8 +68,8 @@ class AbstractNews(AbstractModel):
     """
     @classmethod
     def create_instance(
-            cls, url, schedule, title, content, summary, published,
-            src=None, author=None, image=None):
+            cls, url, schedule, title, content, summary,
+            published=None, src=None, author=None, image=None):
         """
         Provides common interface to create models and abstracts different
         behaviours of model constructors away from various types of orms.
@@ -155,3 +159,33 @@ class AbstractNews(AbstractModel):
     def distance(self):
         """(:class:`int`) Distance from the root news."""
         return 0 if not self.src else self.src.distance + 1
+
+
+class Readable(AbstractNews):
+    """Partial implementation of :class:`AbstractNews`.
+
+    Contains only news content related attributes(e.g. title, content,
+    summary, etc.) and leave other instance-level attributes(e.g. src,
+    schedule, etc.) as `None`.
+
+    This class is useful when passing parsed news content from
+    `~news.reporters.Reporter.parse` to `~news.reporters.Reporter.make_news`
+    without fully instantiating news models.
+
+    """
+    def __init__(self, title, content, summary,
+                 author=None, image=None, published=None):
+        # `ReadableItem` doesn't contain any logical information than news
+        # content itself.
+        self.schedule = None
+        self.src = None
+
+        self.author = author
+        self.title = title
+        self.content = content
+        self.summary = summary
+        self.image = image
+
+        self.published = published
+        self.created = None
+        self.updated = None

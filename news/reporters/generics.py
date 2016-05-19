@@ -7,7 +7,7 @@ class TraversingReporter(Reporter):
     """Base class for tree traversing reporters.
 
     All subclasses of the `TraversingReporter` must implement 'parse()',
-    'make_news()' and 'get_targets()'.
+    'make_news()' and 'get_urls()'.
 
     :param parent: Parent of the reporter. Defaults to `None`.
     :type parent: :class:`TraversingReporter`
@@ -15,8 +15,8 @@ class TraversingReporter(Reporter):
     """
     def __init__(self, parent=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._visited_targets_lock = asyncio.Lock()
-        self._visited_targets = set()
+        self._visited_urls_lock = asyncio.Lock()
+        self._visited_urls = set()
         self._fetched_news = None
 
     @property
@@ -49,18 +49,18 @@ class TraversingReporter(Reporter):
         news = self.fetch()
         news = news if news and self.worth_to_report(news) else None
 
-        # set news fetched and report that we visited the target
+        # set news fetched and report that we visited the url
         self.fetched_news = news
         await self.report_visit()
 
         if news and not bulk_report:
             self.report_news(news)
 
-        targets = self.get_targets(news) if news else []
-        worthy_targets = (t for t in targets if self.worth_to_visit(t))
+        urls = self.get_urls(news) if news else []
+        worthy_urls = (t for t in urls if self.worth_to_visit(t))
 
         news_linked = await self.dispatch_reporters(
-            worthy_targets, bulk_report=bulk_report
+            worthy_urls, bulk_report=bulk_report
         )
         news_total = news_linked + [news] if news else news_linked
 
@@ -73,8 +73,8 @@ class TraversingReporter(Reporter):
 
         return news_total
 
-    async def dispatch_reporters(self, targets, *args, **kwargs):
-        reporters = self.recruit_reporters(targets)
+    async def dispatch_reporters(self, urls, *args, **kwargs):
+        reporters = self.recruit_reporters(urls)
         if not reporters:
             return []
 
@@ -85,31 +85,31 @@ class TraversingReporter(Reporter):
 
         return itertools.chain(*news_sets_valid)
 
-    def get_targets(self, news):
-        """(:class:`list`)Should return a list of targets to be fetched by
+    def get_urls(self, news):
+        """(:class:`list`)Should return a list of urls to be fetched by
         children of the reporter. Not implemented for default."""
         raise NotImplementedError
 
-    def recruit_reporters(self, targets):
-        return [self._inherit_meta(t) for t in targets]
+    def recruit_reporters(self, urls):
+        return [self._inherit_meta(t) for t in urls]
 
     async def report_visit(self):
-        with (await self._visited_targets_lock()):
-            self.root._visited_targets.add(self.target)
+        with (await self._visited_urls_lock()):
+            self.root._visited_urls.add(self.url)
 
-    async def already_visited(self, target):
-        with (await self._visited_targets_lock()):
-            return target in self.root._visited_targets
+    async def already_visited(self, url):
+        with (await self._visited_urls_lock()):
+            return url in self.root._visited_urls
 
     async def get_visited(self):
-        with (await self._visited_targets_lock()):
-            return self.root._visited_targets
+        with (await self._visited_urls_lock()):
+            return self.root._visited_urls
 
-    def _inherit_meta(self, target, parent=None):
+    def _inherit_meta(self, url, parent=None):
         # we do not inherit intel to children to avoid bunch of
         # useless bulk requests.
         child = self.create(
-            target=target, backend=self.backend,
+            url=url, backend=self.backend,
             meta=self.meta
         )
         if isinstance(child, TraversingReporter):

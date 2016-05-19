@@ -8,8 +8,7 @@ import collections
 
 
 class AbstractBackend(object):
-    """
-    Abstract news backend that should be implemented in orm specific ways.
+    """Abstract news backend that should be implemented in orm specific ways
 
     :param owner_model: Owner class to use with backend.
     :type owner_model: Implementation of :class:`~news.models.AbstractModel`.
@@ -20,7 +19,6 @@ class AbstractBackend(object):
     :type news_model: Implementation of :class:`~news.models.AbstractNews`.
 
     """
-
     combinations = {}
 
     def __init__(self, owner_model=None, schedule_model=None, news_model=None,
@@ -48,8 +46,7 @@ class AbstractBackend(object):
                        *args, **kwargs)
 
     def get_news(self, id):
-        """
-        Should retrive a news with given id.
+        """Should retrive a news with given id.
 
         :param id: Id of the news.
         :type id: :attr: `int`
@@ -60,8 +57,7 @@ class AbstractBackend(object):
         raise NotImplementedError
 
     def get_news_by(self, owner, url):
-        """
-        Should return a news for owner from backend.
+        """Should return a news for owner from backend.
 
         :param owner: Owner of the news.
         :type owner: :attr:`owner_model`
@@ -72,8 +68,7 @@ class AbstractBackend(object):
         raise NotImplementedError
 
     def get_news_list(self, owner, root_url):
-        """
-        Should retrieve  a list of news for owner from backend.
+        """Should retrieve  a list of news for owner from backend.
 
         :param owner: Owner of the news.
         :type owner: :attr:`owner_model`
@@ -86,8 +81,7 @@ class AbstractBackend(object):
         raise NotImplementedError
 
     def save_news(self, *news):
-        """
-        Should save news to the backend.
+        """Should save news to the backend.
 
         :param news: News to save.
         :type news: :attr:`news_model`
@@ -96,8 +90,7 @@ class AbstractBackend(object):
         raise NotImplementedError
 
     def delete_news(self, *news):
-        """
-        Delete news in the backend.
+        """Delete news in the backend.
 
         :param news: News to delete.
         :type news: :attr:`news_model`
@@ -106,8 +99,7 @@ class AbstractBackend(object):
         raise NotImplementedError
 
     def news_exists(self, id):
-        """
-        Should check existance of the news in the backend.
+        """Should check existance of the news in the backend.
 
         :param id: Id of the news.
         :type id: :class:`int`
@@ -121,8 +113,7 @@ class AbstractBackend(object):
         return self.get_news_by(owner, url) is not None
 
     def get_schedule(owner, url):
-        """
-        Should retrieve a schedule for owner from the backend.
+        """Should retrieve a schedule for owner from the backend.
 
         :param owner: Owner of the schedule meta.
         :type owner: :attr:`owner_model`
@@ -133,8 +124,7 @@ class AbstractBackend(object):
         raise NotImplementedError
 
     def get_schedules(owner):
-        """
-        Should retrieve a list of schedule meta for owner from backend.
+        """Should retrieve a list of schedule meta for owner from backend.
 
         :param owner: Owner of the schedule meta list.
         :type owner: :attr:`schedule_meta_class`
@@ -145,8 +135,7 @@ class AbstractBackend(object):
         raise NotImplementedError
 
     def schedule_exists(self, id):
-        """
-        Should check existance of the schedule meta in the backend.
+        """Should check existance of the schedule meta in the backend.
 
         :param owner: Owner of the schedule meta.
         :type owner: :attr:`schedule_meta_class`
