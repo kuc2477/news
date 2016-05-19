@@ -23,21 +23,12 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy_utils.types import (
     URLType,
     JSONType,
-    UUIDType,
 )
 from . import (
     AbstractSchedule,
     AbstractNews
 )
-from ..constants import (
-    DEFAULT_SCHEDULE_CYCLE,
-    DEFAULT_MAX_VISIT,
-    DEFAULT_MAX_DIST,
-    DEFAULT_MAX_DEPTH,
-    DEFAULT_BLACKLIST,
-    DEFAULT_BROTHERS
-)
-
+from ..constants import DEFAULT_SCHEDULE_CYCLE
 
 __all__ = ['create_abc_schedule', 'create_abc_news',
            'create_schedule', 'create_news']
@@ -70,34 +61,19 @@ def create_abc_schedule(user_model):
             return relationship(user_model, backref='schedules')
 
         def __init__(self, owner=None, url='', enabled=False,
-                     cycle=DEFAULT_SCHEDULE_CYCLE,
-                     max_dist=DEFAULT_MAX_DIST, max_depth=DEFAULT_MAX_DEPTH,
-                     blacklist=DEFAULT_BLACKLIST, brothers=DEFAULT_BROTHERS):
-            # support both foreign key and model instance
-            if isinstance(owner, int):
-                self.owner_id = owner
-            else:
-                self.owner = owner
-
+                     cycle=DEFAULT_SCHEDULE_CYCLE, **options):
+            self.owner = owner
             self.url = url
             self.enabled = enabled
             self.cycle = cycle
             self.enabled = enabled
-            self.max_dist = max_dist
-            self.max_depth = max_depth
-            self.blacklist = blacklist
-            self.brothers = brothers
+            self.options = options
 
         id = Column(Integer, primary_key=True)
         url = Column(URLType, nullable=False)
         enabled = Column(Boolean, nullable=False, default=False)
-        latest_task = Column(UUIDType(binary=False), default=None)
         cycle = Column(Integer, default=DEFAULT_SCHEDULE_CYCLE, nullable=False)
-        max_visit = Column(Integer, default=DEFAULT_MAX_VISIT)
-        max_dist = Column(Integer, default=DEFAULT_MAX_DIST)
-        max_depth = Column(Integer, default=DEFAULT_MAX_DEPTH)
-        blacklist = Column(JSONType, default=DEFAULT_BLACKLIST, nullable=False)
-        brothers = Column(JSONType, default=DEFAULT_BROTHERS, nullable=False)
+        options = Column(JSONType, nullable=False, default={})
 
     return AbstractBaseSchedule
 
@@ -127,10 +103,8 @@ def create_abc_news(schedule_model):
 
         @declared_attr
         def schedule(cls):
-            return relationship(
-                schedule_model,
-                backref=backref('news_list', cascade='all, delete-orphan')
-            )
+            return relationship(schedule_model, backref=backref(
+                'news_list', cascade='all, delete-orphan'))
 
         @declared_attr
         def src_id(cls):
@@ -138,23 +112,33 @@ def create_abc_news(schedule_model):
 
         @declared_attr
         def src(cls):
-            return relationship(
-                'News',
-                backref=backref('children', cascade='all, delete-orphan'),
-                remote_side=[cls.id]
-            )
+            return relationship('News', backref=backref(
+                'children', cascade='all, delete-orphan'
+            ), remote_side=[cls.id])
 
         id = Column(Integer, primary_key=True)
         url = Column(URLType, nullable=False)
         content = Column(Text, nullable=False)
+        author = Column(Text, nullable=True)
+        title = Column(Text, nullable=False)
+        summary = Column(Text, nullable=False)
+        image = Column(Text, nullable=True)
+        published = Column(DateTime, nullable=False)
         created = Column(DateTime, default=datetime.now)
         updated = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
-        def __init__(self, schedule=None, url='', content='', src=None):
-            self.schedule = schedule
+        def __init__(self, url='', schedule=None, src=None, author=None,
+                     title=None, content=None, summary=None, image=None,
+                     published=None):
             self.url = url
-            self.content = content
+            self.schedule = schedule
             self.src = src
+            self.author = author
+            self.title = title
+            self.content = content
+            self.summary = summary
+            self.image = image
+            self.published = published
 
         def __repr__(self):
             return 'News {} of schedule {}'.format(
@@ -167,18 +151,9 @@ def create_abc_news(schedule_model):
         def __eq__(self, other):
             return self.__hash__() == other.__hash__()
 
-        @classmethod
-        def create_instance(cls, schedule, url, content, src=None):
-            return cls(schedule=schedule, url=url, content=content, src=src)
-
         @property
         def owner(self):
-            if self.schedule:
-                return self.schedule.owner
-            elif hasattr(self, '_schedule'):
-                return self._schedule.owner
-            else:
-                return None
+            return self.schedule.owner
 
     return AbstractBaseNews
 

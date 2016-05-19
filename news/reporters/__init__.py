@@ -56,6 +56,11 @@ class Reporter(object):
         return self.meta.schedule
 
     @property
+    def options(self):
+        """(:class:`dict`) Reporter options."""
+        return self.schedule.options
+
+    @property
     def owner(self):
         """(:class:`~news.models.AbstractModel` implementation)Owner of the
         reporter."""
