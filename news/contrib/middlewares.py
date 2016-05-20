@@ -1,27 +1,6 @@
-from bs4 import BeautifulSoup
 from functools import wraps, partial
 from ..utils.logging import logger
 from ..constants import LOG_URL_MAX_LENGTH
-
-
-def textifying_fetch_middleware(reporter, fetch):
-    @wraps(fetch)
-    def enhanced(r, *args, **kwargs):
-        fetched = fetch(*args, **kwargs)
-
-        soup = BeautifulSoup(fetched.content)
-        for script in soup(['script', 'style']):
-            script.extract()
-
-        # get text from the response body
-        plain_text = soup.get_text()
-        lines = (l.strip() for l in plain_text.splitlines())
-        chunks = (p.strip() for l in lines for p in l.split("  "))
-        text = '\n'.join(chunk for chunk in chunks if chunk)
-
-        fetched.content = text
-        return fetched
-    return enhanced
 
 
 def logging_dispatch_middleware(reporter, dispatch):

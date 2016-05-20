@@ -26,7 +26,7 @@ class Persister(object):
     def context(self, ctx):
         self._context = ctx
 
-    def start_persistence(self, scheduler, silent=False):
+    def start(self, scheduler, silent=False):
         if not self._redis_available():
             return
 
@@ -44,50 +44,50 @@ class Persister(object):
         self.thread = self.pubsub.run_in_thread(
             sleep_time=REDIS_PUBSUB_SLEEP_TIME)
 
-    def stop_persistence(self):
+    def stop(self):
         self.scheduler = None
         self.thread and self.thread.stop()
 
-    # =====================
-    # Scheduler persistence
-    # =====================
+    # ====================
+    # Schedule persistence
+    # ====================
 
-    def persist_schedule_save(self, id, created):
+    def persist_save(self, id, created):
         if not self.scheduler:
             return
 
         # persist schedule in app context if given any
         if self.context:
             with self.context:
-                created and self.scheduler.add_schedule(id, silent=False)
-                not created and self.scheduler.update_schedule(id)
+                created and self.scheduler.add(id, silent=False)
+                not created and self.scheduler.update(id)
         # otherwise persist schedule without any context
         else:
-            created and self.scheduler.add_schedule(id, silent=False)
-            not created and self.scheduler.update_schedule(id)
+            created and self.scheduler.add(id, silent=False)
+            not created and self.scheduler.update(id)
 
-    def persist_schedule_delete(self, id):
+    def persist_delete(self, id):
         if not self.scheduler:
             return
 
         # persist schedule in app context if given any
         if self.context:
             with self.context:
-                self.scheduler.remove_schedule(id, silent=False)
+                self.scheduler.remove(id, silent=False)
         # otherwise persist schedule without any context
         else:
-            self.scheduler.remove_schedule(id, silent=False)
+            self.scheduler.remove(id, silent=False)
 
     # ============================
     # Schedule change notification
     # ============================
 
-    def notify_schedule_saved(self, instance, created, **kwargs):
+    def notify_saved(self, instance, created, **kwargs):
         if self._redis_available():
             self.redis.publish(REDIS_SCHEDULE_CREATE_CHANNEL if created else
                                REDIS_SCHEDULE_UPDATE_CHANNEL, str(instance.id))
 
-    def notify_schedule_deleted(self, instance, **kwargs):
+    def notify_deleted(self, instance, **kwargs):
         if self._redis_available():
             self.redis.publish(REDIS_SCHEDULE_DELETE_CHANNEL, str(instance.id))
 

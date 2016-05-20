@@ -8,6 +8,7 @@ class RSSReporter(FeedReporter):
         return (e for e in f.entries)
 
     def make_news(self, item):
+        # TODO: NOT IMPLEMENTED YET
         return self.backend.News.create_instance(
         )
 
@@ -18,5 +19,6 @@ class AtomReporter(FeedReporter):
         return (e for e in f.entries)
 
     def make_news(self, item):
+        # TODO: NOT IMPLEMENTED YET
         return self.backend.News.create_instance(
         )

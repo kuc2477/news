@@ -183,15 +183,15 @@ def create_schedule(abc_schedule, base, mixins=None, persister=None):
     if persister:
         event.listens_for(Schedule, 'after_insert')(
             lambda mapper, connection, target:
-            persister.notify_schedule_saved(target, created=True)
+            persister.notify_saved(target, created=True)
         )
         event.listens_for(Schedule, 'after_update')(
             lambda mapper, connection, target:
-            persister.notify_schedule_saved(target, created=False)
+            persister.notify_saved(target, created=False)
         )
         event.listens_for(Schedule, 'after_delete')(
             lambda mapper, connection, target:
-            persister.notify_schedule_deleted(target)
+            persister.notify_deleted(target)
         )
 
     return Schedule

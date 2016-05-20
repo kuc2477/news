@@ -1,5 +1,5 @@
 from .generics import TraversingReporter
-from ..constants import (
+from ..defaults import (
     DEFAULT_BLACKLIST,
     DEFAULT_MAX_VISIT,
 )
@@ -40,6 +40,7 @@ class BatchTraversingMixin(object):
 
 class DomainTraversingMixin(object):
     def worth_to_visit(self, news, target):
+        # TODO: NOT IMPLEMENTED YET
         brothers = self.options.get('brothers', [])
         max_dist = self.options.get('max_dist', None)
         max_depth = self.options.get('max_depth', None)

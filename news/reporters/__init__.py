@@ -1,3 +1,4 @@
+import copy
 import functools
 import aiohttp
 
@@ -6,6 +7,10 @@ class ReporterMeta(object):
     """Meta information of a reporter."""
     def __init__(self, schedule):
         self.schedule = schedule
+
+    @property
+    def schedule(self):
+        return self.schedule
 
     @property
     def owner(self):
@@ -22,18 +27,23 @@ class ReporterMeta(object):
 class Reporter(object):
     """Abstract base class for all reporters."""
 
-    def __init__(self, url, meta, backend,
+    def __init__(self, meta, backend, url=None,
                  dispatch_middlewares=None,
-                 fetch_middlewares=None,
-                 *args, **kwargs):
-        self.url = url
+                 fetch_middlewares=None, **reporter_options):
+        self.url = url or meta.schedule.url
         self.meta = meta
         self.backend = backend
+
         self._fetch_middlewares = fetch_middlewares or []
+        self._fetch_middlewares_applied = []
         self._dispatch_middlewares = dispatch_middlewares or []
+        self._dispatch_middlewares_applied= []
 
     @classmethod
-    def create_instance(cls, url, meta, backend, *args, **kwargs):
+    def create_instance(
+            cls, meta, backend, url=None,
+            dispatch_middlewares=None,
+            fetch_middlewares=None, **reporter_options):
         """Create an reporter.
 
         :param url: A url to assign to a reporter.
@@ -47,7 +57,9 @@ class Reporter(object):
         :rtype: `Reporter` implementation.
 
         """
-        return cls(url, meta, backend, *args, **kwargs)
+        return cls(meta=meta, backend=backend, url=url,
+                   dispatch_middlewares=dispatch_middlewares,
+                   fetch_middlewares=fetch_middlewares, **reporter_options)
 
     @property
     def schedule(self):
@@ -136,25 +148,72 @@ class Reporter(object):
         raise NotImplementedError
 
     def enhance(self):
-        self.enhance_fetch(self._fetch_middlewares)
-        self.enhance_dispatch(self._dispatch_middlewares)
+        """Enhance the reporter with it's middlewares.
+
+        Note that middlewares will be exhausted after the enhancement, leaving 
+        an empty lists.
+
+        :returns: Ehanced reporter itself.
+        :rtype: :class:`~news.reporters.Reporter`
+
+        """
+        self.enhance_fetch(*self._fetch_middlewares)
+        self.enhance_dispatch(*self._dispatch_middlewares)
         self._fetch_middlewares = []
         self._dispatch_middlewares = []
+        return self
 
     def enhance_dispatch(self, *middlewares):
-        self.dispatch = functools.reduce(
-            lambda dispatch, middleware: middleware(self, dispatch),
-            middlewares, self.dispatch
-        )
+        """Enhance the reporter's `dispatch()` method with middlewares.
+
+        :param *middlewares: An arbitrary number of dispatch method enhancers.
+        :type *middlewares: A function that takes a reporter and dispatch
+            method as arguments and returns enhanced dispatch method.
+        :returns: Enhanced reporter itself.
+        :rtype: :class:`~news.reporters.Reporter`
+
+        """
+        for middleware in middlewares:
+            self.dispatch = middleware(self, self.dispatch)
+            self._dispatch_middlewares_applied.append(middleware)
+        return self
 
     def enhance_fetch(self, *middlewares):
-        self.fetch = functools.reduce(
-            lambda fetch, middleware: middleware(self, fetch), middlewares,
-            self.fetch
-        )
+        """Enhance the reporter's `fetch()` method with middlewares.
+
+        :param *middlewares: An arbitrary number of fetch method enhancers.
+        :type *middlewares: A function that takes a reporter and fetch method
+            as arguments and returns enhanced fetch method.
+
+        """
+        for middleware in middlewares:
+            self.fetch = middleware(self, self.fetch)
+            self._fetch_middlewares_applied.append(middleware)
+        return self
 
     def worth_to_report(self, news):
+        """Decides whether the reporter should report the news to it's backend
+        or not. The default implementation always returns `True`.
+
+        :param news: A news to test it's worthiness.
+        :type news: :class:`~news.models.AbstractNews` implementation.
+        :returns: `True` if the news is expected to be worthy to report.
+        :rtype: :class:`bool`
+
+        """
         return True
 
     def worth_to_visit(self, news, url):
+        """Decides whether the reporter should visit the link of the news.
+        The default implementation always returns `True`.
+
+        :param news: A news that contains the link.
+        :type news: :class:`~news.models.AbstractNews` implementation.
+        :param url: A URL to test it's worthiness.
+        :type url: :class:`str`
+        :returns: `True` if the url of the news is expected to be worthy to
+        visit.
+        :rtype: :class:`bool`
+
+        """
         return True

@@ -16,14 +16,7 @@ from .import (
     AbstractSchedule,
     AbstractNews
 )
-from ..constants import (
-    DEFAULT_SCHEDULE_CYCLE,
-    DEFAULT_MAX_VISIT,
-    DEFAULT_MAX_DIST,
-    DEFAULT_MAX_DEPTH,
-    DEFAULT_BLACKLIST,
-    DEFAULT_BROTHERS
-)
+from ..constants import DEFAULT_SCHEDULE_CYCLE
 
 
 __all__ = ['create_abc_schedule', 'create_abc_news',
@@ -51,16 +44,7 @@ def create_abc_schedule(user_model=None):
         url = models.URLField()
         cycle = models.IntegerField(default=DEFAULT_SCHEDULE_CYCLE)
         enabled = models.BooleanField(default=False)
-        latest_task = models.UUIDField(null=True)
-
-        max_visit = models.IntegerField(
-            default=DEFAULT_MAX_VISIT)
-        max_dist = models.IntegerField(
-            blank=True, null=True, default=DEFAULT_MAX_DIST)
-        max_depth = models.IntegerField(
-            blank=True, null=True, default=DEFAULT_MAX_DEPTH)
-        blacklist = JSONField(default=DEFAULT_BLACKLIST)
-        brothers = JSONField(default=DEFAULT_BROTHERS)
+        options = JSONField(default={})
 
         class Meta:
             abstract = True
@@ -82,17 +66,25 @@ def create_abc_news(schedule_model):
 
     """
     class AbstractBaseNews(models.Model, AbstractNews):
-        schedule = models.ForeignKey(schedule_model, related_name='news_list',
-                                     db_index=True)
-        src = models.ForeignKey('self', related_name='children',
-                                db_index=True, blank=True, null=True)
+        schedule = models.ForeignKey(
+            schedule_model, related_name='news_list',
+            db_index=True
+        )
+
+        src = models.ForeignKey(
+            'self', related_name='children',
+            db_index=True, blank=True, null=True
+        )
 
         url = models.URLField()
+        author = models.CharField(max_length=100)
+        title = models.CharField(max_length=300)
+        summary = models.TextField()
         content = models.TextField()
-
-        @classmethod
-        def create_instance(cls, schedule, url, content, src=None):
-            return cls(schedule=schedule, url=url, content=content, src=src)
+        image = models.URLField()
+        published = models.DateTimeField()
+        created = models.DateTimeField()
+        updated = models.DateTimeField()
 
         class Meta:
             abstract = True
@@ -125,11 +117,11 @@ def create_schedule(abc_schedule, mixins=None, persister=None):
     # connect persister if given
     if persister:
         post_save.connect(
-            persister.notify_schedule_saved,
+            persister.notify_saved,
             sender=Schedule, weak=False
         )
         post_delete.connect(
-            persister.notify_schedule_deleted,
+            persister.notify_deleted,
             sender=Schedule, weak=False
         )
 

@@ -5,116 +5,76 @@ News cover jobs that will be run by reporters.
 
 """
 import asyncio
-from .reporter import (
-    ReporterMeta,
-    Reporter
-)
+from .reporters import ReporterMeta
 
 
 class Cover(object):
-    """
-    News cover that can be run asynchronously by
-    :class:`news.scheduler.Scheduler`'s celery task.
+    """News cover that can be run by :class:`news.scheduler.Scheduler`'s
+    celery task.
 
-    :param backend: News backend to be used for news cover.
-    :type backend: :class:`~news.backends.AbstractBackend`
-        implementation.
-    :param schedule: Schedule that this cover is in charge of.
-    :type schedule: Backend's
-        :attr:`~news.backend.AbstractBackend.schedule_class`
+    :param schedule: Schedule that dispatches this cover.
+    :type schedule: `backend`'s' :attr:`~news.backend.AbstractBackend.Schedule`
+    :param backend: Backend to be used for news cover.
+    :type backend: :class:`~news.backends.AbstractBackend` implementation.
 
     """
-    def __init__(self, backend, schedule):
-        self.backend = backend
+    def __init__(self, schedule, backend):
         self.schedule = schedule
+        self.backend = backend
         self.reporter = None
         self.loop = None
 
-    @classmethod
-    def from_schedule(cls, schedule, backend):
-        """
-        Factory method that instantiates a cover from the schedule.
+    def prepare(self, reporter_class, dispatch_middlewares=None,
+                fetch_middlewares=None, **reporter_options):
+        """Prepare a reporter for the cover.
 
-        :param schedule: The schedule of which the cover is in charge of.
-        :type schedule: :class:`~news.models.AbstractSchedule`
-            implementation.
-        :param backend: The news backend to use for the cover.
-        :type backend: :class:`~news.backends.AbstractBackend`
-            implementation.
-        :returns: Cover job of the schedule.
-        :rtype: :class:`~news.cover.Cover`
-        """
-        return cls(backend, schedule)
-
-    def prepare(self, intel=None,
-                report_experience=None, fetch_experience=None,
-                dispatch_middlewares=None, fetch_middlewares=None):
-        """
-        Prepare a reporter with experience and middlewares for the cover.
-
-        :param intel: News intel that will be used to boost performance of the
-            cover. Each news of the intel will be fetched in parallel.
-        :type intel: :class:`list`
-        :param report_experience: Module qualified path to the report
-            experience function. The report experience function should take a
-            schedule of the news and the news as it's arguments and return
-            `True` if the news is expected to be valuable. Otherwise it should
-            return `False`.
-        :type report_experience: :class:`str`
-        :param fetch_experience: Module qualified path to the fetch experience
-            function. The fetch experience function should take a schedule of
-            the news, the news and the url to be classified whether it is
-            worth to visit or not. The function should return `True` if the
-            url is expected to be worth to visit. Otherwise it should return
-            `False`.
-        :type fetch_experience: :class:`str`
+        :param reporter_class: Reporter class to use.
+        :type reporter_class: :class:`~news.reporters.Reporter`
+        :param dispatch_middlewares: Dispatch middlewares to enhance the
+            reporter's `dispatch` method.
+        :type dispatch_middlewares: :class:`list` of functions that takes
+            an reporter and it's dispatch method as arguments and returns
+            enhanced `dispatch` method.
+        :param fetch_middlewares: Fetch middlewares to enhance the reporter's
+            `fetch` method.
+        :type fetch_middlewares: :class:`list` of functions that takes an
+            reporter and it's fetch method as arguments and returns enhanced
+            `fetch` method.
+        :returns: Prepared cover itself.
+        :rtype: `~news.cover.Cover`
 
         """
-        reporter_url = self.schedule.url
-        reporter_backend = self.backend
-        reporter_meta = ReporterMeta(
-            self.schedule, intel=intel,
-            report_experience=report_experience,
-            fetch_experience=fetch_experience
-        )
+        meta = ReporterMeta(self.schedule)
+        backend = self.backend
 
-        # set chief reporter of the cover.
-        self.reporter = Reporter(
-            reporter_url,
-            reporter_meta,
-            reporter_backend,
-        )
-
-        # apply middlewares on the reporter if exists.
-        for middleware in (dispatch_middlewares or []):
-            self.reporter.enhance_dispatch(middleware)
-
-        for middleware in (fetch_middlewares or []):
-            self.reporter.enhance_fetch(middleware)
+        # set root reporter of the cover.
+        self.reporter = reporter_class.create_instance(
+            meta=meta, backend=backend,
+            dispatch_middlewares=dispatch_middlewares,
+            fetch_middlewares=fetch_middlewares,
+            **reporter_options
+        ).enhance()
 
         # set event loop for the reporter
         self.loop = asyncio.get_event_loop()
+        return self
 
-    def run(self, bulk_report=True):
-        """
-        Run the news cover. News that has been fetched for the first time will
-        be created in backend as :class:`~news.models.AbstractNews`
-        implemenattion's instance. News that already exists will be updated.
+    def run(self, **dispatch_options):
+        """Run the news cover.
 
-        Since the cover will be run in `asnycio`'s base event loop, this
-        method should be called in another background worker.
+        Since the cover will be run on `asnycio`'s base event loop, this
+        method should be called in another background worker to avoid blocking.
 
-        :param bulK_report: News will be reported in bulk if given True. This
-            can be used to avoid backend save overload on each saves of the
-            news.
-        :type bulK_report: :class:`bool`
+        :param **dispatch_options: Optional dispatch options that will be feed
+            to the reporter's `dispatch` method call.
+        :type **dispatch_options: :class:`dict`
+        :returns: A list of news.
+        :rtype: :class:`list`
 
         """
         # prepare the reporter with bare experience and middlewares if he is
         # not ready to be dispatched yet.
-        if not self.reporter or not self.loop:
-            self.prepare()
-
+        assert(self.reporter and self.loop), 'Cover is not prepared yet'
         return self.loop.run_until_complete(
-            self.reporter.dispatch(bulk_report)
+            self.reporter.dispatch(**dispatch_options)
         )

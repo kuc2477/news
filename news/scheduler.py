@@ -7,6 +7,7 @@ Provides scheduler that runs news cover celery tasks.
 import time
 import threading
 import schedule as pusher
+from contextlib import contextmanager
 from celery import states
 from .constants import COVER_PUSHER_CYCLE
 from .cover import Cover
@@ -108,15 +109,14 @@ class Scheduler(object):
         scheduler.start()
 
     """
-    def __init__(self, backend=None, celery=None,
-                 persister=None, intel_strategy=None,
+    def __init__(self, backend=None, celery=None, mapping=None, persister=None,
                  on_cover_start=None, on_cover_finish=None,
-                 report_experience=None, fetch_experience=None,
                  dispatch_middlewares=None, fetch_middlewares=None):
         # backend & celery
         self.backend = backend
         self.celery = celery
         self.celery_task = None
+        self.mapping = mapping
 
         # schedule persister and pusher
         self.persister = persister
@@ -127,125 +127,79 @@ class Scheduler(object):
         self.queued = set()
         self.running = False
 
-        # scheduler intel strategy
-        self.intel_strategy = intel_strategy or (lambda backend, schedule: [])
-
         # scheduler cover callbacks
-        self.on_cover_start = on_cover_start or (lambda schedule: None)
-        self.on_cover_finish = \
-            on_cover_finish or (lambda schedule, news_list: None)
+        self.on_cover_start = on_cover_start
+        self.on_cover_finish = on_cover_finish
 
         # scheduler middlewares
         self.dispatch_middlewares = dispatch_middlewares or []
         self.fetch_middlewares = fetch_middlewares or []
-
-        # reporter experience to use
-        self.report_experience = report_experience
-        self.fetch_experience = fetch_experience
 
     # =================
     # Scheduler actions
     # =================
 
     def configure(self, **kwargs):
+        """Configure the schedule after the instantiation.
+
+        :param **kwargs: Any constructor arguments to configure the scheduler.
+        :type **kwargs: :class:`dict`
+        :returns: Configured scheduler itself.
+        :rtype: :class:`~news.scheduler.Scheduler`
+
+        """
         self.__init__(**kwargs)
+        return self
 
     def start(self, persister=None):
-        """
-        Starts news cover scheduling in another tiny thread.
+        """Starts news cover scheduling in another tiny thread.
 
         :param persister: Persister that persists schedules from backend.
         :type persister: :class:`news.persister.Persister`
 
         """
+        # set celery task if not set yet.
         if not self.celery_task:
             self.set_task()
 
+        # stop and clear all schedule if the scheduler was already running.
         if self.running:
             self.running = False
-            self.clear_schedules()
+            self.clear()
 
         # start schedule persistence if there's any persister available
         if persister:
-            self.persister and self.persister.stop_persistence()
+            self.persister and self.persister.stop()
             self.persister = persister
-        self.persister and self.persister.start_persistence(self)
 
+        # start persistence if persister exists.
+        if self.persister:
+            self.persister.start(self)
+
+        # add schedules
         schedules = self.backend.get_schedules()
-        [self.add_schedule(s) for s in schedules]
+        (self.add_schedule(s) for s in schedules)
         self._log('Starting with {} schedule(s)'.format(len(schedules)))
 
+        # start scheduler within a tiny thread.
         def schedule_forever():
             self.running = True
             while self.running:
                 self._log('Flush pending covers', tag='debug')
                 self.pusher.run_pending()
                 time.sleep(COVER_PUSHER_CYCLE)
-
         threading.Thread(target=schedule_forever).start()
 
     def stop(self):
-        """Stop news cover scheduling thread and schedule persistence."""
-        self.persister and self.persister.stop_persistence()
+        """Stop both the scheduler thread and the persister thread."""
+        self.persister and self.persister.stop()
         self.running = False
-
-    # ==================
-    # Celery integration
-    # ==================
-
-    def _make_cover(self, schedule):
-        intel = self.intel_strategy(self.backend, schedule)
-        cover = Cover.from_schedule(schedule, self.backend)
-        cover.prepare(
-            intel=intel,
-            report_experience=self.report_experience,
-            fetch_experience=self.fetch_experience,
-            dispatch_middlewares=self.dispatch_middlewares,
-            fetch_middlewares=self.fetch_middlewares
-        )
-        return cover
-
-    def _make_run_cover(self):
-        def run_cover(task, id):
-            # mark task state started
-            task.update_state(states.STARTED)
-
-            # retrieve a schedule and make cover from it
-            schedule = self.backend.get_schedule_by_id(id)
-            cover = self._make_cover(schedule)
-
-            # pop from task queue indicator
-            if id in self.queued:
-                self.queued.remove(id)
-
-            # run news cover along with registered callbacks
-            self._log('Cover for schedule {} starting'.format(id), tag='debug')
-            self.on_cover_start(schedule)
-            self.on_cover_finish(schedule, cover.run())
-            self._log('Cover for schedule {} finished'.format(id), tag='debug')
-        return run_cover
-
-    def _push_cover(self, id):
-        # do not push cover into task queue if already exists
-        if not self.celery_task or id in self.queued:
-            return
-
-        self.celery_task.apply_async((id,), task_id=str(id))
-        self.queued.add(id)
-
-    def make_task(self):
-        # make `run_cover` method into a celery task
-        run_cover = self._make_run_cover()
-        return self.celery.task(bind=True)(run_cover)
-
-    def set_task(self):
-        self.celery_task = self.make_task()
 
     # ======================
     # Schedule manipulations
     # ======================
 
-    def add_schedule(self, schedule, silent=True):
+    def add(self, schedule, silent=True):
         if not self.celery_task:
             self.set_task()
 
@@ -260,7 +214,7 @@ class Scheduler(object):
             .minutes\
             .do(self._push_cover, schedule.id)
 
-    def remove_schedule(self, schedule, silent=True):
+    def remove(self, schedule, silent=True):
         try:
             id = schedule.id
         except AttributeError:
@@ -274,11 +228,19 @@ class Scheduler(object):
         except KeyError:
             pass
 
-    def clear_schedules(self):
+    def clear(self):
+        """Clear all registered schedules from the scheduler."""
         self._log('Clearing {} schedules'.format(len(self.jobs.keys())))
         [self.remove_schedule(id) for id in self.jobs.keys()]
 
-    def update_schedule(self, schedule):
+    def update(self, schedule):
+        """Update the registered schedule by reconciliating with database
+        backend.
+
+        :param schedule: Schedule to synchronize with the database.
+        :type schedule: :class:`~news.models.AbstractSchedule` implementation
+
+        """
         if isinstance(schedule, int):
             schedule = self.backend.get_schedule_by_id(schedule)
 
@@ -291,6 +253,63 @@ class Scheduler(object):
         if schedule.enabled:
             self.add_schedule(schedule)
 
+    # ==================
+    # Celery integration
+    # ==================
+
+    def make_task(self):
+        # make `run_cover` method into a celery task
+        run_cover = self._make_run_cover()
+        return self.celery.task(bind=True)(run_cover)
+
+    def set_task(self):
+        self.celery_task = self.make_task()
+
+    def _make_cover(self, schedule):
+        cover = Cover(schedule=schedule, backend=self.backend)
+        cover.prepare(
+            reporter_class=self.mapping[schedule],
+            dispatch_middlewares=self.dispatch_middlewares,
+            fetch_middlewares=self.fetch_middlewares
+        )
+        return cover
+
+    def _make_run_cover(self):
+        def run_cover(task, id):
+            # mark task state started
+            task.update_state(states.STARTED)
+
+            # retrieve a schedule and make cover from it
+            schedule = self.backend.get_schedule(id)
+            cover = self._make_cover(schedule)
+
+            # pop from task queue indicator
+            if id in self.queued:
+                self.queued.remove(id)
+
+            # run news cover along with registered callbacks
+            sl = 'Cover for schedule {} starting'.format(id)
+            fl = 'Cover for schedule{} finished'.format(id)
+            with self._log_ctx(sl, fl, t1='debug', t2='debug'):
+                if self.on_cover_start:
+                    self.on_cover_start(schedule)
+                if self.on_cover_finish:
+                    self.on_cover_finish(schedule, cover.run())
+        return run_cover
+
+    def _push_cover(self, id):
+        # do not push cover into task queue if already exists
+        if not self.celery_task or id in self.queued:
+            return
+        self.celery_task.apply_async((id,), task_id=str(id))
+        self.queued.add(id)
+
     def _log(self, message, tag='info'):
         logging_method = getattr(logger, tag)
         logging_method('[Scheduler]: {}'.format(message))
+
+    @contextmanager
+    def _log_ctx(self, l1, l2, t1='info', t2='info'):
+        self._log(l1, tag=t1)
+        yield
+        self._log(l2, tag=t2)

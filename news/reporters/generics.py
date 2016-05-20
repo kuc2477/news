@@ -1,3 +1,4 @@
+import copy
 import itertools
 import asyncio
 from . import Reporter
@@ -106,11 +107,15 @@ class TraversingReporter(Reporter):
             return self.root._visited_urls
 
     def _inherit_meta(self, url, parent=None):
+        # we only inherit fetch middleware. dispatch middleware won't be
+        # inherited down to descendents.
+        fetch_middlewares = copy.deepcopy(self._fetch_middlewares_applied)
+
         # we do not inherit intel to children to avoid bunch of
         # useless bulk requests.
         child = self.create(
-            url=url, backend=self.backend,
-            meta=self.meta
+            meta=self.meta, backend=self.backend, url=url,
+            fetch_middlewares=fetch_middlewares
         )
         if isinstance(child, TraversingReporter):
             child.parent = parent
