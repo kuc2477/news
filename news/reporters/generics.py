@@ -48,12 +48,6 @@ class TraversingReporter(Reporter):
     async def dispatch(self, bulk_report=True):
         # fetch news from the url and determine whether it is worthy or not
         news = self.fetch()
-        news = news if news and self.worth_to_report(news) else None
-
-        # set news fetched and report that we visited the url
-        self.fetched_news = news
-        await self.report_visit()
-
         if news and not bulk_report:
             self.report_news(news)
 
@@ -85,6 +79,18 @@ class TraversingReporter(Reporter):
                            ns and not isinstance(ns, Exception))
 
         return itertools.chain(*news_sets_valid)
+
+    async def fetch(self):
+        news = super().fetch()
+
+        # set fetched and report visit
+        self.fetched_news = news
+        await self.report_visit()
+
+        if news is None or not self.worth_to_report(news):
+            return None
+        else:
+            return news
 
     def get_urls(self, news):
         """(:class:`list`)Should return a list of urls to be fetched by

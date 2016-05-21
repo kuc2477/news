@@ -12,6 +12,7 @@ long_description = (
     open('CHANGES.rst').read()
 )
 
+# test command
 try:
     from setuptools.command.test import test
 except ImportError:
@@ -30,16 +31,45 @@ else:
     cmdclass = {'test': pytest}
 
 
+# dependencies
+peer_dependencies = [
+    'celery>=3.1.23',
+    'redis>=2.10.5',
+]
+install_dependencies = [
+    'aiohttp>=0.19.0',
+    'schedule>=0.3.2',
+    'feedparser>=5.2.1',
+    'beautifulsoup4>=4.4.1',
+    'extraction==0.2.1',
+    'urltools>=0.3.2',
+    'colorlog>=2.6.0',
+    'django>=1.7,<=1.9',
+    'django-jsonfield>=0.9.16',
+    'SQLAlchemy>=1.0.11',
+    'sqlalchemy-utils>=0.31.6',
+]
+external_dependencies = [
+    'https://github.com/kuc2477/extraction/archive/master.zip' +
+    '#egg=extraction-0.2.1'
+]
+test_dependencies = [
+    'pytest>=2.8.5',
+    'pytest-asyncio>=0.3.0',
+    'pytest-django>=2.9.1',
+    'pytest-mock>=0.11.0',
+    'pytest-cov>=2.2.1',
+    'celery>=3.1.23',
+    'redis>=2.10.5',
+]
+
+
 setup(
     name='news',
     packages=find_packages(exclude=['tests']),
-    entry_points='''
-        [console_scripts]
-        news = news.cli:main
-    ''',
     data_files=[('', ['README.rst', 'CHANGES.rst'])],
     version=VERSION,
-    description='Scheduled web post scrapper automated',
+    description='Schedulable web subscription engine',
     long_description=long_description,
     license='MIT License',
     author='Ha Junsoo',
@@ -47,33 +77,10 @@ setup(
     maintainer='Ha Junsoo',
     maintainer_email='kuc2477@gmail.com',
     url='https://github.com/kuc2477/news',
-    install_requires=[
-        'aiohttp>=0.19.0',
-        'schedule>=0.3.2',
-        'feedparser>=5.2.1',
-        'beautifulsoup4>=4.4.1',
-        'extraction==0.2.1',
-        'urltools>=0.3.2',
-        'colorlog>=2.6.0',
-        'django>=1.7',
-        'django-jsonfield>=0.9.16',
-        'SQLAlchemy>=1.0.11',
-        'sqlalchemy-utils>=0.31.6',
-    ],
-    dependency_links=[
-        'https://github.com/kuc2477/extraction/archive/master.zip' +
-        '#egg=extraction-0.2.1'
-    ],
+    install_requires=(install_dependencies + peer_dependencies),
+    dependency_links=external_dependencies,
     test_suite='tests',
-    tests_require=[
-        'pytest>=2.8.5',
-        'pytest-asyncio>=0.3.0',
-        'pytest-django>=2.9.1',
-        'pytest-mock>=0.11.0',
-        'pytest-cov>=2.2.1',
-        'celery>=3.1.23',
-        'redis>=2.10.5',
-    ],
+    tests_require=test_dependencies,
     cmdclass=cmdclass,
     classifiers=[
         'Intended Audience :: Developers',

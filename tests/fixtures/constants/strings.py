@@ -21,6 +21,26 @@ def url_child():
 
 
 @pytest.fixture
+def title_root():
+    return 'root title'
+
+
+@pytest.fixture
+def title_child():
+    return 'child title'
+
+
+@pytest.fixture
+def author_root():
+    return 'root author'
+
+
+@pytest.fixture
+def author_child():
+    return 'child author'
+
+
+@pytest.fixture
 def content_root():
     return ("""
 <html>
@@ -61,6 +81,16 @@ def content_child():
     </body>
 </html>
 """)
+
+
+@pytest.fixture
+def summary_root():
+    return 'root summary'
+
+
+@pytest.fixture
+def summary_child():
+    return 'child summary'
 
 
 # ========

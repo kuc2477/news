@@ -1,5 +1,4 @@
 from urllib.parse import urlparse
-
 import pytest
 from news.utils import url
 

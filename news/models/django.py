@@ -16,7 +16,13 @@ from .import (
     AbstractSchedule,
     AbstractNews
 )
-from ..constants import DEFAULT_SCHEDULE_CYCLE
+from ..constants import (
+    DEFAULT_SCHEDULE_CYCLE,
+    DEFAULT_SCHEDULE_NEWS_TYPE,
+    NEWS_TYPE_MAX_LENGTH,
+    AUTHOR_MAX_LENGTH,
+    TITLE_MAX_LENGTH,
+)
 
 
 __all__ = ['create_abc_schedule', 'create_abc_news',
@@ -44,6 +50,8 @@ def create_abc_schedule(user_model=None):
         url = models.URLField()
         cycle = models.IntegerField(default=DEFAULT_SCHEDULE_CYCLE)
         enabled = models.BooleanField(default=False)
+        news_type = models.CharField(max_length=NEWS_TYPE_MAX_LENGTH, 
+                                     default=DEFAULT_SCHEDULE_NEWS_TYPE)
         options = JSONField(default={})
 
         class Meta:
@@ -77,14 +85,14 @@ def create_abc_news(schedule_model):
         )
 
         url = models.URLField()
-        author = models.CharField(max_length=100)
-        title = models.CharField(max_length=300)
+        author = models.CharField(max_length=AUTHOR_MAX_LENGTH)
+        title = models.CharField(max_length=TITLE_MAX_LENGTH)
         summary = models.TextField()
         content = models.TextField()
         image = models.URLField()
-        published = models.DateTimeField()
-        created = models.DateTimeField()
-        updated = models.DateTimeField()
+        published = models.DateTimeField(blank=True, null=True)
+        created = models.DateTimeField(auto_now_add=True)
+        updated = models.DateTimeField(auto_now=True)
 
         class Meta:
             abstract = True

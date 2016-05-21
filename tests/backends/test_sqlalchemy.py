@@ -24,7 +24,9 @@ def test_save_news(sa_session, sa_backend,
     news = sa_news_model.create_instance(
         schedule=sa_schedule,
         url=url_root,
-        content=content_root
+        title='title',
+        content=content_root,
+        summary='summary'
     )
     assert(news not in sa_backend.get_news_list(sa_schedule.owner, url_root))
     sa_backend.save_news(news)

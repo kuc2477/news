@@ -1,116 +1,5 @@
 import pytest
-from news.models import AbstractSchedule
-from news.reporter import Reporter, ReporterMeta
-
-
-# ===============
-# Attribute tests
-# ===============
-
-def test_reporter_meta_attrs(reporter_meta):
-    assert(isinstance(reporter_meta.schedule, AbstractSchedule))
-    assert(isinstance(reporter_meta.intel, list))
-    assert(callable(reporter_meta.report_experience) or
-           reporter_meta.report_experience is None)
-    assert(callable(reporter_meta.fetch_experience) or
-           reporter_meta.fetch_experience is None)
-
-
-def test_chief_reporter_attrs(chief_reporter):
-    assert(chief_reporter.predecessor is None)
-    assert(chief_reporter.fetched_news is None)
-    assert(chief_reporter.schedule == chief_reporter.meta.schedule)
-    assert(chief_reporter.owner == chief_reporter.meta.owner)
-    assert(chief_reporter.filter_options == chief_reporter.meta.filter_options)
-
-
-def test_chief_reporter_fetched_attrs(chief_reporter_fetched):
-    assert(chief_reporter_fetched.predecessor is None)
-    assert(chief_reporter_fetched.fetched_news is not None)
-    assert(chief_reporter_fetched.schedule ==
-           chief_reporter_fetched.meta.schedule)
-    assert(chief_reporter_fetched.owner ==
-           chief_reporter_fetched.meta.owner)
-    assert(chief_reporter_fetched.filter_options ==
-           chief_reporter_fetched.meta.filter_options)
-
-
-def test_successor_reporter_attrs(chief_reporter_fetched,
-                                  successor_reporter):
-    assert(successor_reporter.predecessor == chief_reporter_fetched)
-    assert(successor_reporter.fetched_news is None)
-    assert(successor_reporter.schedule ==
-           successor_reporter.meta.schedule)
-    assert(successor_reporter.owner ==
-           successor_reporter.meta.owner)
-    assert(successor_reporter.filter_options ==
-           successor_reporter.meta.filter_options)
-
-
-def test_successor_reporter_fetched_attrs(chief_reporter_fetched,
-                                          successor_reporter_fetched):
-    assert(successor_reporter_fetched.predecessor == chief_reporter_fetched)
-    assert(successor_reporter_fetched.fetched_news is not None)
-    assert(successor_reporter_fetched.schedule ==
-           successor_reporter_fetched.meta.schedule)
-    assert(successor_reporter_fetched.owner ==
-           successor_reporter_fetched.meta.owner)
-    assert(successor_reporter_fetched.filter_options ==
-           successor_reporter_fetched.meta.filter_options)
-
-
-# ==================
-# News / Middlewares
-# ==================
-
-def test_make_news(chief_reporter, content_root):
-    news = chief_reporter.make_news(content_root)
-    assert(isinstance(news, chief_reporter.backend.News))
-    assert(news.url == chief_reporter.url)
-    assert(news.content == content_root)
-    assert(news.schedule == chief_reporter.schedule)
-    assert(news.src is None)
-
-
-def test_enhance_dispatch(mocker, chief_reporter):
-    mocker.patch.object(chief_reporter, 'dispatch', return_value=[4, 5, 6])
-
-    assert(chief_reporter.dispatch() == [4, 5, 6])
-    chief_reporter.enhance_dispatch('middlewares.dispatch_middleware')
-    assert(chief_reporter.dispatch() == [1, 2, 3])
-
-
-def test_enhance_fetch(mocker, chief_reporter):
-    mocker.patch.object(chief_reporter, 'fetch', return_value=0)
-
-    assert(chief_reporter.fetch() == 0)
-    chief_reporter.enhance_fetch('middlewares.fetch_middleware')
-    assert(chief_reporter.fetch() == 1)
-
-
-# ===================
-# Reporter operations
-# ===================
-
-def test_report_news(chief_reporter, content_root):
-    news = chief_reporter.make_news(content_root)
-    assert(not chief_reporter.backend.news_exists_by(news.owner, news.url))
-    chief_reporter.report_news(news)
-    assert(chief_reporter.backend.news_exists_by(news.owner, news.url))
-
-
-@pytest.mark.asyncio
-async def test_report_visited(chief_reporter, content_root):
-    assert(chief_reporter.url not in chief_reporter._visited_urls)
-    await chief_reporter.report_visited()
-    assert(chief_reporter.url in chief_reporter._visited_urls)
-
-
-@pytest.mark.asyncio
-async def test_already_visited(chief_reporter):
-    assert(not await chief_reporter.already_visited(chief_reporter.url))
-    await chief_reporter.report_visited()
-    assert(await chief_reporter.already_visited(chief_reporter.url))
+from news.reporters import ReporterMeta, URLReporter
 
 
 @pytest.mark.django_db
@@ -121,12 +10,10 @@ async def test_worth_to_visit(django_backend, django_schedule, content_root):
     django_schedule.brothers = ['http://www.naver.com']
     django_schedule.save()
 
-    reporter_meta = ReporterMeta(
-        django_schedule,
-        fetch_experience='experiences.fetch_experience_skip_badexperience'
-    )
-    reporter = Reporter(
-        django_schedule.url, reporter_meta, django_backend
+    meta = ReporterMeta(django_schedule)
+    reporter = URLReporter(
+        meta=meta, backend=django_backend, 
+        url=django_schedule.url
     )
     news = reporter.make_news(content_root)
 
@@ -147,12 +34,10 @@ async def test_get_worthy_urls(django_backend, django_schedule):
     django_schedule.brothers = ['http://www.naver.com']
     django_schedule.save()
 
-    reporter_meta = ReporterMeta(
-        django_schedule,
-        fetch_experience='experiences.fetch_experience_skip_badexperience'
-    )
+    meta = ReporterMeta(django_schedule)
     reporter = Reporter(
-        django_schedule.url, reporter_meta, django_backend
+        meta=meta, backend=django_backend, 
+        url=django_schedule.url,
     )
     content = (
         '''
@@ -188,22 +73,18 @@ async def test_get_worthy_urls(django_backend, django_schedule):
     assert('http://www.naver.com/123' in worthy_urls)
 
 
-def test_worth_to_report(django_backend, django_schedule):
-    reporter_meta = ReporterMeta(
-        django_schedule,
-        report_experience='experiences.report_experience_only_valuable'
-    )
-    reporter = Reporter(
-        django_schedule.url,
-        reporter_meta,
-        django_backend,
-    )
+@pytest.mark.asyncio
+async def test_report_visited(chief_reporter, content_root):
+    assert(chief_reporter.url not in chief_reporter._visited_urls)
+    await chief_reporter.report_visited()
+    assert(chief_reporter.url in chief_reporter._visited_urls)
 
-    valuable_news = reporter.make_news('valuable')
-    useless_news = reporter.make_news('not valuable')
-    assert(reporter.worth_to_report(valuable_news))
-    assert(not reporter.worth_to_report(useless_news))
 
+@pytest.mark.asyncio
+async def test_already_visited(chief_reporter):
+    assert(not await chief_reporter.already_visited(chief_reporter.url))
+    await chief_reporter.report_visited()
+    assert(await chief_reporter.already_visited(chief_reporter.url))
 
 # ================
 # Reporter callups

@@ -6,11 +6,11 @@ import aiohttp
 class ReporterMeta(object):
     """Meta information of a reporter."""
     def __init__(self, schedule):
-        self.schedule = schedule
+        self._schedule = schedule
 
     @property
     def schedule(self):
-        return self.schedule
+        return self._schedule
 
     @property
     def owner(self):

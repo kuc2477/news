@@ -10,7 +10,11 @@ DEFAULT_BLACKLIST = ['png', 'jpg', 'gif', 'pdf', 'svg', 'zip']
 # Model defaults
 # ==============
 
+DEFAULT_SCHEDULE_NEWS_TYPE = 'url'
 DEFAULT_SCHEDULE_CYCLE = 300
+NEWS_TYPE_MAX_LENGTH = 30
+AUTHOR_MAX_LENGTH = 100
+TITLE_MAX_LENGTH = 300
 
 
 # =========

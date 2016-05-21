@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     Text,
+    String,
     Boolean,
     DateTime,
     event
@@ -28,7 +29,10 @@ from . import (
     AbstractSchedule,
     AbstractNews
 )
-from ..constants import DEFAULT_SCHEDULE_CYCLE
+from ..constants import (
+    DEFAULT_SCHEDULE_CYCLE,
+    DEFAULT_SCHEDULE_NEWS_TYPE
+)
 
 __all__ = ['create_abc_schedule', 'create_abc_news',
            'create_schedule', 'create_news']
@@ -73,6 +77,8 @@ def create_abc_schedule(user_model):
         url = Column(URLType, nullable=False)
         enabled = Column(Boolean, nullable=False, default=False)
         cycle = Column(Integer, default=DEFAULT_SCHEDULE_CYCLE, nullable=False)
+        news_type = Column(String, nullable=False, 
+                           default=DEFAULT_SCHEDULE_NEWS_TYPE)
         options = Column(JSONType, nullable=False, default={})
 
     return AbstractBaseSchedule

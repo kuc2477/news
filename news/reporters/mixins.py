@@ -1,5 +1,5 @@
 from .generics import TraversingReporter
-from ..defaults import (
+from ..constants import (
     DEFAULT_BLACKLIST,
     DEFAULT_MAX_VISIT,
 )

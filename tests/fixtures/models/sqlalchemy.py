@@ -1,41 +1,62 @@
 import pytest
-from django.contrib.auth import get_user_model
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import (
     Column,
     Integer
 )
-from news.models import django
 from news.models import sqlalchemy as sa
 
 
-# =============
-# Django models
-# =============
+TEST_DB = 'test.db'
+TEST_DB_PATH = ':memory:'
+TEST_DB_URI = 'sqlite:///' + TEST_DB_PATH
+
+
+# ============================
+# SQLAlchemy engine / sessions
+# ============================
 
 @pytest.fixture(scope='session')
-def django_owner_model():
-    return get_user_model()
-
-
-@pytest.fixture(scope='session')
-def django_abc_schedule(django_owner_model):
-    return django.create_abc_schedule(django_owner_model)
-
-
-@pytest.fixture(scope='session')
-def django_abc_news(django_schedule_model):
-    return django.create_abc_news(django_schedule_model)
+def sa_engine():
+    return create_engine(TEST_DB_URI)
 
 
 @pytest.fixture(scope='session')
-def django_schedule_model(django_abc_schedule, persister):
-    return django.create_schedule(django_abc_schedule,
-                                  persister=persister)
+def sa_declarative_base():
+    return declarative_base()
 
 
 @pytest.fixture(scope='session')
-def django_news_model(django_abc_news):
-    return django.create_news(django_abc_news)
+def sa_db(request,
+          sa_declarative_base, sa_engine,
+          sa_owner_model, sa_schedule_model, sa_news_model):
+    # create tables
+    sa_declarative_base.metadata.create_all(bind=sa_engine)
+
+    # clear tables
+    def teardown():
+        sa_declarative_base.metadata.drop_all(bind=sa_engine)
+
+    request.addfinalizer(teardown)
+
+
+@pytest.fixture(scope='function')
+def sa_session(request, sa_db, sa_engine):
+    connection = sa_engine.connect()
+    transaction = connection.begin()
+    session = sessionmaker(bind=connection)()
+
+    # rollback test transaction, close connection and remove session
+    def teardown():
+        session.close()
+        transaction.rollback()
+        connection.close()
+
+    request.addfinalizer(teardown)
+
+    return session
 
 
 # =================
@@ -71,55 +92,6 @@ def sa_schedule_model(sa_abc_schedule, sa_declarative_base, persister):
 @pytest.fixture(scope='session')
 def sa_news_model(sa_abc_news, sa_declarative_base):
     return sa.create_news(sa_abc_news, sa_declarative_base)
-
-
-# ======================
-# Django model instances
-# ======================
-
-@pytest.fixture
-def django_owner(django_owner_model):
-    owner = django_owner_model(
-        username='testuser',
-        password='testpassword',
-        email='testemail@test.com',
-        first_name='testfirstname',
-        last_name='testlastname'
-    )
-    owner.save()
-    return owner
-
-
-@pytest.fixture
-def django_schedule(db, django_schedule_model, django_owner, url_root):
-    schedule = django_schedule_model(owner=django_owner, url=url_root)
-    schedule.save()
-    return schedule
-
-
-@pytest.fixture
-def django_root_news(db, django_news_model, django_schedule,
-                     url_root, content_root):
-    news = django_news_model(
-        schedule=django_schedule,
-        url=url_root,
-        content=content_root
-    )
-    news.save()
-    return news
-
-
-@pytest.fixture
-def django_news(db, django_news_model, django_schedule, django_root_news,
-                url_child, content_child):
-    news = django_news_model(
-        schedule=django_schedule,
-        src=django_root_news,
-        url=url_child,
-        content=content_child
-    )
-    news.save()
-    return news
 
 
 # ===========================
