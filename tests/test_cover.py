@@ -1,8 +1,6 @@
 import functools
 import pytest
-from news.cover import Cover
 from news.reporters.url import URLReporter
-
 
 
 @pytest.mark.asyncio

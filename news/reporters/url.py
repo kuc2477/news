@@ -44,7 +44,7 @@ class URLReporter(
 
         return news
 
-    def get_urls(self, news):
+    async def get_urls(self, news):
         atags = BeautifulSoup(news.content, 'html.parser')('a')
         links = {a['href'] for a in atags if a.has_attr('href')}
-        return {fillurl(self.root.target, l) for l in links}
+        return {fillurl(self.root.url, l) for l in links}

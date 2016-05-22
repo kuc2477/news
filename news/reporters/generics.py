@@ -19,6 +19,7 @@ class TraversingReporter(Reporter):
         self._visited_urls_lock = asyncio.Lock()
         self._visited_urls = set()
         self._fetched_news = None
+        self.parent = parent
 
     @property
     def root(self):
@@ -97,8 +98,8 @@ class TraversingReporter(Reporter):
         children of the reporter. Not implemented for default."""
         raise NotImplementedError
 
-    def recruit_reporters(self, urls):
-        return [self._inherit_meta(t) for t in urls]
+    def recruit_reporters(self, urls=None):
+        return [self._inherit_meta(t) for t in urls or []]
 
     async def report_visit(self):
         with (await self._visited_urls_lock()):

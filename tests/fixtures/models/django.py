@@ -58,7 +58,7 @@ def django_schedule(db, django_schedule_model, django_owner, url_root):
 
 
 @pytest.fixture
-def django_root_news(db, django_news_model, django_schedule, url_root, 
+def django_root_news(db, django_news_model, django_schedule, url_root,
                      author_root, title_root, content_root, summary_root):
     news = django_news_model(
         url=url_root,
@@ -74,7 +74,7 @@ def django_root_news(db, django_news_model, django_schedule, url_root,
 
 @pytest.fixture
 def django_news(db, django_news_model, django_schedule, django_root_news,
-                url_child, author_child, title_child, content_child, 
+                url_child, author_child, title_child, content_child,
                 summary_child):
     news = django_news_model(
         url=url_child,

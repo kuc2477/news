@@ -64,13 +64,14 @@ def create_abc_schedule(user_model):
         def owner(cls):
             return relationship(user_model, backref='schedules')
 
-        def __init__(self, owner=None, url='', enabled=False,
-                     cycle=DEFAULT_SCHEDULE_CYCLE, **options):
+        def __init__(self, owner=None, url='', enabled=False, 
+                     cycle=DEFAULT_SCHEDULE_CYCLE, 
+                     news_type=DEFAULT_SCHEDULE_NEWS_TYPE, **options):
             self.owner = owner
             self.url = url
-            self.enabled = enabled
             self.cycle = cycle
             self.enabled = enabled
+            self.news_type = news_type
             self.options = options
 
         id = Column(Integer, primary_key=True)

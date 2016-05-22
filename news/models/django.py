@@ -50,7 +50,7 @@ def create_abc_schedule(user_model=None):
         url = models.URLField()
         cycle = models.IntegerField(default=DEFAULT_SCHEDULE_CYCLE)
         enabled = models.BooleanField(default=False)
-        news_type = models.CharField(max_length=NEWS_TYPE_MAX_LENGTH, 
+        news_type = models.CharField(max_length=NEWS_TYPE_MAX_LENGTH,
                                      default=DEFAULT_SCHEDULE_NEWS_TYPE)
         options = JSONField(default={})
 

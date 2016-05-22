@@ -1,5 +1,5 @@
 import feedparser
-from . import FeedReporter
+from .generics import FeedReporter
 
 
 class RSSReporter(FeedReporter):

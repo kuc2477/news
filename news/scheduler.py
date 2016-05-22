@@ -148,7 +148,8 @@ class Scheduler(object):
         :rtype: :class:`~news.scheduler.Scheduler`
 
         """
-        self.__init__(**kwargs)
+        for k, v in kwargs.items():
+            setattr(self, k, v)
         return self
 
     def start(self, persister=None):

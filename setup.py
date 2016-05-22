@@ -44,7 +44,7 @@ install_dependencies = [
     'extraction==0.2.1',
     'urltools>=0.3.2',
     'colorlog>=2.6.0',
-    'django>=1.7,<=1.9',
+    'django>=1.7,<1.10',
     'django-jsonfield>=0.9.16',
     'SQLAlchemy>=1.0.11',
     'sqlalchemy-utils>=0.31.6',

@@ -128,9 +128,15 @@ def sa_schedule(request, sa_session, sa_owner, sa_schedule_model, url_root):
 
 @pytest.fixture
 def sa_root_news(request, sa_session, sa_schedule, sa_news_model,
-                 url_root, content_root):
-    news = sa_news_model(schedule=sa_schedule, url=url_root,
-                         content=content_root)
+                 url_root, title_root, author_root, content_root,
+                 summary_root):
+    news = sa_news_model(
+        schedule=sa_schedule, url=url_root,
+        title=title_root,
+        author=author_root,
+        content=content_root,
+        summary=summary_root
+    )
     sa_session.add(news)
     sa_session.commit()
 
@@ -143,11 +149,13 @@ def sa_root_news(request, sa_session, sa_schedule, sa_news_model,
 
 
 @pytest.fixture
-def sa_news(request, sa_session, sa_schedule, sa_root_news, sa_news_model,
-            url_child, content_child):
+def sa_child_news(request, sa_session, sa_schedule, sa_root_news,
+                  sa_news_model, url_child, author_child,
+                  title_child, content_child, summary_child):
     news = sa_news_model(
-        schedule=sa_schedule, src=sa_root_news,
-        url=url_child, content=content_child
+        schedule=sa_schedule, parent=sa_root_news,
+        url=url_child, author=author_child, content=content_child,
+        title=title_child, summary=summary_child
     )
     sa_session.add(news)
     sa_session.commit()

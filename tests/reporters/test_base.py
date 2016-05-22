@@ -1,24 +1,36 @@
-from news.reporters import ReporterMeta
+import functools
 
 
-def test_enhance_dispatch(mocker, chief_reporter):
-    mocker.patch.object(chief_reporter, 'dispatch', return_value=[4, 5, 6])
+def test_enhance_dispatch(mocker, root_url_reporter):
+    def middleware(reporter, dispatch):
+        @functools.wraps(dispatch)
+        def enhanced():
+            news_list = dispatch()
+            return [1, 2, 3] + news_list
+        return enhanced
 
-    assert(chief_reporter.dispatch() == [4, 5, 6])
-    chief_reporter.enhance_dispatch('middlewares.dispatch_middleware')
-    assert(chief_reporter.dispatch() == [1, 2, 3])
-
-
-def test_enhance_fetch(mocker, chief_reporter):
-    mocker.patch.object(chief_reporter, 'fetch', return_value=0)
-
-    assert(chief_reporter.fetch() == 0)
-    chief_reporter.enhance_fetch('middlewares.fetch_middleware')
-    assert(chief_reporter.fetch() == 1)
+    mocker.patch.object(root_url_reporter, 'dispatch', return_value=[4, 5, 6])
+    assert(root_url_reporter.dispatch() == [4, 5, 6])
+    root_url_reporter.enhance_dispatch(middleware)
+    assert(root_url_reporter.dispatch() == [1, 2, 3, 4, 5, 6])
 
 
-def test_report_news(chief_reporter, content_root):
-    news = chief_reporter.make_news(content_root)
-    assert(not chief_reporter.backend.news_exists_by(news.owner, news.url))
-    chief_reporter.report_news(news)
-    assert(chief_reporter.backend.news_exists_by(news.owner, news.url))
+def test_enhance_fetch(mocker, root_url_reporter):
+    def middleware(reporter, fetch):
+        @functools.wraps(fetch)
+        def enhanced():
+            return 1
+        return enhanced
+
+    mocker.patch.object(root_url_reporter, 'fetch', return_value=0)
+    assert(root_url_reporter.fetch() == 0)
+    root_url_reporter.enhance_fetch(middleware)
+    assert(root_url_reporter.fetch() == 1)
+
+
+def test_report_news(root_url_reporter, content_root):
+    readable = root_url_reporter.parse(content_root)
+    news = root_url_reporter.make_news(readable)
+    assert(not root_url_reporter.backend.news_exists_by(news.owner, news.url))
+    root_url_reporter.report_news(news)
+    assert(root_url_reporter.backend.news_exists_by(news.owner, news.url))
