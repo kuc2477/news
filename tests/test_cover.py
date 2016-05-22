@@ -4,18 +4,18 @@ from news.reporters.url import URLReporter
 
 
 @pytest.mark.asyncio
-async def test_cover_prepare(cover, django_root_news, django_news):
+async def test_cover_prepare(cover, django_root_news):
     # dispatch middleware
     def dispatch_middleware(reporter, dispatch):
         @functools.wraps(dispatch)
-        def enhanced(r):
+        def enhanced():
             return [1, 2, 3]
         return enhanced
 
     # fetch middleware
     def fetch_middleware(reporter, fetch):
         @functools.wraps(fetch)
-        def enhanced(r):
+        def enhanced():
             return 10
         return enhanced
 

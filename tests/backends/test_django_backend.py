@@ -2,32 +2,32 @@ import pytest
 
 
 @pytest.mark.django_db
-def test_get_news(django_backend, django_news):
-    assert(django_news == django_backend.get_news(django_news.id))
+def test_get_news(django_backend, django_child_news):
+    assert(django_child_news == django_backend.get_news(django_child_news.id))
     assert(django_backend.get_news(None) is None)
 
 
 @pytest.mark.django_db
-def test_get_news_list(django_backend, django_news):
-    assert(django_news in django_backend.get_news_list())
-    assert(django_news in
-           django_backend.get_news_list(owner=django_news.owner))
-    assert(django_news in
-           django_backend.get_news_list(root_url=django_news.root.url))
-    assert(django_news in
+def test_get_news_list(django_backend, django_child_news):
+    assert(django_child_news in django_backend.get_news_list())
+    assert(django_child_news in
+           django_backend.get_news_list(owner=django_child_news.owner))
+    assert(django_child_news in
+           django_backend.get_news_list(root_url=django_child_news.root.url))
+    assert(django_child_news in
            django_backend.get_news_list(
-               owner=django_news.owner,
-               root_url=django_news.root.url
+               owner=django_child_news.owner,
+               root_url=django_child_news.root.url
            ))
 
 
 @pytest.mark.django_db
-def test_news_exists(django_backend, django_news):
-    url = django_news.url
-    owner = django_news.schedule.owner
+def test_news_exists(django_backend, django_child_news):
+    url = django_child_news.url
+    owner = django_child_news.schedule.owner
 
     assert(django_backend.news_exists_by(owner, url))
-    django_backend.delete_news(django_news)
+    django_backend.delete_news(django_child_news)
     assert(not django_backend.news_exists_by(owner, url))
 
 
@@ -57,7 +57,7 @@ def test_cascade_save_news(django_backend, django_schedule, django_news_model,
     )
     child = django_news_model(
         schedule=django_schedule,
-        src=root,
+        parent=root,
         url=url_child,
         content=content_child
     )
@@ -69,12 +69,12 @@ def test_cascade_save_news(django_backend, django_schedule, django_news_model,
 
 
 @pytest.mark.django_db
-def test_delete_news(django_backend, django_news):
-    url = django_news.url
-    owner = django_news.schedule.owner
+def test_delete_news(django_backend, django_child_news):
+    url = django_child_news.url
+    owner = django_child_news.schedule.owner
 
     assert(django_backend.news_exists_by(owner, url))
-    django_backend.delete_news(django_news)
+    django_backend.delete_news(django_child_news)
     assert(not django_backend.news_exists_by(owner, url))
 
 

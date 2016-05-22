@@ -33,13 +33,13 @@ class Persister(object):
         self.scheduler = scheduler
         self.pubsub.subscribe(**{
             REDIS_SCHEDULE_CREATE_CHANNEL: lambda message:
-            self.persist_schedule_save(int(message['data']), True),
+            self.persist_save(int(message['data']), True),
 
             REDIS_SCHEDULE_UPDATE_CHANNEL: lambda message:
-            self.persist_schedule_save(int(message['data']), False),
+            self.persist_save(int(message['data']), False),
 
             REDIS_SCHEDULE_DELETE_CHANNEL: lambda message:
-            self.persist_schedule_delete(int(message['data']))
+            self.persist_delete(int(message['data']))
         })
         self.thread = self.pubsub.run_in_thread(
             sleep_time=REDIS_PUBSUB_SLEEP_TIME)

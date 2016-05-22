@@ -40,13 +40,13 @@ class DjangoBackend(AbstractBackend):
             else:
                 previous = self.get_news(n.id)
                 previous.content = n.content
-                previous.src = n.src
+                previous.parent = n.parent
                 previous.save()
 
     @transaction.atomic
     def cascade_save_news(self, news):
-        if news.src and news.src.is_root:
-            self.cascade_save_news(news.src)
+        if news.parent and news.parent.is_root:
+            self.cascade_save_news(news.parent)
         news.save()
 
     def delete_news(self, *news):

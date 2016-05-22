@@ -90,6 +90,17 @@ class Mapping(object):
         self.__map.update(mapping)
         return self
 
+    @classmethod
+    def from_dict(cls, mapping):
+        """Create a mapping from a dictionary.
+
+        :param mapping: Mapping dictionary to use.
+        :type mapping: :class:`dict`
+
+        """
+        assert(isinstance(mapping, dict)), 'Only `dict` type is allowed'
+        return cls(mapping=mapping)
+
     def as_dict(self):
         """Returns internal mapping dictionary as a copied dictionary.
 

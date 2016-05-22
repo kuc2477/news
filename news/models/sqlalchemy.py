@@ -114,11 +114,11 @@ def create_abc_news(schedule_model):
                 'news_list', cascade='all, delete-orphan'))
 
         @declared_attr
-        def src_id(cls):
+        def parent_id(cls):
             return Column(Integer, ForeignKey('news.id'))
 
         @declared_attr
-        def src(cls):
+        def parent(cls):
             return relationship('News', backref=backref(
                 'children', cascade='all, delete-orphan'
             ), remote_side=[cls.id])
@@ -134,12 +134,12 @@ def create_abc_news(schedule_model):
         created = Column(DateTime, default=datetime.now)
         updated = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
-        def __init__(self, url='', schedule=None, src=None, author=None,
+        def __init__(self, url='', schedule=None, parent=None, author=None,
                      title=None, content=None, summary=None, image=None,
                      published=None):
             self.url = url
             self.schedule = schedule
-            self.src = src
+            self.parent = parent
             self.author = author
             self.title = title
             self.content = content

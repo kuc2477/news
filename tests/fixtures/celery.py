@@ -1,7 +1,7 @@
 import pytest
-import celery
+from celery import Celery
 
 
 @pytest.fixture(scope='session')
 def celery():
-    return celery.Celery()
+    return Celery()

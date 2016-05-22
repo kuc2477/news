@@ -73,13 +73,13 @@ def django_root_news(db, django_news_model, django_schedule, url_root,
 
 
 @pytest.fixture
-def django_news(db, django_news_model, django_schedule, django_root_news,
-                url_child, author_child, title_child, content_child,
-                summary_child):
+def django_child_news(db, django_news_model, django_schedule, django_root_news,
+                      url_child, author_child, title_child, content_child, 
+                      summary_child):
     news = django_news_model(
         url=url_child,
         schedule=django_schedule,
-        src=django_root_news,
+        parent=django_root_news,
         title=title_child,
         author=author_child,
         content=content_child,

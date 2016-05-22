@@ -191,7 +191,7 @@ class Reporter(object):
             self._fetch_middlewares_applied.append(middleware)
         return self
 
-    def worth_to_report(self, news):
+    async def worth_to_report(self, news):
         """Decides whether the reporter should report the news to it's backend
         or not. The default implementation always returns `True`.
 
@@ -203,7 +203,7 @@ class Reporter(object):
         """
         return True
 
-    def worth_to_visit(self, news, url):
+    async def worth_to_visit(self, news, url):
         """Decides whether the reporter should visit the link of the news.
         The default implementation always returns `True`.
 

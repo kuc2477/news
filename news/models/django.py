@@ -79,17 +79,17 @@ def create_abc_news(schedule_model):
             db_index=True
         )
 
-        src = models.ForeignKey(
+        parent = models.ForeignKey(
             'self', related_name='children',
             db_index=True, blank=True, null=True
         )
 
         url = models.URLField()
-        author = models.CharField(max_length=AUTHOR_MAX_LENGTH)
+        author = models.CharField(max_length=AUTHOR_MAX_LENGTH, null=True)
         title = models.CharField(max_length=TITLE_MAX_LENGTH)
         summary = models.TextField()
         content = models.TextField()
-        image = models.URLField()
+        image = models.URLField(null=True)
         published = models.DateTimeField(blank=True, null=True)
         created = models.DateTimeField(auto_now_add=True)
         updated = models.DateTimeField(auto_now=True)

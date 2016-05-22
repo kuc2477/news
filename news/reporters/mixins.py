@@ -11,8 +11,8 @@ class BatchTraversingMixin(object):
         self._intel = intel or []
         self.__summoned_reporter_cache = {}
 
-    def recruit_reporters(self, targets):
-        recruited = super().recruit_reporters(targets)
+    def recruit_reporters(self, urls=None):
+        recruited = super().recruit_reporters(urls)
         summoned = self._summon_reporters(self._intel)
         return recruited + summoned
 
@@ -20,7 +20,7 @@ class BatchTraversingMixin(object):
         if not isinstance(self, TraversingReporter):
             return []
         else:
-            return [self._summon_reporters(n) for n in news_list]
+            return [self._summon_reporter(n) for n in news_list]
 
     def _summon_reporter(self, news):
         cache = self.__summoned_reporter_cache
@@ -30,16 +30,16 @@ class BatchTraversingMixin(object):
         # inherit meta to new reporter when not found
         except KeyError:
             parent = self.root if news.parent.is_root else \
-                self.root.summon_reporter(news.parent)
+                self.root._summon_reporter(news.parent)
 
             reporter = cache[news] = self._inherit_meta(
-                target=news.target, parent=parent
+                url=news.url, parent=parent
             )
             return reporter
 
 
 class DomainTraversingMixin(object):
-    def worth_to_visit(self, news, target):
+    async def worth_to_visit(self, news, url):
         # TODO: NOT IMPLEMENTED YET
         brothers = self.options.get('brothers', [])
         max_dist = self.options.get('max_dist', None)

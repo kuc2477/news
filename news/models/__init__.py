@@ -69,7 +69,7 @@ class AbstractNews(AbstractModel):
     @classmethod
     def create_instance(
             cls, url, schedule, title, content, summary,
-            published=None, src=None, author=None, image=None):
+            published=None, parent=None, author=None, image=None):
         """
         Provides common interface to create models and abstracts different
         behaviours of model constructors away from various types of orms.
@@ -86,8 +86,8 @@ class AbstractNews(AbstractModel):
         :type summary: :class:`str`
         :param published: Published datetime of the news.
         :type published: :class:`~datetime.datetime`
-        :param src: Parent news of the news.
-        :type src: :class:`~news.models.AbstractNews` implementation
+        :param parent: Parent news of the news.
+        :type parent: :class:`~news.models.AbstractNews` implementation
         :param author: Name of the news's author
         :type author: :class:`str`
         :param image: URL to the news's image
@@ -96,7 +96,7 @@ class AbstractNews(AbstractModel):
         :rtype: :class:`~news.models.AbstractNews` implementation
 
         """
-        return cls(url=url, schedule=schedule, src=src, author=author,
+        return cls(url=url, schedule=schedule, parent=parent, author=author,
                    title=title, content=content, summary=summary,
                    image=image, published=published)
 
@@ -109,7 +109,7 @@ class AbstractNews(AbstractModel):
 
     #: (:class:`~news.models.abstract.AbstractNews` implementation)
     #: Parent news from which the url of the news has been found.
-    src = NotImplementedError
+    parent = NotImplementedError
 
     #: (:class:`str`) Author of the news.
     author = NotImplementedError
@@ -148,24 +148,24 @@ class AbstractNews(AbstractModel):
     def root(self):
         """(:class:`~news.models.abstract.AbstractNews` implementation) Root
         news of the news."""
-        return self if not self.src else self.src.root
+        return self if not self.parent else self.parent.root
 
     @property
     def is_root(self):
         """(:class:`bool`) Returns `True` if the news is root news."""
-        return self.src is None
+        return self.parent is None
 
     @property
     def distance(self):
         """(:class:`int`) Distance from the root news."""
-        return 0 if not self.src else self.src.distance + 1
+        return 0 if not self.parent else self.parent.distance + 1
 
 
 class Readable(AbstractNews):
     """Partial implementation of :class:`AbstractNews`.
 
     Contains only news content related attributes(e.g. title, content,
-    summary, etc.) and leave other instance-level attributes(e.g. src,
+    summary, etc.) and leave other instance-level attributes(e.g. parent,
     schedule, etc.) as `None`.
 
     This class is useful when passing parsed news content from
@@ -178,7 +178,7 @@ class Readable(AbstractNews):
         # `ReadableItem` doesn't contain any logical information than news
         # content itself.
         self.schedule = None
-        self.src = None
+        self.parent = None
 
         self.author = author
         self.title = title

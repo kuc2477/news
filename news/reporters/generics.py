@@ -53,7 +53,8 @@ class TraversingReporter(Reporter):
             self.report_news(news)
 
         urls = self.get_urls(news) if news else []
-        worthy_urls = (t for t in urls if self.worth_to_visit(t))
+        worthies = asyncio.gather(*[self.worth_to_visit(u) for u in urls])
+        worthy_urls = (u for u, w in zip(urls, worthies) if w)
 
         news_linked = await self.dispatch_reporters(
             worthy_urls, bulk_report=bulk_report
@@ -88,7 +89,7 @@ class TraversingReporter(Reporter):
         self.fetched_news = news
         await self.report_visit()
 
-        if news is None or not self.worth_to_report(news):
+        if news is None or not await self.worth_to_report(news):
             return None
         else:
             return news
@@ -102,15 +103,15 @@ class TraversingReporter(Reporter):
         return [self._inherit_meta(t) for t in urls or []]
 
     async def report_visit(self):
-        with (await self._visited_urls_lock()):
+        with (await self._visited_urls_lock):
             self.root._visited_urls.add(self.url)
 
     async def already_visited(self, url):
-        with (await self._visited_urls_lock()):
+        with (await self._visited_urls_lock):
             return url in self.root._visited_urls
 
     async def get_visited(self):
-        with (await self._visited_urls_lock()):
+        with (await self._visited_urls_lock):
             return self.root._visited_urls
 
     def _inherit_meta(self, url, parent=None):
@@ -120,7 +121,7 @@ class TraversingReporter(Reporter):
 
         # we do not inherit intel to children to avoid bunch of
         # useless bulk requests.
-        child = self.create(
+        child = self.create_instance(
             meta=self.meta, backend=self.backend, url=url,
             fetch_middlewares=fetch_middlewares
         )
@@ -131,5 +132,9 @@ class TraversingReporter(Reporter):
 
 class FeedReporter(Reporter):
     """Base class for feed reporters."""
-    def dispatch(self):
-        return (n for n in self.fetch() if self.worth_to_report(n))
+    async def dispatch(self):
+        fetched = await self.fetch()
+        worthies = await asyncio.gather(*[
+            self.worth_to_report(n) for n in fetched
+        ])
+        return (n for n, w in zip(fetched, worthies) if w)

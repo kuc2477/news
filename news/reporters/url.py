@@ -21,12 +21,13 @@ class URLReporter(
                         summary=extracted.description, image=extracted.image)
 
     def make_news(self, readable):
-        src = self.parent.fetched_news if not self.is_root else None
+        parent = self.parent.fetched_news if not self.is_root else None
         stored = self.backend.get_news_by(owner=self.owner, url=self.url)
         fetched = self.fetched_news
 
         if not fetched and not stored:
             news = self.backend.News.create_instance(
+                parent=parent,
                 url=self.url, schedule=self.schedule, title=readable.title,
                 author=readable.author, content=readable.content,
                 summary=readable.summary, image=readable.image,
@@ -34,7 +35,7 @@ class URLReporter(
             )
         else:
             news = fetched or stored
-            news.src = src
+            news.parent = parent
             news.author = readable.author
             news.title = readable.title
             news.content = readable.content
