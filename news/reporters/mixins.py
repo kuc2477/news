@@ -1,3 +1,9 @@
+""":mod:`news.reporters.mixins` --- Generic News Reporter Mixins
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Provides generic reporter mixins.
+
+"""
 from .generics import TraversingReporter
 from ..constants import (
     DEFAULT_BLACKLIST,

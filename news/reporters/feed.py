@@ -1,3 +1,9 @@
+""":mod:`news.reporters.feed` --- Feed news reporters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Provide concrete feed news reporters.
+
+"""
 import feedparser
 from .generics import FeedReporter
 

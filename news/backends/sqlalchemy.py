@@ -6,14 +6,8 @@ Provides an implementation of news backend for sqlalchemy projects.
 """
 from sqlalchemy.orm import sessionmaker
 from . import AbstractBackend
+from ..exceptions import HeterogenuousEngineError
 
-
-class HeterogenuousEngineError(Exception):
-    """
-    Engine error that will be raised when either given sqlalchemy models
-    doesn't share common engine
-
-    """
 
 
 class SQLAlchemyBackend(AbstractBackend):

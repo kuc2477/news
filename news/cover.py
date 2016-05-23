@@ -1,7 +1,7 @@
 """:mod:`news.cover` --- News cover jobs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-News cover jobs that will be run by reporters.
+News cover jobs to be run by reporters.
 
 """
 import asyncio
@@ -24,8 +24,9 @@ class Cover(object):
         self.reporter = None
         self.loop = None
 
-    def prepare(self, reporter_class, dispatch_middlewares=None,
-                fetch_middlewares=None, **reporter_options):
+    def prepare(self, reporter_class,
+                dispatch_middlewares=None,
+                fetch_middlewares=None, **kwargs):
         """Prepare a reporter for the cover.
 
         :param reporter_class: Reporter class to use.
@@ -52,7 +53,7 @@ class Cover(object):
             meta=meta, backend=backend,
             dispatch_middlewares=dispatch_middlewares,
             fetch_middlewares=fetch_middlewares,
-            **reporter_options
+            **kwargs
         ).enhance()
 
         # set event loop for the reporter

@@ -1,3 +1,9 @@
+""":mod:`news.reporters.generics` --- Generic News reporters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Provide generic reporters.
+
+"""
 import copy
 import itertools
 import asyncio
