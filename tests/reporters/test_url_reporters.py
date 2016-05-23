@@ -78,10 +78,10 @@ async def test_get_urls(django_backend, django_schedule):
 
 @pytest.mark.asyncio
 async def test_report_visited(django_root_url_reporter):
-    assert(django_root_url_reporter.url not in 
+    assert(django_root_url_reporter.url not in
            django_root_url_reporter._visited_urls)
     await django_root_url_reporter.report_visit()
-    assert(django_root_url_reporter.url in 
+    assert(django_root_url_reporter.url in
            django_root_url_reporter._visited_urls)
 
 
