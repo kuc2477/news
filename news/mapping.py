@@ -5,10 +5,10 @@ Provide a mapping class that maps from schedule to reporter classes.
 
 """
 import copy
-from ..models import AbstractSchedule
-from ..reporters import Reporter
-from ..reporters.url import URLReporter
-from ..reporters.feed import (
+from .models import AbstractSchedule
+from .reporters import Reporter
+from .reporters.url import URLReporter
+from .reporters.feed import (
     AtomReporter,
     RSSReporter
 )
