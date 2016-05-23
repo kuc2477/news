@@ -1,3 +1,9 @@
+""":mod:`news.reporters` --- News reporter base classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Provide abstract base classes for reporters.
+
+"""
 import copy
 import functools
 import aiohttp
@@ -29,7 +35,7 @@ class Reporter(object):
 
     def __init__(self, meta, backend, url=None,
                  dispatch_middlewares=None,
-                 fetch_middlewares=None, **reporter_options):
+                 fetch_middlewares=None, **kwargs):
         self.url = url or meta.schedule.url
         self.meta = meta
         self.backend = backend
@@ -43,7 +49,7 @@ class Reporter(object):
     def create_instance(
             cls, meta, backend, url=None,
             dispatch_middlewares=None,
-            fetch_middlewares=None, **reporter_options):
+            fetch_middlewares=None, **kwargs):
         """Create an reporter.
 
         :param url: A url to assign to a reporter.
@@ -59,7 +65,7 @@ class Reporter(object):
         """
         return cls(meta=meta, backend=backend, url=url,
                    dispatch_middlewares=dispatch_middlewares,
-                   fetch_middlewares=fetch_middlewares, **reporter_options)
+                   fetch_middlewares=fetch_middlewares, **kwargs)
 
     @property
     def schedule(self):

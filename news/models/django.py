@@ -30,8 +30,7 @@ __all__ = ['create_abc_schedule', 'create_abc_news',
 
 
 def create_abc_schedule(user_model=None):
-    """
-    Abstract base schedule model factory.
+    """Abstract base schedule model factory.
 
     :param user_model: User model to use as schedule owners.
     :type user_model: :class:`~news.models.AbstractModel`
@@ -62,8 +61,7 @@ def create_abc_schedule(user_model=None):
 
 
 def create_abc_news(schedule_model):
-    """
-    Abstract base news model factory.
+    """Abstract base news model factory.
 
     :param schedule_model: Schedule model to use as news's schedule.
     :type schedule_model: Any concrete schedule model of abc models from
@@ -101,8 +99,7 @@ def create_abc_news(schedule_model):
 
 
 def create_schedule(abc_schedule, mixins=None, persister=None):
-    """
-    Concrete schedule model factory.
+    """Concrete schedule model factory.
 
     :param abc_schedule: Abstract base schedule to use as base.
     :type abc_schedule: Any ABC schedule from :func:`~create_abc_schedule`
@@ -137,8 +134,7 @@ def create_schedule(abc_schedule, mixins=None, persister=None):
 
 
 def create_news(abc_news, mixins=None):
-    """
-    Concrete news model factory.
+    """Concrete news model factory.
 
     :param abc_news: Abstract base news to use as base.
     :type abc_news: Any ABC news from :func:`~create_abc_news` factory

@@ -1,7 +1,7 @@
 """:mod:`news.scheduler` --- News scheduler
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Provides scheduler that runs news cover celery tasks.
+Provides a scheduler class that will run news cover celery tasks.
 
 """
 import time
@@ -9,14 +9,14 @@ import threading
 import schedule as pusher
 from contextlib import contextmanager
 from celery import states
-from .constants import COVER_PUSHER_CYCLE
 from .cover import Cover
+from .mapping import DefaultMapping
 from .utils.logging import logger
+from .constants import COVER_PUSHER_CYCLE
 
 
 class Scheduler(object):
-    """
-    Schedules news covers(:class:`~news.cover.Cover`) and keep in sync with
+    """Schedules news covers(:class:`~news.cover.Cover`) and keep in sync with
     backend schedules.
 
     :param backend: News backend to use.
@@ -27,46 +27,31 @@ class Scheduler(object):
     :param persister: Persister that persists schedules via redis channel from
         backend. The persister that has been used when creating Schedule model
         with `create_schedule` factory method should be given. Note that the
-        scheduler will not persist schedule changes if not given a persister.
+        scheduler will not persist schedule changes if not given.
     :type persister: :class:`news.persister.Persister`
-    :param intel_strategy: Intel strategy to use for a schedule. Using nicely
-        implemented intel strategy function can be work as performance boost
-        in news fetching processes since reporters in charge of the given
-        intel will be batch-dispatched rather than wating for their
-        predecessors to dispatch them.
-    :type intel_strategy: A function that takes a schedule and the backend of
-        the scheduler as positional arguments and return a list of news.
+    :param mapping: Schedule - Reporter class mapping to use. Default mapping
+        which only supports 'rss', 'atom' and 'url' news type will be used
+        if not given.
+    :type mapping: :class:`news.mapping.Mapping`
     :param on_cover_start: Callback function that will be fired on cover start.
     :type on_cover_start: A function that takes a schedule
     :param on_cover_finish: Callback function taht will be fired on cover
         finish.
     :type on_cover_finish: A function that takes a schedule and a list of
         result news of the cover.
-    :param report_experience: Module qualified path to the report experience
-        function. The report experience function should take a schedule of the
-        news and the news as it's arguments  and return `True` if the news is
-        valuable.  Otherwise it should return `False`.
-    :type report_experience: :class:`str`
-    :param fetch_experience: Module qualified path to the fetch experience
-        function. The fetch experience function should take a schedule of the
-        news, the news and the url to be classified whether it is worth to
-        visit or not. The function should return `True` if the url is expected
-        to be worthy. Otherwise it should return `False`.
-    :type fetch_experience: :class:`str`
-    :param dispatch_middlewares: A list of module qualified paths to dispatch
-        middlewares to use. The dispatch middlewares should take a reporter(
-        :class:`~news.reporter.Reporter`) and it's
-        :func:`~news.reporter.Reporter.dispatch` method and return enhanced
+    :param dispatch_middlewares: A list of dispatch middlewares to use. The
+        dispatch middlewares should take a reporter
+        (:class:`~news.reporter.Reporter`) and it's
+        :func:`~news.reporter.Reporter.dispatch` method and return an enhanced
         dispatch method. Note that the middlewares will be only applied to
         the root(chief) reporter and won't be inherited down to it's successor
         reporters.
     :type dispatch_middlewares: :class:`list`
-    :param fetch_middlewares: A list of module qualified paths to fetch
-        middlewares to use. The fetch middlewares should take a reporter(
-        :class:`~news.reporter.Reporter`) and it's
-        :func:`~news.reporter.Reporter.fetch` method and return enhanced
-        fetch method. Not that the middlewares will be applied down to
-        the successor reporters of the chief reporter.
+    :param fetch_middlewares: A list of fetch middlewares to use. The fetch
+        middlewares should take a reporter(:class:`~news.reporter.Reporter`)
+        and it's :func:`~news.reporter.Reporter.fetch` method and return an
+        enhanced fetch method. Note that the middlewares will be applied down
+        to the descendent reporters of the root reporter.
     :type  fetch_middlewares: :class:`list`
 
     *Example*::
@@ -87,14 +72,14 @@ class Scheduler(object):
         redis = Redis()
         celery = Celery()
 
-        # create persister for schedule persistence (optional)
+        # create an persister for schedule persistence (optional)
         persister = Persister(redis)
 
-        # define schedule model
+        # define a schedule model (persisted)
         ABCSchedule = create_abc_schedule(user_model=User)
-        Schedule = create_schedule(ABCSchedule)
+        Schedule = create_schedule(ABCSchedule, persister=persister)
 
-        # define news model
+        # define a news model
         ABCNews = create_abc_news(schedule_model=Schedule)
         News = create_news(ABCNews)
 
@@ -116,7 +101,7 @@ class Scheduler(object):
         self.backend = backend
         self.celery = celery
         self.celery_task = None
-        self.mapping = mapping
+        self.mapping = DefaultMapping(mapping)
 
         # schedule persister and pusher
         self.persister = persister
@@ -201,6 +186,13 @@ class Scheduler(object):
     # ======================
 
     def add(self, schedule, silent=True):
+        """Add an schedule to the scheduler.
+
+        :param schedule: An schedule or it's id to add to the scheduler.
+        :type scheduke: :class:`news.models.AbstractSchedule` implementation or
+            :int:
+
+        """
         if not self.celery_task:
             self.set_task()
 
@@ -216,6 +208,16 @@ class Scheduler(object):
             .do(self._push_cover, schedule.id)
 
     def remove(self, schedule, silent=True):
+        """Remove an schedule from the scheduler.
+
+        Removal will fail silently if given schedule doesn't exist in the
+        scheduler.
+
+        :param schedule: An schedule or it's id to remove from the scheduler.
+        :type schedule: :class:`news.models.AbstractSchedule` implementation or
+            :int:
+
+        """
         try:
             id = schedule.id
         except AttributeError:
@@ -232,7 +234,7 @@ class Scheduler(object):
     def clear(self):
         """Clear all registered schedules from the scheduler."""
         self._log('Clearing {} schedules'.format(len(self.jobs.keys())))
-        [self.remove_schedule(id) for id in self.jobs.keys()]
+        [self.remove(id) for id in self.jobs.keys()]
 
     def update(self, schedule):
         """Update the registered schedule by reconciliating with database
@@ -259,19 +261,30 @@ class Scheduler(object):
     # ==================
 
     def make_task(self):
+        """Create an celery task responsible of running reporter covers
+        asynchronously.
+
+        :returns: An celery task.
+        :rtype: :class:`~celery.Task`
+
+        """
         # make `run_cover` method into a celery task
         run_cover = self._make_run_cover()
         return self.celery.task(bind=True)(run_cover)
 
     def set_task(self):
+        """Set an celery task responsible of running reporter covers on the
+        scheduler."""
         self.celery_task = self.make_task()
 
     def _make_cover(self, schedule):
+        reporter_class, kwargs = self.mapping[schedule]
         cover = Cover(schedule=schedule, backend=self.backend)
         cover.prepare(
-            reporter_class=self.mapping[schedule],
+            reporter_class=reporter_class,
             dispatch_middlewares=self.dispatch_middlewares,
-            fetch_middlewares=self.fetch_middlewares
+            fetch_middlewares=self.fetch_middlewares,
+            **kwargs
         )
         return cover
 
@@ -294,8 +307,11 @@ class Scheduler(object):
             with self._log_ctx(sl, fl, t1='debug', t2='debug'):
                 if self.on_cover_start:
                     self.on_cover_start(schedule)
+
+                news_list = cover.run()
+
                 if self.on_cover_finish:
-                    self.on_cover_finish(schedule, cover.run())
+                    self.on_cover_finish(schedule, news_list)
         return run_cover
 
     def _push_cover(self, id):

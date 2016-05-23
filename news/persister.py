@@ -1,3 +1,10 @@
+""":mod:`news.persister` --- News scheduler
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Provides a persister class that will persist schedules along multiple
+processes or threads.
+
+"""
 from redis.exceptions import ConnectionError
 from .utils.logging import logger
 from .constants import (
@@ -9,6 +16,35 @@ from .constants import (
 
 
 class Persister(object):
+    """Persists schedule states along multiple processes or threads via redis
+    channels.
+
+    :param redis: A redis instance to use for persistence.
+    :type redis: :class:`~redis.Redis`
+
+    *Example*::
+
+        from redis import Redis
+        from django.contrib.auth.models import User
+        from news.models.django import create_abc_schedule, create_schedule
+        from news.scheduler import Scheduler
+        from news.persister import Persister
+
+        redis = Redis()
+        persister = Persister(redis=redis)
+
+        # define persisted schedule model
+        ScheduleABC = create_abc_schedule(user_model=User)
+        Schedule = create_schedule(ScheduleABC, persister=persister)
+
+        ...
+
+        # scheduler's schedule states will be persisted over change events from
+        # other processes or threads. this allows you to run a news scheduler
+        # on it's own process or threads.
+        scheduler.configure(persister=persister)
+
+    """
     def __init__(self, redis, context=None):
         self.scheduler = None
         self.redis = redis

@@ -1,3 +1,9 @@
+""":mod:`news.reporters.url` --- URL news reporters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Provide concrete URL news reporters.
+
+"""
 from bs4 import BeautifulSoup
 from extraction import Extractor
 from ..models import Readable
