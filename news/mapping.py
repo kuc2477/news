@@ -84,17 +84,20 @@ class Mapping(object):
 
     """
     def __init__(self, mapping=None, kwargs_factory=None):
-        if isinstance(mapping, dict):
+        if mapping is None:
+            self.__map = {}
+        elif isinstance(mapping, dict):
             self.__map = mapping
         elif isinstance(mapping, Mapping):
             self.__map = mapping.as_dict()
-        elif mapping is None:
-            self.__map = {}
+            self.__kwargs_factory = mapping.kwargs_factory
         else:
             raise TypeError('Only dictionary or `Mapping` instance is allowed')
 
-        if callable(kwargs_factory):
-            self.__kwargs_factory = kwargs_factory or (lambda schedule: {})
+        if kwargs_factory is None:
+            self.__kwargs_factory = (lambda schedule: {})
+        elif callable(kwargs_factory):
+            self.__kwargs_factory = kwargs_factory
         elif isinstance(kwargs_factory, dict):
             self.__kwargs_factory = merge_kwargs_factories(kwargs_factory)
         else:
@@ -120,16 +123,20 @@ class Mapping(object):
         if isinstance(key, str):
             return self.__map[key], {}
         elif isinstance(key, AbstractSchedule):
-            return self.__map[key.news_type], self.__make_kwargs(key)
+            return self.__map[key.news_type], self._make_kwargs(key)
         else:
             raise KeyError('Only Schedule subclass or string are allowed ' +
                            'as mapping key')
 
     def __contains__(self, key):
-        return key in self.__map
+        try:
+            self[key]
+            return True
+        except KeyError:
+            return False
 
     def _make_kwargs(self, schedule):
-        return self.__kwarg_factory(schedule)
+        return self.__kwargs_factory(schedule)
 
     def map(self, key, value):
         """Add mapping from a news type or a schedule to a reporter class.
@@ -159,16 +166,29 @@ class Mapping(object):
         del self[key]
         return self
 
-    def merge(self, mapping):
+    def merge(self, mapping, kwargs_factory=None):
         """Merge another mapping.
 
         :param mapping: A mapping to merge.
-        :type mapping: :class:`Mapping`
-        :returns: Merged mapping itself
+        :type mapping: :class:`dict` or :class:`Mapping`
+        :param kwargs_factory: A kwargs factory function to set.
+        :type kwargs_factory: A function that takes an schedule and returns
+            appropriate kwrags dict.
+        :returns: The merged mapping itself
         :rtype: :class:`Mapping`
 
         """
-        self.__map.update(mapping)
+        if isinstance(mapping, dict):
+            self.__map.update(mapping)
+        elif isinstance(mapping, Mapping):
+            self.__map.update(mapping.as_dict())
+            self.__kwargs_factory = mapping.kwargs_factory
+        else:
+            raise TypeError('Only dictionary or `Mapping` instance is allowed')
+
+        if kwargs_factory:
+            self.__kwargs_factory = kwargs_factory
+
         return self
 
     @classmethod
@@ -177,6 +197,9 @@ class Mapping(object):
 
         :param mapping: Mapping dictionary to use.
         :type mapping: :class:`dict`
+        :param kwargs_factory: A kwargs factory function.
+        :type kwargs_factory: A function that takes an schedule and returns
+            appropirate reporter kwargs dict.
 
         """
         assert(isinstance(mapping, dict)), 'Only `dict` type is allowed'
@@ -190,6 +213,17 @@ class Mapping(object):
 
         """
         return copy.deepcopy(self.__map)
+
+    @property
+    def kwargs_factory(self):
+        """Returns kwargs factory function.
+
+        :returns: A kwargs factory function.
+        :rtype: A function that takes an schedule and returns reporter kwargs
+            dict.
+
+        """
+        return self.__kwargs_factory
 
 
 class DefaultMapping(Mapping):
@@ -209,5 +243,5 @@ class DefaultMapping(Mapping):
     }
 
     def __init__(self, mapping=None, kwarg_factory=None):
-        mapping = dict(self.__default, **(mapping or {}))
+        mapping = Mapping(mapping=self.__default).merge(mapping)
         super().__init__(mapping=mapping, kwarg_factory=kwarg_factory)

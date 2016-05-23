@@ -130,7 +130,7 @@ class TraversingReporter(Reporter):
         child = self.create_instance(
             meta=self.meta, backend=self.backend, url=url,
             fetch_middlewares=fetch_middlewares
-        )
+        ).enhance()
         if isinstance(child, TraversingReporter):
             child.parent = parent
         return child
