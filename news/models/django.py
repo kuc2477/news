@@ -154,3 +154,12 @@ def create_news(abc_news, mixins=None):
         'News', mixins + (abc_news,),
         {'__module__': __name__}
     )
+
+
+def create_default_schedule(user_model, persister=None):
+    return create_schedule(create_abc_schedule(user_model),
+                           persister=persister)
+
+
+def create_default_news(schedule_model):
+    return create_news(create_abc_news(schedule_model))
