@@ -219,3 +219,4 @@ class Readable(AbstractNews):
                     del kwargs[k]
             except TypeError:
                 del kwargs[exclude]
+        return kwargs
