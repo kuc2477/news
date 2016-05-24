@@ -112,8 +112,8 @@ def create_abc_news(schedule_model):
         def schedule(cls):
             return relationship(
                 schedule_model,
-                backref=backref('news_list', cascade='all, delete-orphan'),
-                cascade_backrefs=False
+                backref=backref('news_list', cascade='all, delete-orphan',
+                                cascade_backrefs=False),
             )
 
         @declared_attr
@@ -124,9 +124,11 @@ def create_abc_news(schedule_model):
         def parent(cls):
             return relationship(
                 'News',
-                backref=backref('children', cascade='all, delete-orphan'),
-                cascade_backrefs=False,
                 remote_side=[cls.id],
+                backref=backref(
+                    'children', cascade='all, delete-orphan',
+                    cascade_backrefs=False
+                ),
             )
 
         @property
