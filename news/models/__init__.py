@@ -173,13 +173,14 @@ class Readable(AbstractNews):
     without fully instantiating news models.
 
     """
-    def __init__(self, title, content, summary,
+    def __init__(self, title, content, summary, url=None,
                  author=None, image=None, published=None):
         # `ReadableItem` doesn't contain any logical information than news
         # content itself.
         self.schedule = None
         self.parent = None
 
+        self.url = url
         self.author = author
         self.title = title
         self.content = content
@@ -189,3 +190,31 @@ class Readable(AbstractNews):
         self.published = published
         self.created = None
         self.updated = None
+
+    def kwargs(self, exclude=None):
+        """Create kwargs needed for instantiating a news.
+
+        This function is useful when instantiating a news from a plain
+        readable.
+
+        :param exclude: Attribute(s) to exclude from kwargs.
+        :type exclude: :class:`str` or :class:`list`
+        :returns: A dictionary of `url`, `author`, `title`, `content`,
+            `summary`, `image` and `published` attributes of the readable.
+        :rtype: :class:`dict`
+
+        """
+        kwargs = {
+            'url': self.url,
+            'author': self.author,
+            'title': self.title,
+            'content': self.content,
+            'summary': self.summary,
+            'image': self.image,
+            'published': self.published
+        }
+        try:
+            for k in exclude:
+                del kwargs[k]
+        except TypeError:
+            del kwargs[exclude]

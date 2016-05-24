@@ -150,8 +150,7 @@ def create_abc_news(schedule_model):
                             image=None):
             return cls(url=url, schedule=schedule, parent=parent,
                        author=author, title=title, content=content,
-                       summary=summary, image=image, published=published,
-                       cascade=False)
+                       summary=summary, image=image, published=published)
 
         def __init__(self, url='', schedule=None, parent=None, author=None,
                      title=None, content=None, summary=None, image=None,

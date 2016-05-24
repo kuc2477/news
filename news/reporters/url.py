@@ -23,7 +23,7 @@ class URLReporter(
     def parse(self, content):
         extractor = Extractor()
         extracted = extractor.extract(content)
-        return Readable(title=extracted.title, content=content,
+        return Readable(url=self.url, title=extracted.title, content=content,
                         summary=extracted.description, image=extracted.image)
 
     def make_news(self, readable):
@@ -33,21 +33,14 @@ class URLReporter(
 
         if not fetched and not stored:
             news = self.backend.News.create_instance(
-                parent=parent,
-                url=self.url, schedule=self.schedule, title=readable.title,
-                author=readable.author, content=readable.content,
-                summary=readable.summary, image=readable.image,
-                published=readable.published
+                parent=parent, schedule=self.schedule,
+                **readable.kwargs()
             )
         else:
             news = fetched or stored
             news.parent = parent
-            news.author = readable.author
-            news.title = readable.title
-            news.content = readable.content
-            news.summary = readable.summary
-            news.image = readable.image
-            news.published = readable.published
+            for k, v in readable.kwargs().items():
+                setattr(news, k, v)
 
         return news
 
