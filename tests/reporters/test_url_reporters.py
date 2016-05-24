@@ -5,31 +5,6 @@ from news.reporters.url import URLReporter
 
 @pytest.mark.django_db
 @pytest.mark.asyncio
-async def test_worth_to_visit(django_backend, django_schedule, content_root):
-    django_schedule.max_dist = 1
-    django_schedule.max_depth = 1
-    django_schedule.brothers = ['http://www.naver.com']
-    django_schedule.save()
-
-    meta = ReporterMeta(django_schedule)
-    reporter = URLReporter(
-        meta=meta, backend=django_backend,
-        url=django_schedule.url
-    )
-    readable = reporter.parse(content_root)
-    news = reporter.make_news(readable)
-
-    assert(await reporter.worth_to_visit(news, django_schedule.url + '/1'))
-    assert(not await reporter.worth_to_visit(news, django_schedule.url +
-                                             '/1/2'))
-    assert(await reporter.worth_to_visit(news, 'http://www.naver.com'))
-    assert(await reporter.worth_to_visit(news, 'http://www.naver.com/123'))
-    assert(not await reporter.worth_to_visit(news, django_schedule.url +
-                                             '/badexperience'))
-
-
-@pytest.mark.django_db
-@pytest.mark.asyncio
 async def test_get_urls(django_backend, django_schedule):
     django_schedule.max_dist = 1
     django_schedule.max_depth = 1
@@ -69,8 +44,7 @@ async def test_get_urls(django_backend, django_schedule):
     assert(django_schedule.url in worthy_urls)
     assert(django_schedule.url + '/' not in worthy_urls)
     assert(django_schedule.url + '/1' in worthy_urls)
-    assert(django_schedule.url + '/1/2' not in worthy_urls)
-    assert(django_schedule.url + '/badexperience' not in worthy_urls)
+    assert(django_schedule.url + '/1/2' in worthy_urls)
     assert('http://www.naver.com' in worthy_urls)
     assert('http://www.naver.com/' not in worthy_urls)
     assert('http://www.naver.com/123' in worthy_urls)
@@ -78,10 +52,10 @@ async def test_get_urls(django_backend, django_schedule):
 
 @pytest.mark.asyncio
 async def test_report_visited(django_root_url_reporter):
-    assert(django_root_url_reporter.url not in 
+    assert(django_root_url_reporter.url not in
            django_root_url_reporter._visited_urls)
     await django_root_url_reporter.report_visit()
-    assert(django_root_url_reporter.url in 
+    assert(django_root_url_reporter.url in
            django_root_url_reporter._visited_urls)
 
 

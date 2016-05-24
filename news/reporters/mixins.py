@@ -5,6 +5,11 @@ Provides generic reporter mixins.
 
 """
 from .generics import TraversingReporter
+from ..utils.url import (
+    issamedomain,
+    issuburl,
+    ext,
+)
 from ..constants import (
     DEFAULT_BLACKLIST,
     DEFAULT_MAX_VISIT,
@@ -37,7 +42,6 @@ class BatchTraversingMixin(object):
         except KeyError:
             parent = self.root if news.parent.is_root else \
                 self.root._summon_reporter(news.parent)
-
             reporter = cache[news] = self._inherit_meta(
                 url=news.url, parent=parent
             )
@@ -47,10 +51,23 @@ class BatchTraversingMixin(object):
 
 class DomainTraversingMixin(object):
     async def worth_to_visit(self, news, url):
-        # TODO: NOT IMPLEMENTED YET
+        root_url = self.root.url
+
+        # options
         brothers = self.options.get('brothers', [])
-        max_dist = self.options.get('max_dist', None)
-        max_depth = self.options.get('max_depth', None)
-        max_visit = self.options.get('max_visit', DEFAULT_MAX_VISIT)
         blacklist = self.options.get('blacklist', DEFAULT_BLACKLIST)
-        return True
+        max_dist = self.options.get('max_dist', None)
+        max_visit = self.options.get('max_visit', DEFAULT_MAX_VISIT)
+
+        # conditions
+        is_same_domain = issamedomain(root_url, url)
+        is_brother = any([issuburl(b, url) for b in brothers])
+        blacklist_ok = ext(url) not in blacklist
+        distance_ok = self.distance <= max_dist if max_dist else True
+        visit_ok = len(await self.get_visited()) <= max_visit if \
+            max_visit else True
+
+        return (is_same_domain or is_brother) and \
+            blacklist_ok and \
+            distance_ok and \
+            visit_ok

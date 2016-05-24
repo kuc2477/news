@@ -242,6 +242,6 @@ class DefaultMapping(Mapping):
         'rss': RSSReporter,
     }
 
-    def __init__(self, mapping=None, kwarg_factory=None):
-        mapping = Mapping(mapping=self.__default).merge(mapping)
-        super().__init__(mapping=mapping, kwarg_factory=kwarg_factory)
+    def __init__(self, mapping=None, kwargs_factory=None):
+        mapping = Mapping(mapping=self.__default).merge(mapping or {})
+        super().__init__(mapping=mapping, kwargs_factory=kwargs_factory)

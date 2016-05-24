@@ -16,8 +16,19 @@ def isrelpath(url):
     return ispath(url) and not url.startswith('/')
 
 
+def issamedomain(index, url):
+    parsed_index = urltools.parse(index)
+    parsed_url = urltools.parse(url)
+
+    return ispath(url) or \
+        '{}.{}'.format(parsed_index.domain, parsed_index.tld) == \
+        '{}.{}'.format(parsed_url.domain, parsed_url.tld)
+
+
 def issamehost(index, url):
-    return ispath(url) or urlparse(index).hostname == urlparse(url).hostname
+    return ispath(url) or \
+        urlparse(index).hostname == \
+        urlparse(url).hostname
 
 
 def issuburl(index, url):
