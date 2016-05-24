@@ -131,7 +131,8 @@ def sa_root_news(request, sa_session, sa_schedule, sa_news_model,
                  url_root, title_root, author_root, content_root,
                  summary_root):
     news = sa_news_model(
-        schedule=sa_schedule, url=url_root,
+        schedule=sa_schedule,
+        url=url_root,
         title=title_root,
         author=author_root,
         content=content_root,

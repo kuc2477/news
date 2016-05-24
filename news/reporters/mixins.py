@@ -41,6 +41,7 @@ class BatchTraversingMixin(object):
             reporter = cache[news] = self._inherit_meta(
                 url=news.url, parent=parent
             )
+            reporter.fetched_news = news
             return reporter
 
 

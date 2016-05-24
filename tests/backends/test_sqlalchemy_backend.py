@@ -5,8 +5,10 @@ def test_get_news(sa_session, sa_backend, sa_child_news):
 
 def test_get_news_list(sa_session, sa_backend, sa_child_news):
     assert(sa_child_news in sa_backend.get_news_list())
-    assert(sa_child_news in sa_backend.get_news_list(owner=sa_child_news.owner))
-    assert(sa_child_news in sa_backend.get_news_list(root_url=sa_child_news.root.url))
+    assert(sa_child_news in sa_backend.get_news_list(
+        owner=sa_child_news.owner))
+    assert(sa_child_news in sa_backend.get_news_list(
+        root_url=sa_child_news.root.url))
     assert(sa_child_news in sa_backend.get_news_list(
         owner=sa_child_news.owner,
         root_url=sa_child_news.root.url

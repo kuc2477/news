@@ -9,7 +9,6 @@ from . import AbstractBackend
 from ..exceptions import HeterogenuousEngineError
 
 
-
 class SQLAlchemyBackend(AbstractBackend):
     def __init__(self, bind=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -50,11 +49,12 @@ class SQLAlchemyBackend(AbstractBackend):
         try:
             root = [n for n in news if n.is_root][0]
         except IndexError:
-            raise
+            root = None
 
-        # save-update cascade will do heavy lifting
-        self.session.add(root)
-        self.session.commit()
+        if root:
+            # save-update cascade will do heavy lifting
+            self.session.add(root)
+            self.session.commit()
 
     def delete_news(self, *news):
         self.session.delete(*news)

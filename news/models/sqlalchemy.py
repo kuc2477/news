@@ -64,8 +64,8 @@ def create_abc_schedule(user_model):
         def owner(cls):
             return relationship(user_model, backref='schedules')
 
-        def __init__(self, owner=None, url='', enabled=False, 
-                     cycle=DEFAULT_SCHEDULE_CYCLE, 
+        def __init__(self, owner=None, url='', enabled=False,
+                     cycle=DEFAULT_SCHEDULE_CYCLE,
                      news_type=DEFAULT_SCHEDULE_NEWS_TYPE, **options):
             self.owner = owner
             self.url = url
@@ -78,7 +78,7 @@ def create_abc_schedule(user_model):
         url = Column(URLType, nullable=False)
         enabled = Column(Boolean, nullable=False, default=False)
         cycle = Column(Integer, default=DEFAULT_SCHEDULE_CYCLE, nullable=False)
-        news_type = Column(String, nullable=False, 
+        news_type = Column(String, nullable=False,
                            default=DEFAULT_SCHEDULE_NEWS_TYPE)
         options = Column(JSONType, nullable=False, default={})
 
@@ -110,8 +110,11 @@ def create_abc_news(schedule_model):
 
         @declared_attr
         def schedule(cls):
-            return relationship(schedule_model, backref=backref(
-                'news_list', cascade='all, delete-orphan'))
+            return relationship(
+                schedule_model,
+                backref=backref('news_list', cascade='all, delete-orphan'),
+                cascade_backrefs=False
+            )
 
         @declared_attr
         def parent_id(cls):
@@ -119,9 +122,16 @@ def create_abc_news(schedule_model):
 
         @declared_attr
         def parent(cls):
-            return relationship('News', backref=backref(
-                'children', cascade='all, delete-orphan'
-            ), remote_side=[cls.id])
+            return relationship(
+                'News',
+                backref=backref('children', cascade='all, delete-orphan'),
+                cascade_backrefs=False,
+                remote_side=[cls.id],
+            )
+
+        @property
+        def owner(self):
+            return self.schedule.owner
 
         id = Column(Integer, primary_key=True)
         url = Column(URLType, nullable=False)
@@ -133,6 +143,15 @@ def create_abc_news(schedule_model):
         published = Column(DateTime, nullable=True)
         created = Column(DateTime, default=datetime.now)
         updated = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+        @classmethod
+        def create_instance(cls, url, schedule, title, content, summary,
+                            published=None, parent=None, author=None,
+                            image=None):
+            return cls(url=url, schedule=schedule, parent=parent,
+                       author=author, title=title, content=content,
+                       summary=summary, image=image, published=published,
+                       cascade=False)
 
         def __init__(self, url='', schedule=None, parent=None, author=None,
                      title=None, content=None, summary=None, image=None,
@@ -157,10 +176,6 @@ def create_abc_news(schedule_model):
 
         def __eq__(self, other):
             return self.__hash__() == other.__hash__()
-
-        @property
-        def owner(self):
-            return self.schedule.owner
 
     return AbstractBaseNews
 
