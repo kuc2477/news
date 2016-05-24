@@ -4,27 +4,22 @@
    contain the root `toctree` directive.
 
 News
-====
+================
 
-News is a schedulable url subscription engine built on top of :mod:`asnycio` and :mod:`aiohttp`. ::
+News is a web subscription engine built on top of :mod:`asnycio` and :mod:`aiohttp`. ::
 
     from celery import Celery
     from django.contrib.auth.models import User
-
-    from news.backends.django import DjangoBackend
     from news.scheduler import Scheduler
+    from news.backends.django import DjangoBackend
     from news.models.django import (
-        create_abc_schedule, create_schedule, 
-        create_abc_news, create_news
+        create_default_schedule,
+        create_default_news,
     )
 
-    # define schedule model
-    ABCSchedule = create_abc_schedule(user_model=User)
-    Schedule = create_schedule(ABCSchedule)
-
-    # define news model
-    ABCNews = create_abc_news(schedule_model=Schedule)
-    News = create_news(ABCNews)
+    # define models
+    Schedule = create_default_schedule(user_model=User)
+    News = create_default_news(schedule_model=Schedule)
 
     # create a celery instance
     celery = Celery()
@@ -40,22 +35,44 @@ News is a schedulable url subscription engine built on top of :mod:`asnycio` and
     scheduler.start()
 
 
-References
-----------
+User's Guide
+------------
+.. toctree::
+   :maxdepth: 2
+
+   guides/django
+   guides/sqlalchemy
+
+
+Advanced Usage
+--------------
+.. toctree::
+    :maxdepth: 2
+    advanced/extending_models
+    advanced/writing_backends
+    advanced/writing_reporters
+
+
+API References
+---------------
 
 .. toctree::
    :maxdepth: 1
 
-   news
-   news/reporter
    news/scheduler
-   news/cover
-   news/backends
-   news/backends/django
-   news/backends/sqlalchemy
    news/models
    news/models/django
    news/models/sqlalchemy
+   news/backends
+   news/backends/django
+   news/backends/sqlalchemy
+   news/reporters/generics
+   news/reporters/mixins
+   news/reporters/feed
+   news/reporters/url
+   news/cover
+   news/persister
+   news/mapping
 
 
 Indices and tables
@@ -64,4 +81,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

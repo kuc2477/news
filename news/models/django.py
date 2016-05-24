@@ -25,8 +25,11 @@ from ..constants import (
 )
 
 
-__all__ = ['create_abc_schedule', 'create_abc_news',
-           'create_schedule', 'create_news']
+__all__ = [
+    'create_abc_schedule', 'create_abc_news',
+    'create_schedule', 'create_default_schedule',
+    'create_news', 'create_default_news'
+]
 
 
 def create_abc_schedule(user_model=None):

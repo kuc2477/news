@@ -20,8 +20,8 @@ class TraversingReporter(Reporter):
     :type parent: :class:`TraversingReporter`
 
     """
-    def __init__(self, parent=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, meta, backend, parent=None, *args, **kwargs):
+        super().__init__(meta=meta, backend=backend, *args, **kwargs)
         self._visited_urls_lock = asyncio.Lock()
         self._visited_urls = set()
         self._fetched_news = None
@@ -29,23 +29,23 @@ class TraversingReporter(Reporter):
 
     @property
     def root(self):
-        """(:class:`TraversingReporter`)Root reporter."""
+        """(:class:`TraversingReporter`) Root reporter."""
         return self if self.is_root else self.parent.root
 
     @property
     def is_root(self):
-        """(:class:`bool`)Returns `True` if the reporter is a root reporter."""
+        """(:class:`bool`) Returns `True` if the reporter is a root reporter."""
         return self.parent is None
 
     @property
     def distance(self):
-        """(:class:`int`)Returns the distance from the root reporter."""
+        """(:class:`int`) Returns the distance from the root reporter."""
         return 0 if not self.parent else self.parent.distance + 1
 
     @property
     def fetched_news(self):
-        """(:class:`~news.models.AbstractNews`)Fetched news. Defaults to `None`
-        if the reporter hasn't fetched a news yet."""
+        """(:class:`~news.models.AbstractNews`) Fetched news. Defaults to
+            `None` if the reporter hasn't fetched a news yet."""
         return self._fetched_news
 
     @fetched_news.setter
@@ -101,7 +101,7 @@ class TraversingReporter(Reporter):
             return news
 
     def get_urls(self, news):
-        """(:class:`list`)Should return a list of urls to be fetched by
+        """(:class:`list`) Should return a list of urls to be fetched by
         children of the reporter. Not implemented for default."""
         raise NotImplementedError
 

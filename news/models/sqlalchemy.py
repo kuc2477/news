@@ -34,8 +34,11 @@ from ..constants import (
     DEFAULT_SCHEDULE_NEWS_TYPE
 )
 
-__all__ = ['create_abc_schedule', 'create_abc_news',
-           'create_schedule', 'create_news']
+__all__ = [
+    'create_abc_schedule', 'create_abc_news',
+    'create_schedule', 'create_default_schedule',
+    'create_news', 'create_default_news',
+]
 
 
 def create_abc_schedule(user_model):
@@ -240,3 +243,12 @@ def create_news(abc_news, base, mixins=None):
     """
     mixins = mixins or tuple()
     return type('News', mixins + (abc_news, base), {})
+
+
+def create_default_schedule(user_model, persister=None):
+    return create_schedule(create_abc_schedule(user_model),
+                           persister=persister)
+
+
+def create_default_news(schedule_model):
+    return create_news(create_abc_news(schedule_model))

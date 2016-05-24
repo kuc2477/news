@@ -1,2 +1,0 @@
-.. automodule:: news.reporter
-   :members:
