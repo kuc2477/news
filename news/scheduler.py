@@ -8,7 +8,7 @@ import time
 import threading
 import schedule as pusher
 from contextlib import contextmanager
-from celery import states
+from celery import Task, states
 from .cover import Cover
 from .mapping import DefaultMapping
 from .utils.logging import logger
@@ -35,10 +35,13 @@ class Scheduler(object):
     :type mapping: :class:`news.mapping.Mapping`
     :param on_cover_start: Callback function that will be fired on cover start.
     :type on_cover_start: A function that takes a schedule
-    :param on_cover_finish: Callback function taht will be fired on cover
-        finish.
-    :type on_cover_finish: A function that takes a schedule and a list of
+    :param on_cover_success: Callback function taht will be fired on cover
+        success.
+    :type on_cover_success: A function that takes a schedule and a list of
         result news of the cover.
+    :param on_cover_failure: Callback function that will be fired on cover
+        failure.
+    :type on_cover_failre: A function that takes a schedule and an exception.
     :param dispatch_middlewares: A list of dispatch middlewares to use. The
         dispatch middlewares should take a reporter
         (:class:`~news.reporter.Reporter`) and it's
@@ -95,8 +98,9 @@ class Scheduler(object):
 
     """
     def __init__(self, backend=None, celery=None, mapping=None, persister=None,
-                 on_cover_start=None, on_cover_finish=None,
-                 dispatch_middlewares=None, fetch_middlewares=None):
+                 on_cover_start=None, on_cover_success=None,
+                 on_cover_failure=None, dispatch_middlewares=None,
+                 fetch_middlewares=None):
         # backend & celery
         self.backend = backend
         self.celery = celery
@@ -114,7 +118,8 @@ class Scheduler(object):
 
         # scheduler cover callbacks
         self.on_cover_start = on_cover_start
-        self.on_cover_finish = on_cover_finish
+        self.on_cover_success = on_cover_success
+        self.on_cover_failure = on_cover_failure
 
         # scheduler middlewares
         self.dispatch_middlewares = dispatch_middlewares or []
@@ -268,9 +273,18 @@ class Scheduler(object):
         :rtype: :class:`~celery.Task`
 
         """
+        class CallbackTask(Task):
+            def on_success(task, retval, task_id, args, kwargs):
+                schedule = self.backend.get_schedule(args[0])
+                self.on_cover_success(schedule, retval)
+
+            def on_failure(task, exc, task_id, args, kwargs, einfo):
+                schedule = self.backend.get_schedule(args[0])
+                self.on_cover_failure(schedule, exc)
+
         # make `run_cover` method into a celery task
         run_cover = self._make_run_cover()
-        return self.celery.task(bind=True)(run_cover)
+        return self.celery.task(bind=True, base=CallbackTask)(run_cover)
 
     def set_task(self):
         """Set an celery task responsible of running reporter covers on the
@@ -307,11 +321,8 @@ class Scheduler(object):
             with self._log_ctx(sl, fl, t1='debug', t2='debug'):
                 if self.on_cover_start:
                     self.on_cover_start(schedule)
+                cover.run()
 
-                news_list = cover.run()
-
-                if self.on_cover_finish:
-                    self.on_cover_finish(schedule, news_list)
         return run_cover
 
     def _push_cover(self, id):
