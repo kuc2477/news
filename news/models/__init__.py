@@ -213,8 +213,9 @@ class Readable(AbstractNews):
             'image': self.image,
             'published': self.published
         }
-        try:
-            for k in exclude:
-                del kwargs[k]
-        except TypeError:
-            del kwargs[exclude]
+        if exclude:
+            try:
+                for k in exclude:
+                    del kwargs[k]
+            except TypeError:
+                del kwargs[exclude]
