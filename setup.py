@@ -64,7 +64,7 @@ test_dependencies = [
 setup(
     name='news',
     packages=find_packages(exclude=['tests']),
-    data_files=[('', ['README.rst', 'CHANGES.rst'])],
+    data_files=[('', ['README.rst'])],
     version=VERSION,
     description='Schedulable web subscription engine',
     long_description=long_description,
