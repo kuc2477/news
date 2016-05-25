@@ -7,10 +7,7 @@ from news import VERSION
 
 
 # describe readme and change logs
-long_description = (
-    open('README.rst').read() + '\n\n' +
-    open('CHANGES.rst').read()
-)
+long_description = open('README.rst').read()
 
 # test command
 try:

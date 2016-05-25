@@ -1,5 +1,5 @@
-""":mod:`news.models.django` --- News model Django implementations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.models.django` --- Model Django implementations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Provides factory functions and default News models.
 
@@ -12,7 +12,7 @@ from django.db.models.signals import (
 from django.conf import settings
 from jsonfield import JSONField
 
-from .import (
+from .abstract import (
     AbstractSchedule,
     AbstractNews
 )

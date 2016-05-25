@@ -1,2 +1,2 @@
-.. automodule:: news.reporters
+.. automodule:: news.mapping
     :members:

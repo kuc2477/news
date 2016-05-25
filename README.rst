@@ -26,5 +26,7 @@ Documentation
 
 Note
 ====
-- You can see the project roadmap in `ROADMAP.org`
-- Public API can be changed at any time since the project is still under heavy development.
+- The project is currently under heavy development. Most of public APIs are settled but it can break your
+  system at any time due to it's breaking change. Make sure to check release notes before you
+  add ``news`` to your dependencies.
+- You can check the roadmap at ``ROADMAP.org``

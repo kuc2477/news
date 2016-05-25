@@ -1,5 +1,5 @@
-""":mod:`news.persister` --- News scheduler
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.persister` --- Schedule persistence
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Provides a persister class that will persist schedules along multiple
 processes or threads.

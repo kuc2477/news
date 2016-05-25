@@ -1,5 +1,5 @@
-""":mod:`news.cover` --- News cover jobs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.cover` --- News cover
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 News cover jobs to be run by reporters.
 
@@ -13,9 +13,11 @@ class Cover(object):
     celery task.
 
     :param schedule: Schedule that dispatches this cover.
-    :type schedule: `backend`'s' :attr:`~news.backend.AbstractBackend.Schedule`
+    :type schedule: `backend`'s'
+        :attr:`~news.backend.abstract.AbstractBackend.Schedule`
     :param backend: Backend to be used for news cover.
-    :type backend: :class:`~news.backends.AbstractBackend` implementation.
+    :type backend: :class:`~news.backends.abstract.AbstractBackend`
+        implementation.
 
     """
     def __init__(self, schedule, backend):

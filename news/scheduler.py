@@ -1,5 +1,5 @@
-""":mod:`news.scheduler` --- News scheduler
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.scheduler` --- Scheduler
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Provides a scheduler class that will run news cover celery tasks.
 
@@ -20,7 +20,7 @@ class Scheduler(object):
     backend schedules.
 
     :param backend: News backend to use.
-    :type backend: :class:`news.backends.AbstractBackend`
+    :type backend: :class:`news.backends.abstract.AbstractBackend`
         implementation.
     :param celery: Celery app instance to use as asynchronous job queue.
     :type celery: :class:`~celery.Celery`
@@ -57,42 +57,37 @@ class Scheduler(object):
         to the descendent reporters of the root reporter.
     :type  fetch_middlewares: :class:`list`
 
-    *Example*::
+    **Example**::
 
         from redis import Redis
         from celery import Celery
         from django.contrib.auth.models import User
-
-        from news.backends.django import DjangoBackend
+        from news.backends import DjangoBackend
         from news.scheduler import Scheduler
         from news.persister import Persister
         from news.models.django import (
-            create_abc_schedule, create_abc_news,
-            create_schedule, create_news
+            create_default_schedule,
+            create_default_news,
         )
 
         # create a celery instance and a redis instance
         redis = Redis()
         celery = Celery()
 
-        # create an persister for schedule persistence (optional)
+        # create an persister (optional)
         persister = Persister(redis)
 
-        # define a schedule model (persisted)
-        ABCSchedule = create_abc_schedule(user_model=User)
-        Schedule = create_schedule(ABCSchedule, persister=persister)
+        # define models
+        Schedule = create_default_schedule(
+            user_model=User,
+            persister=persister,
+        )
+        News = create_default_news(schedule_model=Schedule)
 
-        # define a news model
-        ABCNews = create_abc_news(schedule_model=Schedule)
-        News = create_news(ABCNews)
+        # create a news backend
+        backend = DjangoBackend(schedule_model=Schedule, news_model=News)
 
-        # create a schedule backend
-        backend = DjangoBackend(
-                user_model=User,
-                schedule_model=Schedule,
-                news_model=News)
-
-        # run scheduler (persisted)
+        # run a persisted scheduler
         scheduler = Scheduler(backend, celery, persister=persister)
         scheduler.start()
 

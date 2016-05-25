@@ -4,7 +4,7 @@
    .. toctree::
       :maxdepth: 2
 
-      news/reporter
+      news/reporters
       news/scheduler
       news/cover
       news/backends/abstract

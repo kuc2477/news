@@ -4,79 +4,99 @@
    contain the root `toctree` directive.
 
 News
-================
+====
 
 News is a web subscription engine built on top of :mod:`asnycio` and :mod:`aiohttp`. ::
 
     from celery import Celery
     from django.contrib.auth.models import User
     from news.scheduler import Scheduler
-    from news.backends.django import DjangoBackend
+    from news.backends import DjangoBackend
     from news.models.django import (
         create_default_schedule,
         create_default_news,
     )
 
+    # create a celery instance (or use your own instance)
+    celery = Celery()
+
     # define models
     Schedule = create_default_schedule(user_model=User)
     News = create_default_news(schedule_model=Schedule)
 
-    # create a celery instance
-    celery = Celery()
+    # define a backend
+    backend = DjangoBackend(schedule_model=Schedule, news_model=News)
 
-    # create a schedule backend
-    backend = DjangoBackend(
-            user_model=User,
-            schedule_model=Schedule,
-            news_model=News)
+    # subscribe an url
+    owner = User.objects.first()
+    schedule = Schedule(url='http://www.naver.com', owner=owner, cycle=60)
+    schedule.save()
 
     # run news scheduler
     scheduler = Scheduler(backend, celery)
     scheduler.start()
 
 
+Installation
+------------
+You can get the latest version from the PyPI
+
+.. code-block:: shell
+
+    pip install news
+
+
+Quick Start
+-----------
+.. toctree::
+   :maxdepth: 1
+
+   quickstarts/concepts
+   quickstarts/django
+   quickstarts/sqlalchemy
+
+
 User's Guide
 ------------
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 1
 
-   guides/django
-   guides/sqlalchemy
+    guides/models
+    guides/backends
+    guides/reporters
+    guides/persister
+    guides/scheduler
 
 
 Advanced Usage
 --------------
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
+
     advanced/extending_models
     advanced/writing_backends
     advanced/writing_reporters
+    advanced/middlewares
 
 
 API References
 ---------------
 
 .. toctree::
-   :maxdepth: 1
+   :includehidden:
+   :maxdepth: 2
 
-   news/scheduler
    news/models
-   news/models/django
-   news/models/sqlalchemy
    news/backends
-   news/backends/django
-   news/backends/sqlalchemy
-   news/reporters/generics
-   news/reporters/mixins
-   news/reporters/feed
-   news/reporters/url
+   news/reporters
+   news/scheduler
    news/cover
    news/persister
    news/mapping
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

@@ -1,11 +1,11 @@
-""":mod:`news.backends.sqlalchemy` --- News backend SQLAlchemy implementations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.backends.sqlalchemy` --- Backend SQLAlchemy implementation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Provides an implementation of news backend for sqlalchemy projects.
+Provides an implementation of news backend for SQLAlchemy.
 
 """
 from sqlalchemy.orm import sessionmaker
-from . import AbstractBackend
+from .abstract import AbstractBackend
 from ..exceptions import HeterogenuousEngineError
 
 
@@ -15,8 +15,7 @@ class SQLAlchemyBackend(AbstractBackend):
 
         # use given session if available. otherwise try to retrieve session
         # from the engine bound to models if exists.
-        self.session = bind or self.retrieve_session(
-            self.Owner, self.Schedule, self.News)
+        self.session = bind or self._retrieve_session(self.Schedule, self.News)
 
     def get_news(self, id):
         if not id:
@@ -73,11 +72,12 @@ class SQLAlchemyBackend(AbstractBackend):
 
         return query.all()
 
-    def bind_session(self, session):
+    def bind(self, session):
         self.session = session
+        return self
 
     @staticmethod
-    def retrieve_session(model, *models):
+    def _retrieve_session(model, *models):
         if not all([m.metadata.bind for m in models + (model,)]):
             return None
 

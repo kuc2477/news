@@ -1,5 +1,5 @@
-""":mod:`news.models.sqlalchemy` --- News model SQLAlchemy implementations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.models.sqlalchemy` --- Model SQLAlchemy implementations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Provides factory functions for both abstract and concrete News models.
 
@@ -25,7 +25,7 @@ from sqlalchemy_utils.types import (
     URLType,
     JSONType,
 )
-from . import (
+from .abstract import (
     AbstractSchedule,
     AbstractNews
 )
@@ -245,10 +245,11 @@ def create_news(abc_news, base, mixins=None):
     return type('News', mixins + (abc_news, base), {})
 
 
-def create_default_schedule(user_model, persister=None):
-    return create_schedule(create_abc_schedule(user_model),
-                           persister=persister)
+def create_default_schedule(user_model, base, persister=None):
+    abc_schedule = create_abc_schedule(user_model, base)
+    return create_schedule(abc_schedule, base, persister=persister)
 
 
-def create_default_news(schedule_model):
-    return create_news(create_abc_news(schedule_model))
+def create_default_news(schedule_model, base):
+    abc_news = create_abc_news(schedule_model, base)
+    return create_news(abc_news, base)

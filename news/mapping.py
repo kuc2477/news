@@ -1,12 +1,12 @@
-""":mod:`news.mapping` --- News reporter mapping
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.mapping` --- Reporter mapping
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Provide a mapping class that maps from schedule to reporter classes.
+Provides a mapping classes that maps from schedule to reporter classes.
 
 """
 import copy
-from .models import AbstractSchedule
-from .reporters import Reporter
+from .models.abstract import AbstractSchedule
+from .reporters.abstract import Reporter
 from .reporters.url import URLReporter
 from .reporters.feed import (
     AtomReporter,
@@ -34,23 +34,20 @@ def merge_kwargs_factories(kwargs_factories):
 
 
 class Mapping(object):
-    """Mapping from news type / schedule to reporter classes.
+    """Mapping from news type/schedule to reporter classes.
 
-    Implements `__setitem__` and `__getitem__` magic methods to support both
-    mapping from :class:`str` to :class:`~news.reporters.Reporter` subclasses
-    and from :class:`~news.models.AbstractSchedule` subclasses to
-    `~news.reporters.Reporter`.
+    Implements :meth:`__setitem__` and :meth:`__getitem__` magic methods to
+    support both mapping from :class:`str` and from
+    :class:`~news.models.AbstractSchedule` subclasses to
+    :class:`~news.reporters.Reporter`.
 
     :param mapping: A mapping to inherit from.
     :type mapping: :class:`~news.scheduler.Mapping` or `dict`
-    :param kwargs_factory: A **kwargs factory function that takes an schedule
+    :param kwargs_factory: A kwargs factory function that takes an schedule
         and returns appropriate reporter kwargs. Factory functions will be
         merged if a dictionary which maps from news types to kwargs factory is
         given. Defaults to a function that simply returns empty dictionary.
-    :type kwargs_factory: A function that takes an
-        :class:`~news.models.AbstractSchedule` implementation's instance and
-        returns a reporter kwargs dictionary. A dictioanry mapped from
-        news types to kwargs factory function is also allowed.
+    :type kwargs_factory: function
 
     *Example*::
 
@@ -142,10 +139,10 @@ class Mapping(object):
         """Add mapping from a news type or a schedule to a reporter class.
 
         :param key: Schedule or an string to be mapped from.
-        :type key: A `~news.models.AbstractSchedule` implementation or
+        :type key: A :class:`~news.models.AbstractSchedule` implementation or
             :class:`str`
         :param value: Reporter to be mapped to.
-        :type value: `~news.reporters.Reporter`
+        :type value: :class:`~news.reporters.Reporter`
         :returns: Modified mapping itself
         :rtype: :class:`Mapping`
 
@@ -157,7 +154,7 @@ class Mapping(object):
         """Remove mapping from a news type or a schedule to a reporter class.
 
         :param key: Schedule or an string mapped from.
-        :type key: A `~news.models.AbstractSchedule` implementation or
+        :type key: A :class:`~news.models.AbstractSchedule` implementation or
             :class:`str`
         :returns: Modified mapping itself
         :rtype: :class:`Mapping`
@@ -172,8 +169,7 @@ class Mapping(object):
         :param mapping: A mapping to merge.
         :type mapping: :class:`dict` or :class:`Mapping`
         :param kwargs_factory: A kwargs factory function to set.
-        :type kwargs_factory: A function that takes an schedule and returns
-            appropriate kwrags dict.
+        :type kwargs_factory: function
         :returns: The merged mapping itself
         :rtype: :class:`Mapping`
 
@@ -216,7 +212,7 @@ class Mapping(object):
 
     @property
     def kwargs_factory(self):
-        """Returns kwargs factory function.
+        """kwargs factory function of the mapping.
 
         :returns: A kwargs factory function.
         :rtype: A function that takes an schedule and returns reporter kwargs
@@ -227,10 +223,12 @@ class Mapping(object):
 
 
 class DefaultMapping(Mapping):
-    """Default mapping implementation.
+    """Default mapping implementation for convenience.
 
-    Maps 'url', 'atom', 'rss' news types to `news.reporters.url.URLReporter`,
-    `news.reporters.feed.AtomReporter` and `news.reporters.feed.RSSReporter`.
+    Maps *url*, *atom* and *rss* news types to
+    :class:`~news.reporters.url.URLReporter`,
+    :class:`~news.reporters.feed.AtomReporter` and
+    :class:`~news.reporters.feed.RSSReporter`.
 
     :param mapping: A mapping to merge into default mapping.
     :type mapping: :class:`~news.scheduler.Mapping` or `dict`

@@ -1,12 +1,12 @@
-""":mod:`news.backends.django` --- News backend Django implementations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.backends.django` --- Backend Django implementation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Provides an implemenation of news backend for django projects.
+Provides an implemenation of news backend for django ORM.
 
 """
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
-from .import AbstractBackend
+from .abstract import AbstractBackend
 
 
 class DjangoBackend(AbstractBackend):

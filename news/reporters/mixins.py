@@ -1,5 +1,5 @@
-""":mod:`news.reporters.mixins` --- Generic news reporter mixins
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""":mod:`news.reporters.mixins` --- Generic reporter mixins
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Provides generic reporter mixins.
 
