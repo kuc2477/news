@@ -1,5 +1,5 @@
 import pytest
-from news.models import Readable
+from news.models.abstract import Readable
 from .django import *
 from .sqlalchemy import *
 
