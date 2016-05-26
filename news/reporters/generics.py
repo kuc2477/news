@@ -79,11 +79,16 @@ class TraversingReporter(Reporter):
         """
         # fetch news from the url and determine whether it is worthy or not
         news = await self.fetch()
-        if news and not self.bulk_report:
+
+        if not news:
+            return []
+
+        if not self.bulk_report:
             self.report_news(news)
 
         urls = await self.get_urls(news) if news else []
-        worthies = await asyncio.gather(*[self.worth_to_visit(u) for u in urls])
+        worthies = await asyncio.gather(*[
+            self.worth_to_visit(news, u) for u in urls])
         worthy_urls = (u for u, w in zip(urls, worthies) if w)
 
         news_linked = await self.dispatch_reporters(worthy_urls)
