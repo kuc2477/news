@@ -83,7 +83,6 @@ class Reporter(object):
         :rtype: :class:`list` or `~news.models.AbstractNews` implemnetation.
 
         """
-        print('original fetch')
         async with aiohttp.get(self.url) as response:
             # return nothing if status code is not OK
             if response.status != 200:
@@ -140,7 +139,7 @@ class Reporter(object):
     def enhance(self):
         """Enhance the reporter with it's middlewares.
 
-        Note that middlewares will be exhausted after the enhancement, leaving 
+        Note that middlewares will be exhausted after the enhancement, leaving
         an empty lists.
 
         :returns: Ehanced reporter itself.

@@ -38,7 +38,9 @@ class TraversingReporter(Reporter):
     def __init__(self, meta, backend, url=None, parent=None, bulk_report=True,
                  dispatch_middlewares=None, fetch_middlewares=None,
                  *args, **kwargs):
-        super().__init__(meta=meta, backend=backend, url=url, *args, **kwargs)
+        super().__init__(meta=meta, backend=backend, url=url,
+                         dispatch_middlewares=dispatch_middlewares,
+                         fetch_middlewares=fetch_middlewares, *args, **kwargs)
         self._visited_urls_lock = asyncio.Lock()
         self._visited_urls = set()
         self._fetched_news = None
@@ -126,7 +128,7 @@ class TraversingReporter(Reporter):
 
         :class:`~news.reporters.generics.TraversingReporter` will carry
         :attr:`fetched_news` and report to it's root reporter that he has
-        visited the url after when the fetch has been finished. Theses visited 
+        visited the url after when the fetch has been finished. Theses visited
         urls can later be accessed by :meth:`get_visited` or utilized by
         :meth:`already_visited`.
 

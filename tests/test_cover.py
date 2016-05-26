@@ -13,7 +13,6 @@ async def test_cover_prepare(cover, django_root_news):
     def dispatch_middleware(reporter, dispatch):
         @functools.wraps(dispatch)
         async def enhanced():
-            print('hello dispatch')
             return [1, 2, 3]
         return enhanced
 
@@ -21,7 +20,6 @@ async def test_cover_prepare(cover, django_root_news):
     def fetch_middleware(reporter, fetch):
         @functools.wraps(fetch)
         async def enhanced():
-            print('hello fetch')
             return 10
         return enhanced
 
