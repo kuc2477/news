@@ -5,7 +5,7 @@ from ...constants import LOG_URL_MAX_LENGTH
 
 def logging_dispatch_middleware(reporter, dispatch):
     @wraps(dispatch)
-    await def enhanced(*args, **kwargs):
+    async def enhanced(*args, **kwargs):
         log = _log_factory(reporter)
         log('Dispatching reporter with {} intel'.format(len(r.meta.intel)))
         news_list = await dispatch(*args, **kwargs)
@@ -16,7 +16,7 @@ def logging_dispatch_middleware(reporter, dispatch):
 
 def logging_fetch_middleware(reporter, fetch):
     @wraps(fetch)
-    await def enhanced(*args, **kwargs):
+    async def enhanced(*args, **kwargs):
         log = _log_factory(reporter)
         log('Fetch started')
         fetched = await fetch(*args, **kwargs)
