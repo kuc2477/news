@@ -4,72 +4,86 @@ Quickstart for SQLAlchemy users
 *News* with *SQLAlchemy* is as simple as following.
 
 
-1. Define news models
+**1. Define models**
 
-   .. code-block:: python
+First off, you need to describe how your subscription schedule and web contents
+should look like to your database.
 
-       # models.py
-       from sqlalchemy import Column, Integer
-       from sqlalchemy.ext.declarative import declarative_base
-       from news.models.sqlalchemy import (
-           create_default_news,
-           create_default_schedule
-       )
+.. code-block:: python
 
-       base = declarative_base()
+   # models.py
+   from sqlalchemy import Column, Integer
+   from sqlalchemy.ext.declarative import declarative_base
+   from news.models.sqlalchemy import (
+       create_default_news,
+       create_default_schedule
+   )
 
-       class User(base):
-            __tablename__ = 'user'
-           id = Column(Integer, primary_key=True)
+   base = declarative_base()
 
-       Schedule = create_default_schedule(user_model=User, base=base)
-       News = create_default_news(schedule_model=Schedule, base=base)
+   class User(base):
+        __tablename__ = 'user'
+       id = Column(Integer, primary_key=True)
 
-
-
-2. Create a news backend
-
-   .. code-block:: python
-
-       # backend.py
-       from news.backends import SQLAlchemyBackend
-       from .models import Schedule, News
-
-       backend = SQLAlchemyBackend(schedule_model=Schedule, news_model=News)
+   Schedule = create_default_schedule(user_model=User, base=base)
+   News = create_default_news(schedule_model=Schedule, base=base)
 
 
-3. Create a celery app instance and register the scheduler's celery task
+**2. Define a backend**
 
-   .. code-block:: python
+Backend serves as an interface between your models and other :mod:`news`
+components. Any backend constructors will produce singleton backend objects
+based on combination of supplied models.
 
-       # celery.py
-       from celery import Celery
-       celery = Celery()
+.. code-block:: python
 
+   # backend.py
+   from news.backends import SQLAlchemyBackend
+   from .models import Schedule, News
 
-  .. code-block:: python
-
-       # tasks.py
-       from .scheduler import scheduler
-       scheduler_task = scheduler.make_task()
-
-
-4. Define a scheduler
-
-   .. code-block:: python
-
-       # scheduler.py
-       from news.scheduler import Scheduler
-       from .backend import backend
-       from .celery import celery
-
-       scheduler = Scheduler(backend=backend, celery=celery)
-
-       if __name__ == '__main__':
-           scheduler.start()
+   backend = SQLAlchemyBackend(schedule_model=Schedule, news_model=News)
 
 
-5. Populate your news schedules
+**3. Define a scheduler**
+
+:mod:`news` usese :mod:`celery` as an task queue for distributing cover tasks over
+multiple workers. You will need to define your own celery instance and supply
+it to the scheduler.
+
+.. code-block:: python
+
+   # celery.py
+   from celery import Celery
+   celery = Celery()
+
+.. code-block:: python
+
+   # scheduler.py
+   from news.scheduler import Scheduler
+   from .backend import backend
+   from .celery import celery
+
+   scheduler = Scheduler(backend=backend, celery=celery)
+
+   if __name__ == '__main__':
+       scheduler.start()
+
+
+**4. Register the scheduler's celery task**
+
+Celery workers should know what kind of tasks they can work on. Scheduler's
+:meth:`make_task` task factory method creates it's news cover task.
+
+.. code-block:: python
+
+   # tasks.py
+   from .scheduler import scheduler
+   scheduler_task = scheduler.make_task()
+
+
+**5. Populate your schedules**
+
+To get web contents periodically, you first need to subscribe an url.
 
    .. code-block:: python
 
@@ -84,7 +98,11 @@ Quickstart for SQLAlchemy users
            session.commit()
 
 
-6. Launch your celery process against ``tasks.py``
+**6. Launch celery workers and the scheduler**
 
+Launch celery workers and the scheduler on their each process!
 
-7. Launch your scheduler process with ``python scheduler.py``
+.. code-block:: shell
+
+    $ celery worker
+    $ python scheduler.py

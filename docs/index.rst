@@ -29,28 +29,20 @@ News is a web subscription engine built on top of :mod:`asnycio` and :mod:`aioht
 
     # subscribe an url
     owner = User.objects.first()
-    schedule = Schedule(url='http://www.naver.com', owner=owner, cycle=60)
+    schedule = Schedule(url='http://httpbin.org', owner=owner)
     schedule.save()
 
-    # run news scheduler
+    # run the scheduler
     scheduler = Scheduler(backend, celery)
     scheduler.start()
-
-
-Installation
-------------
-You can get the latest version from the PyPI
-
-.. code-block:: shell
-
-    pip install news
 
 
 Quick Start
 -----------
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
+   quickstarts/installation
    quickstarts/concepts
    quickstarts/django
    quickstarts/sqlalchemy
@@ -59,24 +51,11 @@ Quick Start
 User's Guide
 ------------
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
     guides/models
     guides/backends
     guides/reporters
-    guides/persister
-    guides/scheduler
-
-
-Advanced Usage
---------------
-.. toctree::
-    :maxdepth: 1
-
-    advanced/extending_models
-    advanced/writing_backends
-    advanced/writing_reporters
-    advanced/middlewares
 
 
 API References

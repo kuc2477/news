@@ -133,7 +133,10 @@ class Mapping(object):
             return False
 
     def _make_kwargs(self, schedule):
-        return self.__kwargs_factory(schedule)
+        if self.__kwargs_factory:
+            return self.__kwargs_factory(schedule)
+        else:
+            return {}
 
     def map(self, key, value):
         """Add mapping from a news type or a schedule to a reporter class.

@@ -47,7 +47,9 @@ def create_abc_schedule(user_model=None):
 
     class AbstractBaseSchedule(models.Model, AbstractSchedule):
         owner = models.ForeignKey(
-            user_model, related_name='schedules', db_index=True)
+            user_model, related_name='schedules',
+            db_index=True, blank=True, null=True
+        )
 
         url = models.URLField()
         cycle = models.IntegerField(default=DEFAULT_SCHEDULE_CYCLE)
