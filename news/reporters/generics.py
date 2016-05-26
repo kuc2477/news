@@ -78,12 +78,12 @@ class TraversingReporter(Reporter):
 
         """
         # fetch news from the url and determine whether it is worthy or not
-        news = self.fetch()
+        news = await self.fetch()
         if news and not self.bulk_report:
             self.report_news(news)
 
-        urls = self.get_urls(news) if news else []
-        worthies = asyncio.gather(*[self.worth_to_visit(u) for u in urls])
+        urls = await self.get_urls(news) if news else []
+        worthies = await asyncio.gather(*[self.worth_to_visit(u) for u in urls])
         worthy_urls = (u for u, w in zip(urls, worthies) if w)
 
         news_linked = await self.dispatch_reporters(worthy_urls)
@@ -93,7 +93,7 @@ class TraversingReporter(Reporter):
         # take care of case of `False` since news should be reported on
         # `dispatch()` calls of each successor reporters already if
         # `bulk_report` flag was given `True`.
-        if self.bulk_report and self.is_chief:
+        if self.bulk_report and self.is_root:
             self.report_news(*set(news_total))
 
         return news_total
@@ -129,7 +129,7 @@ class TraversingReporter(Reporter):
         :rtype: :class:`~news.models.abstract.AbstractNews` implementation
 
         """
-        news = super().fetch()
+        news = await super().fetch()
 
         # set fetched and report visit
         self.fetched_news = news
@@ -140,7 +140,7 @@ class TraversingReporter(Reporter):
         else:
             return news
 
-    def get_urls(self, news):
+    async def get_urls(self, news):
         """Should return a list of urls to be fetched by the reporter's
         children.
 
