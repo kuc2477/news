@@ -60,14 +60,16 @@ class DomainTraversingMixin(object):
         max_visit = self.options.get('max_visit', DEFAULT_MAX_VISIT)
 
         # conditions
+        already_visited = await self.already_visited(url)
         is_same_domain = issamedomain(root_url, url)
         is_brother = any([issuburl(b, url) for b in brothers])
         blacklist_ok = ext(url) not in blacklist
         distance_ok = self.distance <= max_dist if max_dist else True
-        visit_ok = len(await self.get_visited()) <= max_visit if \
+        visit_count_ok = len(await self.get_visited()) <= max_visit if \
             max_visit else True
 
-        return (is_same_domain or is_brother) and \
+        return not already_visited and \
+            (is_same_domain or is_brother) and \
             blacklist_ok and \
             distance_ok and \
-            visit_ok
+            visit_count_ok
