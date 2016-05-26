@@ -1,6 +1,6 @@
 from functools import wraps, partial
-from ..utils.logging import logger
-from ..constants import LOG_URL_MAX_LENGTH
+from ...utils.logging import logger
+from ...constants import LOG_URL_MAX_LENGTH
 
 
 def logging_dispatch_middleware(reporter, dispatch):

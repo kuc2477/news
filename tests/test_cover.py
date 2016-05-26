@@ -1,6 +1,10 @@
 import functools
 import pytest
 from news.reporters.url import URLReporter
+from news.contrib.logging.middlewares import (
+    logging_dispatch_middleware,
+    logging_fetch_middleware,
+)
 
 
 @pytest.mark.asyncio
@@ -20,9 +24,17 @@ async def test_cover_prepare(cover, django_root_news):
         return enhanced
 
     assert(cover.reporter is None)
-    cover.prepare(reporter_class=URLReporter,
-                  dispatch_middlewares=[dispatch_middleware],
-                  fetch_middlewares=[fetch_middleware])
+    cover.prepare(
+        reporter_class=URLReporter,
+        dispatch_middlewares=[
+            logging_fetch_middleware,
+            dispatch_middleware
+        ],
+        fetch_middlewares=[
+            logging_dispatch_middleware,
+            fetch_middleware
+        ]
+    )
 
     assert(cover.reporter is not None)
     assert(cover.reporter.backend == cover.backend)
