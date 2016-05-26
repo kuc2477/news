@@ -8,7 +8,6 @@ def test_abstract_model_implementations(django_schedule, django_child_news):
 
 def test_abstract_schedule_implementation(
         django_scheduler, django_backend, django_schedule):
-    assert(isinstance(django_schedule.owner, django_backend.Owner))
     assert(isinstance(django_schedule.url, str))
     assert(isinstance(django_schedule.cycle, int))
     assert(isinstance(django_schedule.options, dict))

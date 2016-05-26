@@ -5,10 +5,10 @@ from ..constants import LOG_URL_MAX_LENGTH
 
 def logging_dispatch_middleware(reporter, dispatch):
     @wraps(dispatch)
-    def enhanced(*args, **kwargs):
+    await def enhanced(*args, **kwargs):
         log = _log_factory(reporter)
         log('Dispatching reporter with {} intel'.format(len(r.meta.intel)))
-        news_list = dispatch(*args, **kwargs)
+        news_list = await dispatch(*args, **kwargs)
         log('Found {} news'.format(len(news_list)))
         return news_list
     return enhanced
@@ -16,10 +16,10 @@ def logging_dispatch_middleware(reporter, dispatch):
 
 def logging_fetch_middleware(reporter, fetch):
     @wraps(fetch)
-    def enhanced(*args, **kwargs):
+    await def enhanced(*args, **kwargs):
         log = _log_factory(reporter)
         log('Fetch started')
-        fetched = fetch(*args, **kwargs)
+        fetched = await fetch(*args, **kwargs)
         if fetched:
             log('Fetch successed')
         else:
