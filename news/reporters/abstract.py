@@ -83,6 +83,7 @@ class Reporter(object):
         :rtype: :class:`list` or `~news.models.AbstractNews` implemnetation.
 
         """
+        print('original fetch')
         async with aiohttp.get(self.url) as response:
             # return nothing if status code is not OK
             if response.status != 200:
