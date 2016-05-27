@@ -1,8 +1,6 @@
-====
-News
-====
-
-|build| |coverage|
+=======================
+News |build| |coverage|
+=======================
 
 |logo|
 
