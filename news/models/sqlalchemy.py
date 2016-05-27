@@ -35,13 +35,13 @@ from ..constants import (
 )
 
 __all__ = [
-    'create_abc_schedule', 'create_abc_news',
-    'create_schedule', 'create_default_schedule',
-    'create_news', 'create_default_news',
+    'create_schedule_abc', 'create_news_abc',
+    'create_schedule', 'create_news',
+    'create_default_schedule', 'create_default_news',
 ]
 
 
-def create_abc_schedule(user_model):
+def create_schedule_abc(user_model):
     """Abstract base schedule model factory
 
     :param user_model: User model to use as schedule owners.
@@ -88,7 +88,7 @@ def create_abc_schedule(user_model):
     return AbstractBaseSchedule
 
 
-def create_abc_news(schedule_model):
+def create_news_abc(schedule_model):
     """
     Abstract base news model factory
 
@@ -246,10 +246,30 @@ def create_news(abc_news, base, mixins=None):
 
 
 def create_default_schedule(user_model, base, persister=None):
-    abc_schedule = create_abc_schedule(user_model, base)
-    return create_schedule(abc_schedule, base, persister=persister)
+    """Default schedule model factory.
+
+    :param user_model: User model to use as schedule owners.
+    :type user_model: :class:`~news.models.abstract.AbstractModel`
+        implementation
+    :returns: A default schedule model.
+    :rtype: Default SQLAlchemy :class:`~news.models.AbstractSchedule`
+        implementation
+
+    """
+    schedule_abc = create_schedule_abc(user_model, base)
+    return create_schedule(schedule_abc, base, persister=persister)
 
 
 def create_default_news(schedule_model, base):
-    abc_news = create_abc_news(schedule_model, base)
-    return create_news(abc_news, base)
+    """Default news model factory.
+
+    :param schedule_model: Schedule model to use as news's schedule.
+    :type schedule_model: :class:`~news.models.abstract.AbstractSchedule`
+        implementation
+    :returns: A abstract base news model.
+    :rtype: Default SQLAlchemy :class:`~news.models.Abstractnews`
+        implementation
+
+    """
+    news_abc = create_news_abc(schedule_model, base)
+    return create_news(news_abc, base)

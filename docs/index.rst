@@ -3,8 +3,20 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+====
 News
 ====
+
+|build| |coverage|
+
+|logo|
+
+.. |build| image:: https://travis-ci.org/kuc2477/news.svg?branch=dev
+
+.. |coverage| image:: https://coveralls.io/repos/github/kuc2477/news/badge.svg?branch=dev
+
+.. |logo| image:: http://emojipedia-us.s3.amazonaws.com/cache/31/52/3152d71c04eb9dc2082c057e466b35cb.png
+    :alt: News, subscription engine built on top of asynchronosy
 
 News is a web subscription engine built on top of :mod:`asnycio` and :mod:`aiohttp`. ::
 
@@ -40,7 +52,7 @@ News is a web subscription engine built on top of :mod:`asnycio` and :mod:`aioht
 Quick Start
 -----------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    quickstarts/installation
    quickstarts/concepts
