@@ -18,7 +18,7 @@ News
 .. |logo| image:: http://emojipedia-us.s3.amazonaws.com/cache/31/52/3152d71c04eb9dc2082c057e466b35cb.png
     :alt: News, subscription engine built on top of asynchronosy
 
-News is a web subscription engine built on top of :mod:`asnycio` and :mod:`aiohttp`. ::
+News is an asynchronous web subscription engine built on top of :mod:`asnycio` and :mod:`aiohttp`. ::
 
     from celery import Celery
     from django.contrib.auth.models import User
