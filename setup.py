@@ -66,7 +66,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     data_files=[('', ['README.rst'])],
     version=VERSION,
-    description='Schedulable web subscription engine',
+    description='Web subscription engine built on top of asyncio and aiohttp',
     long_description=long_description,
     license='MIT License',
     author='Ha Junsoo',
