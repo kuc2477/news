@@ -13,24 +13,24 @@ def django_owner_model():
 
 
 @pytest.fixture(scope='session')
-def django_abc_schedule(django_owner_model):
-    return django.create_abc_schedule(django_owner_model)
+def django_schedule_abc(django_owner_model):
+    return django.create_schedule_abc(django_owner_model)
 
 
 @pytest.fixture(scope='session')
-def django_abc_news(django_schedule_model):
-    return django.create_abc_news(django_schedule_model)
+def django_news_abc(django_schedule_model):
+    return django.create_news_abc(django_schedule_model)
 
 
 @pytest.fixture(scope='session')
-def django_schedule_model(django_abc_schedule, persister):
-    return django.create_schedule(django_abc_schedule,
+def django_schedule_model(django_schedule_abc, persister):
+    return django.create_schedule(django_schedule_abc,
                                   persister=persister)
 
 
 @pytest.fixture(scope='session')
-def django_news_model(django_abc_news):
-    return django.create_news(django_abc_news)
+def django_news_model(django_news_abc):
+    return django.create_news(django_news_abc)
 
 
 # ======================
@@ -74,7 +74,7 @@ def django_root_news(db, django_news_model, django_schedule, url_root,
 
 @pytest.fixture
 def django_child_news(db, django_news_model, django_schedule, django_root_news,
-                      url_child, author_child, title_child, content_child, 
+                      url_child, author_child, title_child, content_child,
                       summary_child):
     news = django_news_model(
         url=url_child,

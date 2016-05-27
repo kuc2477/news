@@ -64,13 +64,13 @@ def sa_session(request, sa_db, sa_engine):
 # =================
 
 @pytest.fixture(scope='session')
-def sa_abc_schedule(sa_owner_model):
-    return sa.create_abc_schedule(sa_owner_model)
+def sa_schedule_abc(sa_owner_model):
+    return sa.create_schedule_abc(sa_owner_model)
 
 
 @pytest.fixture(scope='session')
-def sa_abc_news(sa_schedule_model):
-    return sa.create_abc_news(sa_schedule_model)
+def sa_news_abc(sa_schedule_model):
+    return sa.create_news_abc(sa_schedule_model)
 
 
 @pytest.fixture(scope='session')
@@ -84,14 +84,14 @@ def sa_owner_model(sa_declarative_base):
 
 
 @pytest.fixture(scope='session')
-def sa_schedule_model(sa_abc_schedule, sa_declarative_base, persister):
-    return sa.create_schedule(sa_abc_schedule, sa_declarative_base,
+def sa_schedule_model(sa_schedule_abc, sa_declarative_base, persister):
+    return sa.create_schedule(sa_schedule_abc, sa_declarative_base,
                               persister=persister)
 
 
 @pytest.fixture(scope='session')
-def sa_news_model(sa_abc_news, sa_declarative_base):
-    return sa.create_news(sa_abc_news, sa_declarative_base)
+def sa_news_model(sa_news_abc, sa_declarative_base):
+    return sa.create_news(sa_news_abc, sa_declarative_base)
 
 
 # ===========================
