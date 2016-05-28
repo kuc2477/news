@@ -1,5 +1,5 @@
 .. automodule:: news.reporters
-    :members:
+   :members:
 
     .. toctree::
         :maxdepth: 2

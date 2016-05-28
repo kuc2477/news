@@ -16,7 +16,7 @@ Backend
 -------
 ``Backend`` serves as an interface between your models and rest of *News* components,
 for example, ``Scheduler`` or ``Reporter``. *News* currently supports *Django* and
-*SQLAlchemy* models out of the box.
+*SQLAlchemy* backends out of the box.
 
 
 Reporter
