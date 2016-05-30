@@ -4,6 +4,7 @@
 Provides factory functions for both abstract and concrete News models.
 
 """
+import copy
 from datetime import datetime
 from sqlalchemy import (
     Column,
@@ -31,7 +32,8 @@ from .abstract import (
 )
 from ..constants import (
     DEFAULT_SCHEDULE_CYCLE,
-    DEFAULT_SCHEDULE_NEWS_TYPE
+    DEFAULT_SCHEDULE_TYPE,
+    DEFAULT_OPTIONS,
 )
 
 __all__ = [
@@ -69,21 +71,23 @@ def create_schedule_abc(user_model):
 
         def __init__(self, owner=None, url='', enabled=False,
                      cycle=DEFAULT_SCHEDULE_CYCLE,
-                     news_type=DEFAULT_SCHEDULE_NEWS_TYPE, **options):
+                     type=DEFAULT_SCHEDULE_TYPE, options=None):
             self.owner = owner
             self.url = url
             self.cycle = cycle
             self.enabled = enabled
-            self.news_type = news_type
-            self.options = options
+            self.type = type
+            self.options = options or copy.deepcopy(DEFAULT_OPTIONS)
 
         id = Column(Integer, primary_key=True)
         url = Column(URLType, nullable=False)
         enabled = Column(Boolean, nullable=False, default=False)
         cycle = Column(Integer, default=DEFAULT_SCHEDULE_CYCLE, nullable=False)
-        news_type = Column(String, nullable=False,
-                           default=DEFAULT_SCHEDULE_NEWS_TYPE)
-        options = Column(JSONType, nullable=False, default={})
+        type = Column(
+            String, nullable=False,
+            default=DEFAULT_SCHEDULE_TYPE
+        )
+        options = Column(JSONType, nullable=False, default=DEFAULT_OPTIONS)
 
     return AbstractBaseSchedule
 

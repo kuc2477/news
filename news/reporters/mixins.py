@@ -11,7 +11,7 @@ from ..utils.url import (
     ext,
 )
 from ..constants import (
-    DEFAULT_BLACKLIST,
+    DEFAULT_EXT_BLACKLIST,
     DEFAULT_MAX_VISIT,
 )
 
@@ -54,22 +54,26 @@ class DomainTraversingMixin(object):
         root_url = self.root.url
 
         # options
-        brothers = self.options.get('brothers', [])
-        blacklist = self.options.get('blacklist', DEFAULT_BLACKLIST)
+        url_whitelist = self.options.get('url_whitelist', [])
+        url_blacklist = self.options.get('url_blacklist', [])
+        ext_blacklist = self.options.get('ext_blacklist',
+                                         DEFAULT_EXT_BLACKLIST)
         max_dist = self.options.get('max_dist', None)
         max_visit = self.options.get('max_visit', DEFAULT_MAX_VISIT)
 
         # conditions
         already_visited = await self.already_visited(url)
         is_same_domain = issamedomain(root_url, url)
-        is_brother = any([issuburl(b, url) for b in brothers])
-        blacklist_ok = ext(url) not in blacklist
+        is_url_white = any([issuburl(w, url) for w in url_whitelist])
+        is_url_black = any([issuburl(b, url) for b in url_blacklist])
+        ext_ok = ext(url) not in ext_blacklist
         distance_ok = self.distance <= max_dist if max_dist else True
         visit_count_ok = len(await self.get_visited()) <= max_visit if \
             max_visit else True
 
         return not already_visited and \
-            (is_same_domain or is_brother) and \
-            blacklist_ok and \
+            (is_same_domain or is_url_white) and \
+            not is_url_black and \
+            ext_ok and \
             distance_ok and \
             visit_count_ok

@@ -26,7 +26,7 @@ def merge_kwargs_factories(kwargs_factories):
     """
     def merged_factory(schedule):
         try:
-            return kwargs_factories[schedule.news_type](schedule)
+            return kwargs_factories[schedule.type](schedule)
         except KeyError:
             return {}
 
@@ -109,7 +109,7 @@ class Mapping(object):
         if isinstance(key, str):
             self.__map[key] = value
         elif isinstance(key, AbstractSchedule):
-            self.__map[key.news_type] = value
+            self.__map[key.type] = value
         # only string or schedule can be mapped from
         else:
             raise KeyError('Mapping key is only allowed for Schedule ' +
@@ -120,7 +120,7 @@ class Mapping(object):
         if isinstance(key, str):
             return self.__map[key], {}
         elif isinstance(key, AbstractSchedule):
-            return self.__map[key.news_type], self._make_kwargs(key)
+            return self.__map[key.type], self._make_kwargs(key)
         else:
             raise KeyError('Only Schedule subclass or string are allowed ' +
                            'as mapping key')

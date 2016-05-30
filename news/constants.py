@@ -3,16 +3,23 @@
 # ===============
 
 DEFAULT_MAX_VISIT = 200
-DEFAULT_BLACKLIST = ['png', 'jpg', 'gif', 'pdf', 'svg', 'zip']
+DEFAULT_EXT_BLACKLIST = ['png', 'jpg', 'gif', 'pdf', 'svg', 'zip']
+DEFAULT_OPTIONS = {
+    'max_dist': None,
+    'max_visit': DEFAULT_MAX_VISIT,
+    'ext_blacklist': DEFAULT_EXT_BLACKLIST,
+    'url_whitelist': [],
+    'url_blacklist': [],
+}
 
 
 # ==============
 # Model defaults
 # ==============
 
-DEFAULT_SCHEDULE_NEWS_TYPE = 'url'
+DEFAULT_SCHEDULE_TYPE = 'url'
 DEFAULT_SCHEDULE_CYCLE = 300
-NEWS_TYPE_MAX_LENGTH = 30
+SCHEDULE_TYPE_MAX_LENGTH = 30
 AUTHOR_MAX_LENGTH = 100
 TITLE_MAX_LENGTH = 300
 

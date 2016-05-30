@@ -54,7 +54,8 @@ class TraversingReporter(Reporter):
 
     @property
     def is_root(self):
-        """(:class:`bool`) Returns `True` if the reporter is a root reporter."""
+        """(:class:`bool`) Returns `True` if the reporter is a root reporter.
+        """
         return self.parent is None
 
     @property

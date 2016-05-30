@@ -18,8 +18,9 @@ from .abstract import (
 )
 from ..constants import (
     DEFAULT_SCHEDULE_CYCLE,
-    DEFAULT_SCHEDULE_NEWS_TYPE,
-    NEWS_TYPE_MAX_LENGTH,
+    DEFAULT_SCHEDULE_TYPE,
+    DEFAULT_OPTIONS,
+    SCHEDULE_TYPE_MAX_LENGTH,
     AUTHOR_MAX_LENGTH,
     TITLE_MAX_LENGTH,
 )
@@ -48,15 +49,15 @@ def create_schedule_abc(user_model=None):
     class AbstractBaseSchedule(models.Model, AbstractSchedule):
         owner = models.ForeignKey(
             user_model, related_name='schedules',
-            db_index=True, blank=True, null=True
+            db_index=True, blank=True, null=True,
         )
 
         url = models.URLField()
         cycle = models.IntegerField(default=DEFAULT_SCHEDULE_CYCLE)
         enabled = models.BooleanField(default=False)
-        news_type = models.CharField(max_length=NEWS_TYPE_MAX_LENGTH,
-                                     default=DEFAULT_SCHEDULE_NEWS_TYPE)
-        options = JSONField(default={})
+        type = models.CharField(max_length=SCHEDULE_TYPE_MAX_LENGTH,
+                                default=DEFAULT_SCHEDULE_TYPE)
+        options = JSONField(default=DEFAULT_OPTIONS)
 
         class Meta:
             abstract = True
