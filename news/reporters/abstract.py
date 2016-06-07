@@ -4,8 +4,6 @@
 Provide abstract base classes for reporters.
 
 """
-import copy
-import functools
 import aiohttp
 
 
@@ -22,7 +20,7 @@ class Reporter(object):
         self._fetch_middlewares = fetch_middlewares or []
         self._fetch_middlewares_applied = []
         self._dispatch_middlewares = dispatch_middlewares or []
-        self._dispatch_middlewares_applied= []
+        self._dispatch_middlewares_applied = []
 
     @classmethod
     def create_instance(

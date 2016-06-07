@@ -197,7 +197,7 @@ class Scheduler(object):
             self.set_task()
 
         if isinstance(schedule, int):
-            schedule = self.backend.get_schedule_by_id(schedule)
+            schedule = self.backend.get_schedule(schedule)
 
         if not silent:
             self._log('Adding schedule {}'.format(schedule.id))
@@ -245,7 +245,7 @@ class Scheduler(object):
 
         """
         if isinstance(schedule, int):
-            schedule = self.backend.get_schedule_by_id(schedule)
+            schedule = self.backend.get_schedule(schedule)
 
         # log
         self._log('Updating schedule {}'.format(

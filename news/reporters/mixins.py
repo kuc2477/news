@@ -71,7 +71,7 @@ class DomainTraversingMixin(object):
         visit_count_ok = len(await self.get_visited()) <= max_visit if \
             max_visit else True
 
-        return not already_visited and \
+        return (not already_visited) and \
             (is_same_domain or is_url_white) and \
             not is_url_black and \
             ext_ok and \

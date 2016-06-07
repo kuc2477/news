@@ -6,8 +6,9 @@ from ...constants import LOG_URL_MAX_LENGTH
 def logging_dispatch_middleware(reporter, dispatch):
     @wraps(dispatch)
     async def enhanced(*args, **kwargs):
+        intel_count = len(getattr(reporter, '_intel', []))
         log = _log_factory(reporter)
-        log('Dispatching reporter with {} intel'.format(len(r.meta.intel)))
+        log('Dispatching reporter with {} intel'.format(intel_count))
         news_list = await dispatch(*args, **kwargs)
         log('Found {} news'.format(len(news_list)))
         return news_list
@@ -20,8 +21,18 @@ def logging_fetch_middleware(reporter, fetch):
         log = _log_factory(reporter)
         log('Fetch started')
         fetched = await fetch(*args, **kwargs)
+
+        try:
+            success_msg = 'Fetch successed'
+            success_msg += ' [root status:{} ,{}]'.format(
+                reporter.is_root,
+                len(await reporter.get_visited())
+            )
+        except AttributeError:
+            pass
+
         if fetched:
-            log('Fetch successed')
+            log(success_msg)
         else:
             log('Fetch failed', tag='warning')
         return fetched

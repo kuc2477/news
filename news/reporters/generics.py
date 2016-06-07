@@ -91,11 +91,13 @@ class TraversingReporter(Reporter):
 
         urls = await self.get_urls(news) if news else []
         worthies = await asyncio.gather(*[
-            self.worth_to_visit(news, u) for u in urls])
+            self.worth_to_visit(news, u) for u in urls
+        ])
         worthy_urls = (u for u, w in zip(urls, worthies) if w)
 
         news_linked = await self.dispatch_reporters(worthy_urls)
-        news_total = news_linked + [news] if news else news_linked
+        news_total = itertools.chai(news_linked, [news]) \
+            if news else news_linked
 
         # Bulk report news if the flag is set to `True`. We don't have to
         # take care of case of `False` since news should be reported on
@@ -137,11 +139,11 @@ class TraversingReporter(Reporter):
         :rtype: :class:`~news.models.abstract.AbstractNews` implementation
 
         """
+        await self.report_visit()
         news = await super().fetch()
 
         # set fetched and report visit
         self.fetched_news = news
-        await self.report_visit()
 
         if news is None or not await self.worth_to_report(news):
             return None
@@ -169,12 +171,12 @@ class TraversingReporter(Reporter):
         :rtype: :class:`list`
 
         """
-        return [self._inherit_meta(t) for t in urls or []]
+        return [self._inherit_meta(t, parent=self) for t in urls or []]
 
     async def report_visit(self):
         """Report to the root reporter that the reporter visited assigned url.
         """
-        with (await self._visited_urls_lock):
+        with (await self.root._visited_urls_lock):
             self.root._visited_urls.add(self.url)
 
     async def already_visited(self, url):
@@ -187,7 +189,7 @@ class TraversingReporter(Reporter):
         :rtype: :class:`bool`
 
         """
-        with (await self._visited_urls_lock):
+        with (await self.root._visited_urls_lock):
             return url in self.root._visited_urls
 
     async def get_visited(self):
@@ -197,7 +199,7 @@ class TraversingReporter(Reporter):
         :rtype: :class:`set`
 
         """
-        with (await self._visited_urls_lock):
+        with (await self.root._visited_urls_lock):
             return self.root._visited_urls
 
     def _inherit_meta(self, url, parent=None):
