@@ -6,6 +6,7 @@ News cover jobs to be run by reporters.
 """
 import asyncio
 from .reporters import ReporterMeta
+from concurrent.futures import ProcessPoolExecutor
 
 
 class Cover(object):
@@ -50,16 +51,19 @@ class Cover(object):
         meta = ReporterMeta(self.schedule)
         backend = self.backend
 
+        # set event loop and executor for the reporter
+        self.loop = asyncio.get_event_loop()
+        self.executor = ProcessPoolExecutor()
+
         # set root reporter of the cover.
         self.reporter = reporter_class.create_instance(
             meta=meta, backend=backend,
             dispatch_middlewares=dispatch_middlewares,
             fetch_middlewares=fetch_middlewares,
+            loop=self.loop, executor=self.executor,
             **kwargs
         ).enhance()
 
-        # set event loop for the reporter
-        self.loop = asyncio.get_event_loop()
         return self
 
     def run(self, **dispatch_options):
