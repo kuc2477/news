@@ -12,10 +12,13 @@ class Reporter(object):
 
     def __init__(self, meta, backend, url=None,
                  dispatch_middlewares=None,
-                 fetch_middlewares=None, **kwargs):
+                 fetch_middlewares=None,
+                 loop=None, executor=None, **kwargs):
         self.url = url or meta.schedule.url
         self.meta = meta
         self.backend = backend
+        self._loop = loop
+        self._executor = executor
 
         self._fetch_middlewares = fetch_middlewares or []
         self._fetch_middlewares_applied = []
@@ -26,7 +29,8 @@ class Reporter(object):
     def create_instance(
             cls, meta, backend, url=None,
             dispatch_middlewares=None,
-            fetch_middlewares=None, **kwargs):
+            fetch_middlewares=None,
+            loop=None, executor=None, **kwargs):
         """Create an reporter.
 
         :param url: A url to assign to a reporter.
@@ -39,6 +43,8 @@ class Reporter(object):
         :type dispatch_middlewares: :class:`list`
         :param fetch_middlewares: Fetch middlewares to apply.
         :type fetch_middlewares: :class:`list`
+        :param loop: Event loop that this reporter will be running on.
+        :type loop: :class:`asyncio.BaseEventLoop`
 
         :returns: An instance of a `Reporter` implementation.
         :rtype: `Reporter` implementation.
@@ -46,7 +52,8 @@ class Reporter(object):
         """
         return cls(meta=meta, backend=backend, url=url,
                    dispatch_middlewares=dispatch_middlewares,
-                   fetch_middlewares=fetch_middlewares, **kwargs)
+                   fetch_middlewares=fetch_middlewares,
+                   loop=None, executor=None, **kwargs)
 
     @property
     def schedule(self):
@@ -87,7 +94,9 @@ class Reporter(object):
                 return None
 
             # make news from the response
-            items = self.parse(await response.text())
+            items = await self._loop.run_in_executor(
+                self._executor, self.parse, await response.text()
+            )
 
             # return a single news if we have only one. return a list of news
             # if we have more than a single news.
