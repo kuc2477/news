@@ -14,6 +14,7 @@ from ..constants import (
     DEFAULT_EXT_BLACKLIST,
     DEFAULT_MAX_VISIT,
 )
+from ..utils.logging import logger
 
 
 class BatchTraversingMixin(object):
@@ -65,7 +66,7 @@ class DomainTraversingMixin(object):
         visited = len(await self.get_visited())
         filtered = []
 
-        for url, count in enumerate(urls, start=1):
+        for count, url in enumerate(urls, start=1):
             # conditions
             already_visited = await self.already_visited(url)
             is_same_domain = issamedomain(root_url, url)
@@ -86,4 +87,4 @@ class DomainTraversingMixin(object):
             if ok:
                 filtered.append(url)
 
-        return iter(filtered)
+        return filtered

@@ -89,12 +89,11 @@ class TraversingReporter(Reporter):
         if not self.bulk_report:
             self.report_news(news)
 
-        urls = await self.get_urls(news) if news else []
-        worthies = await self.filter_urls(urls)
+        urls = await self.get_urls(news) if news else set()
+        worthies = await self.filter_urls(news, *urls)
 
         news_linked = await self.dispatch_reporters(worthies)
-        news_total = itertools.chai(news_linked, [news]) \
-            if news else news_linked
+        news_total = list(news_linked) + [news] if news else news_linked
 
         # Bulk report news if the flag is set to `True`. We don't have to
         # take care of case of `False` since news should be reported on
