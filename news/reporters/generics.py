@@ -137,7 +137,7 @@ class TraversingReporter(Reporter):
 
         """
         await self.report_visit()
-        self.fetched_news = await super().fetch()
+        self.fetched_news = news = await super().fetch()
 
         if not news or not await self.filter_news(news):
             return None
