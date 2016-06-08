@@ -53,7 +53,7 @@ class Reporter(object):
         return cls(meta=meta, backend=backend, url=url,
                    dispatch_middlewares=dispatch_middlewares,
                    fetch_middlewares=fetch_middlewares,
-                   loop=None, executor=None, **kwargs)
+                   loop=loop, executor=executor, **kwargs)
 
     @property
     def schedule(self):
