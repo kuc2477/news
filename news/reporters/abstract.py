@@ -178,29 +178,28 @@ class Reporter(object):
             self._fetch_middlewares_applied.append(middleware)
         return self
 
-    async def worth_to_report(self, news):
+    async def filter_news(self, *news):
         """Decides whether the reporter should report the news to it's backend
-        or not. The default implementation always returns `True`.
+        or not. The default implementation just returns passed news.
 
-        :param news: A news to test it's worthiness.
-        :type news: :class:`~news.models.AbstractNews` implementation.
-        :returns: `True` if the news is expected to be worthy to report.
-        :rtype: :class:`bool`
+        :param news: Arbitrary number of news to test it's worthinesses.
+        :type news: :class:`~news.models.AbstractNews` implementations.
+        :returns: An iterator of filtered news.
+        :rtype: iterator
 
         """
-        return True
+        return news
 
-    async def worth_to_visit(self, news, url):
+    async def filter_urls(self, news, *urls):
         """Decides whether the reporter should visit the link of the news.
-        The default implementation always returns `True`.
+        The default implementation just returns passed urls.
 
-        :param news: A news that contains the link.
+        :param news: A news that contains the urls.
         :type news: :class:`~news.models.AbstractNews` implementation.
-        :param url: A URL to test it's worthiness.
-        :type url: :class:`str`
-        :returns: `True` if the url of the news is expected to be worthy to
-        visit.
-        :rtype: :class:`bool`
+        :param urls: Arbitrary number of urls to test it's worthinesses.
+        :type urls: :class:`str`
+        :returns: An iterator of filtered urls.
+        :rtype: iterator
 
         """
-        return True
+        return urls

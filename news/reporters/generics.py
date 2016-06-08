@@ -90,12 +90,9 @@ class TraversingReporter(Reporter):
             self.report_news(news)
 
         urls = await self.get_urls(news) if news else []
-        worthies = await asyncio.gather(*[
-            self.worth_to_visit(news, u) for u in urls
-        ])
-        worthy_urls = (u for u, w in zip(urls, worthies) if w)
+        worthies = await self.filter_urls(urls)
 
-        news_linked = await self.dispatch_reporters(worthy_urls)
+        news_linked = await self.dispatch_reporters(worthies)
         news_total = itertools.chai(news_linked, [news]) \
             if news else news_linked
 
@@ -140,12 +137,9 @@ class TraversingReporter(Reporter):
 
         """
         await self.report_visit()
-        news = await super().fetch()
+        self.fetched_news = await super().fetch()
 
-        # set fetched and report visit
-        self.fetched_news = news
-
-        if news is None or not await self.worth_to_report(news):
+        if not news or not await self.filter_news(news):
             return None
         else:
             return news
@@ -241,7 +235,4 @@ class FeedReporter(Reporter):
     async def dispatch(self):
         """Dispatch the reporter to the feed url."""
         fetched = await self.fetch()
-        worthies = await asyncio.gather(*[
-            self.worth_to_report(n) for n in fetched
-        ])
-        return (n for n, w in zip(fetched, worthies) if w)
+        return await self.filter_news(fetched)
