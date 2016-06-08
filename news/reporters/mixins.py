@@ -62,7 +62,7 @@ class DomainTraversingMixin(object):
         max_visit = self.options.get('max_visit', DEFAULT_MAX_VISIT)
 
         # current state
-        visited = len(await.self.get_visited())
+        visited = len(await self.get_visited())
         filtered = []
 
         for url, count in enumerate(urls, start=1):
