@@ -1,42 +1,28 @@
 from functools import wraps, partial
 from ...utils.logging import logger
 from ...constants import LOG_URL_MAX_LENGTH
+from ...reporters.mixins import BatchTraversingMixin
 
 
-def logging_dispatch_middleware(reporter, dispatch):
-    @wraps(dispatch)
-    async def enhanced(*args, **kwargs):
-        intel_count = len(getattr(reporter, '_intel', []))
-        log = _log_factory(reporter)
-        log('Dispatching reporter with {} intel'.format(intel_count))
-        news_list = await dispatch(*args, **kwargs)
-        log('Found {} news'.format(len(news_list)))
-        return news_list
-    return enhanced
+async def request_log_middleware(reporter, client_session):
+    log = _log_factory(reporter)
+    log('Fetch start')
+    return client_session
 
 
-def logging_fetch_middleware(reporter, fetch):
-    @wraps(fetch)
-    async def enhanced(*args, **kwargs):
-        log = _log_factory(reporter)
-        log('Fetch started')
-        fetched = await fetch(*args, **kwargs)
+async def response_log_middleware(reporter, response):
+    log = _log_factory(reporter)
+    if response.status == 200:
+        log('Fetch success')
+    else:
+        log('Fetch failure', tag='warning')
+    return response
 
-        try:
-            success_msg = 'Fetch successed'
-            success_msg += ' [root status:{} ,{}]'.format(
-                reporter.is_root,
-                len(await reporter.get_visited())
-            )
-        except AttributeError:
-            pass
 
-        if fetched:
-            log(success_msg)
-        else:
-            log('Fetch failed', tag='warning')
-        return fetched
-    return enhanced
+async def report_log_middleware(reporter, news):
+    log = _log_factory(reporter)
+    log('Reporting {} news'.format(len(news)))
+    return news
 
 
 def _log_reporter(reporter, message, tag='info'):

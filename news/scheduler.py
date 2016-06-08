@@ -42,20 +42,6 @@ class Scheduler(object):
     :param on_cover_failure: Callback function that will be fired on cover
         failure.
     :type on_cover_failre: A function that takes a schedule and an exception.
-    :param dispatch_middlewares: A list of dispatch middlewares to use. The
-        dispatch middlewares should take a reporter
-        (:class:`~news.reporter.Reporter`) and it's
-        :func:`~news.reporter.Reporter.dispatch` method and return an enhanced
-        dispatch method. Note that the middlewares will be only applied to
-        the root(chief) reporter and won't be inherited down to it's successor
-        reporters.
-    :type dispatch_middlewares: :class:`list`
-    :param fetch_middlewares: A list of fetch middlewares to use. The fetch
-        middlewares should take a reporter(:class:`~news.reporter.Reporter`)
-        and it's :func:`~news.reporter.Reporter.fetch` method and return an
-        enhanced fetch method. Note that the middlewares will be applied down
-        to the descendent reporters of the root reporter.
-    :type  fetch_middlewares: :class:`list`
 
     **Example**::
 
@@ -94,8 +80,9 @@ class Scheduler(object):
     """
     def __init__(self, backend=None, celery=None, mapping=None, persister=None,
                  on_cover_start=None, on_cover_success=None,
-                 on_cover_failure=None, dispatch_middlewares=None,
-                 fetch_middlewares=None):
+                 on_cover_failure=None,
+                 request_middlewares=None, response_middlewares=None,
+                 report_middlewares=None):
         # backend & celery
         self.backend = backend
         self.celery = celery
@@ -116,9 +103,10 @@ class Scheduler(object):
         self.on_cover_success = on_cover_success
         self.on_cover_failure = on_cover_failure
 
-        # scheduler middlewares
-        self.dispatch_middlewares = dispatch_middlewares or []
-        self.fetch_middlewares = fetch_middlewares or []
+        # reporter / cover middlewares
+        self.request_middlewares = request_middlewares
+        self.response_middlewares = response_middlewares
+        self.report_middlewares = report_middlewares
 
     # =================
     # Scheduler actions
@@ -291,8 +279,8 @@ class Scheduler(object):
         cover = Cover(schedule=schedule, backend=self.backend)
         cover.prepare(
             reporter_class=reporter_class,
-            dispatch_middlewares=self.dispatch_middlewares,
-            fetch_middlewares=self.fetch_middlewares,
+            request_middlewares=self.request_middlewares,
+            response_middlewares=self.response_middlewares,
             **kwargs
         )
         return cover

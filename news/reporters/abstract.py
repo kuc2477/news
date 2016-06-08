@@ -10,26 +10,25 @@ import aiohttp
 class Reporter(object):
     """Abstract base class for all reporters."""
 
-    def __init__(self, meta, backend, url=None,
-                 dispatch_middlewares=None,
-                 fetch_middlewares=None,
+    def __init__(self, meta, url=None,
+                 request_middlewares=None,
+                 response_middlewares=None,
                  loop=None, executor=None, **kwargs):
         self.url = url or meta.schedule.url
         self.meta = meta
-        self.backend = backend
+
+        self.request_middlewares = request_middlewares or []
+        self.response_middlewares = response_middlewares or []
+
         self._loop = loop
         self._executor = executor
-
-        self._fetch_middlewares = fetch_middlewares or []
-        self._fetch_middlewares_applied = []
-        self._dispatch_middlewares = dispatch_middlewares or []
-        self._dispatch_middlewares_applied = []
+        self._client_session = aiohttp.ClientSession(loop)
 
     @classmethod
     def create_instance(
-            cls, meta, backend, url=None,
-            dispatch_middlewares=None,
-            fetch_middlewares=None,
+            cls, meta, url=None,
+            request_middlewares=None,
+            response_middlewares=None,
             loop=None, executor=None, **kwargs):
         """Create an reporter.
 
@@ -37,22 +36,23 @@ class Reporter(object):
         :type url: :class:`str`
         :param meta: Meta information of a reporter.
         :type meta: :class:`ReporterMeta`
-        :param backend: A news backend to be used.
-        :type backend: :class:`~news.backends.AbstractBackend` implementation
-        :param dispatch_middlewares: Dispatch middlewares to apply.
-        :type dispatch_middlewares: :class:`list`
-        :param fetch_middlewares: Fetch middlewares to apply.
-        :type fetch_middlewares: :class:`list`
+        :param request_middlewares: Request middlewares to pipe.
+        :type request_middlewares: :class:`list`
+        :param response_middlewares: Response middlewares to pipe.
+        :type response_middlewares: :class:`list`
         :param loop: Event loop that this reporter will be running on.
         :type loop: :class:`asyncio.BaseEventLoop`
+        :param executor: Process pool executor to utilize multiple cores on
+            parsing.
+        :type executor: :class:`concurrent.futures.ProcessPoolExecutor`
 
         :returns: An instance of a `Reporter` implementation.
         :rtype: `Reporter` implementation.
 
         """
-        return cls(meta=meta, backend=backend, url=url,
-                   dispatch_middlewares=dispatch_middlewares,
-                   fetch_middlewares=fetch_middlewares,
+        return cls(meta=meta, url=url,
+                   request_middlewares=request_middlewares,
+                   response_middlewares=response_middlewares,
                    loop=loop, executor=executor, **kwargs)
 
     @property
@@ -72,14 +72,17 @@ class Reporter(object):
         reporter."""
         return self.meta.owner
 
-    def report_news(self, *news):
-        """Report news to the backend.
+    async def dispatch(self):
+        """Dispatches the reporter to it's url and returns a list of news.
 
-        :param *news: News to report to backend of the reporter.
-        :type *news: Arbirtrary number of (:class:`~news.models.AbstractNews`)
-            implementation.
+        Should be implemented by all reporter subclasses.  Defaults to rasing
+        `NotImplementedError`.
+
+        :returns: A list of news.
+        :rtype: :class:`list`
+
         """
-        self.backend.save_news(*news)
+        raise NotImplementedError
 
     async def fetch(self):
         """Fetches url of the reporter and returns news.
@@ -88,7 +91,19 @@ class Reporter(object):
         :rtype: :class:`list` or `~news.models.AbstractNews` implemnetation.
 
         """
-        async with aiohttp.get(self.url) as response:
+        # pipe request middlewares
+        for middleware in self.request_middlewares:
+            self._client_session = await middleware(self, self._client_session)
+            if not self._client_session:
+                return None
+
+        async with self._client_session.get(self.url) as response:
+            # pipe response middlewares
+            for middleware in self.response_middlewares:
+                response = await middleware(self, response)
+                if not response:
+                    return None
+
             # return nothing if status code is not OK
             if response.status != 200:
                 return None
@@ -106,18 +121,6 @@ class Reporter(object):
                 item = items
                 news = self.make_news(item)
                 return news
-
-    async def dispatch(self):
-        """Dispatches the reporter to it's url and returns a list of news.
-
-        Should be implemented by all reporter subclasses.  Defaults to rasing
-        `NotImplementedError`.
-
-        :returns: A list of news.
-        :rtype: :class:`list`
-
-        """
-        raise NotImplementedError
 
     def parse(self, content):
         """Parses fetched response body into a list of items.
@@ -142,50 +145,6 @@ class Reporter(object):
 
         """
         raise NotImplementedError
-
-    def enhance(self):
-        """Enhance the reporter with it's middlewares.
-
-        Note that middlewares will be exhausted after the enhancement, leaving
-        an empty lists.
-
-        :returns: Ehanced reporter itself.
-        :rtype: :class:`~news.reporters.Reporter`
-
-        """
-        self.enhance_fetch(*self._fetch_middlewares)
-        self.enhance_dispatch(*self._dispatch_middlewares)
-        self._fetch_middlewares = []
-        self._dispatch_middlewares = []
-        return self
-
-    def enhance_dispatch(self, *middlewares):
-        """Enhance the reporter's `dispatch()` method with middlewares.
-
-        :param *middlewares: An arbitrary number of dispatch method enhancers.
-        :type *middlewares: A function that takes a reporter and dispatch
-            method as arguments and returns enhanced dispatch method.
-        :returns: Enhanced reporter itself.
-        :rtype: :class:`~news.reporters.Reporter`
-
-        """
-        for middleware in middlewares:
-            self.dispatch = middleware(self, self.dispatch)
-            self._dispatch_middlewares_applied.append(middleware)
-        return self
-
-    def enhance_fetch(self, *middlewares):
-        """Enhance the reporter's `fetch()` method with middlewares.
-
-        :param *middlewares: An arbitrary number of fetch method enhancers.
-        :type *middlewares: A function that takes a reporter and fetch method
-            as arguments and returns enhanced fetch method.
-
-        """
-        for middleware in middlewares:
-            self.fetch = middleware(self, self.fetch)
-            self._fetch_middlewares_applied.append(middleware)
-        return self
 
     async def filter_news(self, *news):
         """Decides whether the reporter should report the news to it's backend

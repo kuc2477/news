@@ -15,18 +15,19 @@ class TraversingReporter(Reporter):
 
     :param meta: Reporter meta from which to populate the reporter.
     :type meta: :class:`news.reporters.ReporterMeta`
-    :param backend: Backend to report news.
-    :type backend: :class:`news.backends.abstract.AbstractBackend`
     :param url: A url to assign to a reporter.
     :type url: :class:`str`
     :param parent: Parent of the reporter. Defaults to `None`.
     :type parent: :class:`TraversingReporter`
-    :param bulk_report: Report news in bulk if given `True`.
-    :type bulk_report: :class:`bool`
-    :param dispatch_middlewares: Dispatch middlewares to apply.
-    :type dispatch_middlewares: :class:`list`
-    :param fetch_middlewares: Fetch middlewares to apply.
-    :type fetch_middlewares: :class:`list`
+    :param request_middlewares: Request middlewares to pipe.
+    :type request_middlewares: :class:`list`
+    :param response_middlewares: Response middlewares to pipe.
+    :type response_middlewares: :class:`list`
+    :param loop: Event loop that this reporter will be running on.
+    :type loop: :class:`asyncio.BaseEventLoop`
+    :param executor: Process pool executor to utilize multiple cores on
+        parsing.
+    :type executor: :class:`concurrent.futures.ProcessPoolExecutor`
 
     .. note::
 
@@ -35,17 +36,19 @@ class TraversingReporter(Reporter):
         :meth:`parse`, :meth:`make_news` and :meth:`get_urls`.
 
     """
-    def __init__(self, meta, backend, url=None, parent=None, bulk_report=True,
-                 dispatch_middlewares=None, fetch_middlewares=None,
+    def __init__(self, meta, url=None, parent=None,
+                 request_middlewares=None, response_middlewares=None,
                  *args, **kwargs):
-        super().__init__(meta=meta, backend=backend, url=url,
-                         dispatch_middlewares=dispatch_middlewares,
-                         fetch_middlewares=fetch_middlewares, *args, **kwargs)
+        super().__init__(
+            meta=meta, url=url,
+            request_middlewares=request_middlewares,
+            response_middlewares=response_middlewares,
+            *args, **kwargs
+        )
         self._visited_urls_lock = asyncio.Lock()
         self._visited_urls = set()
         self._fetched_news = None
         self.parent = parent
-        self.bulk_report = bulk_report
 
     @property
     def root(self):
@@ -86,21 +89,12 @@ class TraversingReporter(Reporter):
         if not news:
             return []
 
-        if not self.bulk_report:
-            self.report_news(news)
-
-        urls = await self.get_urls(news) if news else set()
-        worthies = await self.filter_urls(news, *urls)
+        urls = await self.get_urls(news) if news else []
+        worthies = await self.filter_urls(urls)
 
         news_linked = await self.dispatch_reporters(worthies)
-        news_total = list(news_linked) + [news] if news else news_linked
-
-        # Bulk report news if the flag is set to `True`. We don't have to
-        # take care of case of `False` since news should be reported on
-        # `dispatch()` calls of each successor reporters already if
-        # `bulk_report` flag was given `True`.
-        if self.bulk_report and self.is_root:
-            self.report_news(*set(news_total))
+        news_total = itertools.chain(news_linked, [news]) \
+            if news else news_linked
 
         return news_total
 
@@ -196,20 +190,14 @@ class TraversingReporter(Reporter):
             return self.root._visited_urls
 
     def _inherit_meta(self, url, parent=None):
-        # we only inherit fetch middleware. dispatch middleware won't be
-        # inherited down to descendents.
-        fetch_middlewares = copy.deepcopy(self._fetch_middlewares_applied)
-
-        # we do not inherit intel to children to avoid bunch of
-        # useless bulk requests.
-        child = self.create_instance(
-            meta=self.meta, backend=self.backend, url=url,
-            fetch_middlewares=fetch_middlewares,
+        request_middlewares = copy.deepcopy(self.request_middlewares)
+        response_middlewares = copy.deepcopy(self.response_middlewares)
+        return self.create_instance(
+            meta=self.meta, url=url, parent=parent
+            request_middlewares=request_middlewares,
+            response_middlewares=response_middlewares,
             loop=self._loop, executor=self._executor,
-        ).enhance()
-        if isinstance(child, TraversingReporter):
-            child.parent = parent
-        return child
+        )
 
 
 class FeedReporter(Reporter):
@@ -217,14 +205,17 @@ class FeedReporter(Reporter):
 
     :param meta: Reporter meta from which to populate the reporter.
     :type meta: :class:`news.reporters.ReporterMeta`
-    :param backend: Backend to report news.
-    :type backend: :class:`~news.backends.abstract.AbstractBackend`
     :param url: A url to assign to a reporter.
     :type url: :class:`str`
-    :param dispatch_middlewares: Dispatch middlewares to apply.
-    :type dispatch_middlewares: :class:`list`
-    :param fetch_middlewares: Fetch middlewares to apply.
-    :type fetch_middlewares: :class:`list`
+    :param request_middlewares: Request middlewares to pipe.
+    :type request_middlewares: :class:`list`
+    :param response_middlewares: Response middlewares to pipe.
+    :type response_middlewares: :class:`list`
+    :param loop: Event loop that this reporter will be running on.
+    :type loop: :class:`asyncio.BaseEventLoop`
+    :param executor: Process pool executor to utilize multiple cores on
+    parsing.
+    :type executor: :class:`concurrent.futures.ProcessPoolExecutor`
 
     .. note::
 
