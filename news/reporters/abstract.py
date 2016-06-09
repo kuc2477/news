@@ -22,7 +22,7 @@ class Reporter(object):
 
         self._loop = loop
         self._executor = executor
-        self._client_session = aiohttp.ClientSession(loop)
+        self._client_session = aiohttp.ClientSession(loop=loop)
 
     @classmethod
     def create_instance(
