@@ -118,18 +118,20 @@ class Reporter(object):
                 return None
 
             # make news from the response
-            items = await self._loop.run_in_executor(
+            readables = await self._loop.run_in_executor(
                 self._executor, self.parse, await response.text()
             )
 
             # return a single news if we have only one. return a list of news
             # if we have more than a single news.
             try:
-                return (self.make_news(item) for item in items)
+                return (self.make_news(r) for r in readables if r.valid)
             except TypeError:
-                item = items
-                news = self.make_news(item)
-                return news
+                r = readables
+                return self.make_news(r) if r.valid else None
+
+    def make_news(self, readable):
+        pass
 
     async def filter_news(self, *news):
         """Decides whether the reporter should report the news to it's backend

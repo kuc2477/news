@@ -218,3 +218,9 @@ class Readable(AbstractNews):
             except TypeError:
                 del kwargs[exclude]
         return kwargs
+
+    @property
+    def valid(self):
+        """(:class:`bool`)Returns `True` if the readable satisfies none-null
+        conditions of news model. Otherwise returns `False`."""
+        return self.url and self.title and self.content and self.summary
