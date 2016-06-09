@@ -1,7 +1,6 @@
-from functools import wraps, partial
+from functools import partial
 from ...utils.logging import logger
 from ...constants import LOG_URL_MAX_LENGTH
-from ...reporters.mixins import BatchTraversingMixin
 
 
 async def request_log_middleware(reporter, client_session):
