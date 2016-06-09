@@ -131,7 +131,16 @@ class Reporter(object):
                 return self.make_news(r) if r.valid else None
 
     def make_news(self, readable):
-        pass
+        """Instantiate a news out of the readable parsed by :attr:`parser`.
+        Not implemented by default and should be implemented by subclasses.
+
+        :param readable: A parsed readable.
+        :type readable: :class:`~news.models.abstract.Readable`
+        :returns: A news instance
+        :rtype: :class:`~news.models.abstract.AbstractNews` implementation
+
+        """
+        raise NotImplementedError
 
     async def filter_news(self, *news):
         """Decides whether the reporter should report the news to it's backend

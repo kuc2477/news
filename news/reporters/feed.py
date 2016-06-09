@@ -19,7 +19,7 @@ class RSSReporter(FeedReporter):
     parser = 'news.parsers.parse_rss'
 
     def make_news(self, readable):
-        """Instantiate a news out of the readable parsed from :meth:`parse`.
+        """Instantiate a news out of the readable parsed from :attr:`parser`.
 
         :param readable: A parsed readable.
         :type readable: :class:`news.model.abstract.Readable`
@@ -43,7 +43,7 @@ class AtomReporter(FeedReporter):
     parser = 'news.parsers.parse_atom'
 
     def make_news(self, readable):
-        """Instantiate a news out of the readable parsed from :meth:`parse`.
+        """Instantiate a news out of the readable parsed from :attr:`parser`.
 
         :param readable: A parsed readable.
         :type readable: :class:`news.model.abstract.Readable`

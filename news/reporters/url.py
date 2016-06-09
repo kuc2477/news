@@ -43,7 +43,7 @@ class URLReporter(
     parser = 'news.parsers.parse_html'
 
     def make_news(self, readable):
-        """Instantiate a news out of the readable parsed from :meth:`parse`.
+        """Instantiate a news out of the readable parsed from :attr:`parser`.
 
         :param readable: A parsed readable.
         :type readable: :class:`~news.models.abstract.Readable`
