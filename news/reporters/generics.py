@@ -91,14 +91,14 @@ class TraversingReporter(Reporter):
         if not news:
             return []
 
-        urls = await self.get_urls(news) if news else []
-        worthies = await self.filter_urls(urls)
+        urls = await self.get_urls(news)
+        worthies = await self.filter_urls(news, *urls)
 
         news_linked = await self.dispatch_reporters(worthies)
         news_total = itertools.chain(news_linked, [news]) \
             if news else news_linked
 
-        return news_total
+        return list(news_total)
 
     async def dispatch_reporters(self, urls, *args, **kwargs):
         """Dispatch the reporter's descendents to the given urls.
@@ -229,4 +229,4 @@ class FeedReporter(Reporter):
     async def dispatch(self):
         """Dispatch the reporter to the feed url."""
         fetched = await self.fetch()
-        return await self.filter_news(fetched)
+        return await self.filter_news(*fetched)

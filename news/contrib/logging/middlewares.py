@@ -18,8 +18,8 @@ async def response_log_middleware(reporter, response):
     return response
 
 
-async def report_log_middleware(reporter, news):
-    log = _log_factory(reporter)
+def report_log_middleware(cover, news):
+    log = _log_factory(cover.reporter)
     log('Reporting {} news'.format(len(news)))
     return news
 
