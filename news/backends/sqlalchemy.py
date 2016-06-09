@@ -45,15 +45,8 @@ class SQLAlchemyBackend(AbstractBackend):
         return query.all()
 
     def save_news(self, *news):
-        try:
-            root = [n for n in news if n.is_root][0]
-        except IndexError:
-            root = None
-
-        if root:
-            # save-update cascade will do heavy lifting
-            self.session.add(root)
-            self.session.commit()
+        self.session.add_all(news)
+        self.session.commit()
 
     def delete_news(self, *news):
         self.session.delete(*news)
