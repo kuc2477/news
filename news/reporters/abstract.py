@@ -4,18 +4,25 @@
 Provide abstract base classes for reporters.
 
 """
+import functools
 import aiohttp
+from ..utils.python import importpath
 
 
 class Reporter(object):
     """Abstract base class for all reporters."""
 
-    def __init__(self, meta, url=None,
+    #: (:class:`str) Module qualified path to the parser function to use.
+    parser = NotImplemented
+
+    def __init__(self, meta, backend, url=None,
                  request_middlewares=None,
                  response_middlewares=None,
                  loop=None, executor=None, **kwargs):
         self.url = url or meta.schedule.url
         self.meta = meta
+        self.backend = backend
+        self.parse = functools.partial(importpath(self.parser), self.url)
 
         self.request_middlewares = request_middlewares or []
         self.response_middlewares = response_middlewares or []
@@ -26,7 +33,7 @@ class Reporter(object):
 
     @classmethod
     def create_instance(
-            cls, meta, url=None,
+            cls, meta, backend, url=None,
             request_middlewares=None,
             response_middlewares=None,
             loop=None, executor=None, **kwargs):
@@ -36,6 +43,8 @@ class Reporter(object):
         :type url: :class:`str`
         :param meta: Meta information of a reporter.
         :type meta: :class:`ReporterMeta`
+        :param backend: Backend to report news.
+        :type backend: :class:`~news.backends.abstract.AbstractBackend`
         :param request_middlewares: Request middlewares to pipe.
         :type request_middlewares: :class:`list`
         :param response_middlewares: Response middlewares to pipe.
@@ -50,7 +59,7 @@ class Reporter(object):
         :rtype: `Reporter` implementation.
 
         """
-        return cls(meta=meta, url=url,
+        return cls(meta=meta, backend=backend, url=url,
                    request_middlewares=request_middlewares,
                    response_middlewares=response_middlewares,
                    loop=loop, executor=executor, **kwargs)
@@ -121,30 +130,6 @@ class Reporter(object):
                 item = items
                 news = self.make_news(item)
                 return news
-
-    def parse(self, content):
-        """Parses fetched response body into a list of items.
-
-        Should be implemented by all reporter subclasses. Defaults to rasing
-        `NotImplementedError`.
-
-        :returns: A list of items each to be passed to `make_news` method.
-        :rtype: :class:`list`
-
-        """
-        raise NotImplementedError
-
-    def make_news(self, item):
-        """Make a news instance from the passed item.
-
-        Should be implemented by all reporter subclasses. Defaults to rasing
-        `NotImplementedError`.
-
-        :returns: An instance of `~news.models.AbstractNews` implementation.
-        :rtype: :class:`~news.models.AbstractNews` implementation.
-
-        """
-        raise NotImplementedError
 
     async def filter_news(self, *news):
         """Decides whether the reporter should report the news to it's backend

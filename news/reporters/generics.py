@@ -15,6 +15,8 @@ class TraversingReporter(Reporter):
 
     :param meta: Reporter meta from which to populate the reporter.
     :type meta: :class:`news.reporters.ReporterMeta`
+    :param backend: Backend to report news.
+    :type backend: :class:`~news.backends.abstract.AbstractBackend`
     :param url: A url to assign to a reporter.
     :type url: :class:`str`
     :param parent: Parent of the reporter. Defaults to `None`.
@@ -33,14 +35,14 @@ class TraversingReporter(Reporter):
 
         All subclasses of the
         :class:`~news.reporters.generics.TraversingReporter` must implement
-        :meth:`parse`, :meth:`make_news` and :meth:`get_urls`.
+        :meth:`make_news` and :meth:`get_urls`.
 
     """
-    def __init__(self, meta, url=None, parent=None,
+    def __init__(self, meta, backend, url=None, parent=None,
                  request_middlewares=None, response_middlewares=None,
                  *args, **kwargs):
         super().__init__(
-            meta=meta, url=url,
+            meta=meta, url=url, backend=backend,
             request_middlewares=request_middlewares,
             response_middlewares=response_middlewares,
             *args, **kwargs
@@ -193,7 +195,8 @@ class TraversingReporter(Reporter):
         request_middlewares = copy.deepcopy(self.request_middlewares)
         response_middlewares = copy.deepcopy(self.response_middlewares)
         return self.create_instance(
-            meta=self.meta, url=url, parent=parent,
+            meta=self.meta, backend=self.backend,
+            url=url, parent=parent,
             request_middlewares=request_middlewares,
             response_middlewares=response_middlewares,
             loop=self._loop, executor=self._executor,
@@ -220,7 +223,7 @@ class FeedReporter(Reporter):
     .. note::
 
         All subclasses of the :class:`FeedReporter` must implement
-        :meth:`parse`, :meth:`make_news`.
+        :meth:`make_news`.
 
     """
     async def dispatch(self):

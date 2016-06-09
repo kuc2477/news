@@ -5,8 +5,6 @@ Provide a concrete URL news reporter.
 
 """
 from bs4 import BeautifulSoup
-from extraction import Extractor
-from ..models.abstract import Readable
 from .generics import TraversingReporter
 from .mixins import (
     BatchTraversingMixin,
@@ -22,31 +20,27 @@ class URLReporter(
     """URL Reporter for fetching news from plain html web pages.
 
     :param meta: Reporter meta from which to populate the reporter.
-    :type meta: :class:`~news.reporters.ReporterMeta`
+    :type meta: :class:`news.reporters.ReporterMeta`
     :param backend: Backend to report news.
     :type backend: :class:`~news.backends.abstract.AbstractBackend`
-        implementation
+    :param url: A url to assign to a reporter.
+    :type url: :class:`str`
+    :param parent: Parent of the reporter. Defaults to `None`.
+    :type parent: :class:`TraversingReporter`
+    :param request_middlewares: Request middlewares to pipe.
+    :type request_middlewares: :class:`list`
+    :param response_middlewares: Response middlewares to pipe.
+    :type response_middlewares: :class:`list`
+    :param loop: Event loop that this reporter will be running on.
+    :type loop: :class:`asyncio.BaseEventLoop`
+    :param executor: Process pool executor to utilize multiple cores on
+        parsing.
+    :type executor: :class:`concurrent.futures.ProcessPoolExecutor`
     :param intel: Intels to use for batch traversing.
     :type intel: :class:`list` of news
 
     """
-    def parse(self, content):
-        """Parses html content of http response body into a single
-        :class:`~news.models.abstract.Readable`.
-
-        Internally uses :class:`~extraction.Extractor` extractor to extract
-        sementic tags from the plain html content.
-
-        :param content: Http response body
-        :type content: :class:`str`
-        :returns: A parsed readable
-        :rtype: :class:`~news.models.abstract.Readable`
-
-        """
-        extractor = Extractor()
-        extracted = extractor.extract(content)
-        return Readable(url=self.url, title=extracted.title, content=content,
-                        summary=extracted.description, image=extracted.image)
+    parser = 'news.parsers.parse_html'
 
     def make_news(self, readable):
         """Instantiate a news out of the readable parsed from :meth:`parse`.

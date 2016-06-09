@@ -4,8 +4,6 @@
 Provide concrete feed news reporters.
 
 """
-import feedparser
-from ..models.abstract import Readable
 from .generics import FeedReporter
 
 
@@ -18,23 +16,7 @@ class RSSReporter(FeedReporter):
     :type backend: :class:`news.backends.abstract.AbstractBackend`
 
     """
-    def parse(self, content):
-        """Parses feed content of http response body into multiple
-        :class:`news.models.abstract.Readable`s.
-
-        Internally uses :mod:`~feedparser` library to extract entries from the
-        response body.
-
-        :param content: Http response body
-        :type content: :class:`str`
-        :returns: An iterator of parsed readables
-        :rtype: An iterator of :class:`news.models.abstract.Readable`
-
-        """
-        f = feedparser.parse(content)
-        return (Readable(
-            author=e.author, title=e.title, content=e.content, url=e.link,
-            summary=e.summary, image=f.image) for e in f.entries)
+    parser = 'news.parsers.parse_rss'
 
     def make_news(self, readable):
         """Instantiate a news out of the readable parsed from :meth:`parse`.
@@ -58,23 +40,7 @@ class AtomReporter(FeedReporter):
     :type backend: :class:`news.backends.abstract.AbstractBackend`
 
     """
-    def parse(self, content):
-        """Parses feed content of http response body into multiple
-        :class:`news.models.abstract.Readable`s.
-
-        Internally uses :mod:`~feedparser` library to extract entries from the
-        response body.
-
-        :param content: Http response body
-        :type content: :class:`str`
-        :returns: An iterator of parsed readables
-        :rtype: An iterator of :class:`news.models.abstract.Readable`
-
-        """
-        f = feedparser.parse(content)
-        return (Readable(
-            author=e.author, title=e.title, content=e.content, url=e.link,
-            summary=e.summary, image=f.image) for e in f.entries)
+    parser = 'news.parsers.parse_atom'
 
     def make_news(self, readable):
         """Instantiate a news out of the readable parsed from :meth:`parse`.

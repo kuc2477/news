@@ -50,7 +50,7 @@ class Cover(object):
 
         # set root reporter of the cover.
         self.reporter = reporter_class.create_instance(
-            meta=meta,
+            meta=meta, backend=self.backend,
             request_middlewares=request_middlewares,
             response_middlewares=response_middlewares,
             loop=self.loop, executor=self.executor,
@@ -80,7 +80,7 @@ class Cover(object):
         )
 
         # pipe report middlewares
-        for middleware in self.middlewares:
+        for middleware in self.report_middlewares:
             news_list = middleware(news_list)
 
         # report the news to the backend

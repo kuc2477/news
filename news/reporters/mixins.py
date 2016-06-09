@@ -14,7 +14,6 @@ from ..constants import (
     DEFAULT_EXT_BLACKLIST,
     DEFAULT_MAX_VISIT,
 )
-from ..utils.logging import logger
 
 
 class BatchTraversingMixin(object):
