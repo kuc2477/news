@@ -81,7 +81,7 @@ class Cover(object):
 
         # pipe report middlewares
         for middleware in self.report_middlewares:
-            news_list = middleware(news_list)
+            news_list = middleware(self, news_list)
 
         # report the news to the backend
         self.backend.save_news(*news_list)

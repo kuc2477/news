@@ -11,7 +11,7 @@ a (:class:`str`)content passed from a
 """
 import feedparser
 from extraction import Extractor
-from ..models.abstract import Readable
+from .models.abstract import Readable
 
 
 def parse_html(url, content):
