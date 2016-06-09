@@ -193,7 +193,7 @@ class TraversingReporter(Reporter):
         request_middlewares = copy.deepcopy(self.request_middlewares)
         response_middlewares = copy.deepcopy(self.response_middlewares)
         return self.create_instance(
-            meta=self.meta, url=url, parent=parent
+            meta=self.meta, url=url, parent=parent,
             request_middlewares=request_middlewares,
             response_middlewares=response_middlewares,
             loop=self._loop, executor=self._executor,
