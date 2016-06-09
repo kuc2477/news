@@ -19,6 +19,6 @@ async def test_cover_prepare(cover, django_root_news):
 
     assert(cover.reporter is not None)
     assert(cover.reporter.backend == cover.backend)
-    assert(cover.request_middlewares)
-    assert(cover.response_middlewares)
+    assert(cover.reporter.request_middlewares)
+    assert(cover.reporter.response_middlewares)
     assert(cover.report_middlewares)
