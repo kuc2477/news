@@ -55,7 +55,7 @@ class Cover(object):
             response_middlewares=response_middlewares,
             loop=self.loop, executor=self.executor,
             **kwargs
-        ).enhance()
+        )
 
         return self
 
