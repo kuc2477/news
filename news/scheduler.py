@@ -9,7 +9,6 @@ import threading
 import schedule as pusher
 from contextlib import contextmanager
 from celery import Task, states
-from celery.signals import worker_process_init
 from .cover import Cover
 from .mapping import DefaultMapping
 from .utils.logging import logger
@@ -250,16 +249,6 @@ class Scheduler(object):
     # ==================
     # Celery integration
     # ==================
-
-    def _enable_celery_multiprocessing(self):
-        from multiprocessing import current_process
-
-        @worker_process_init.connect
-        def enable_multiprocessing(**kwargs):
-            try:
-                current_process()._config
-            except AttributeError:
-                current_process()._config = {'semprefix': '/mp'}
 
     def make_task(self):
         """Create an celery task responsible of running reporter covers

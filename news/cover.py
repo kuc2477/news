@@ -29,6 +29,13 @@ class Cover(object):
         self.executor = None
         self.reporter = None
 
+    def _enable_celery_multiprocessing(self):
+        from multiprocessing import current_process
+        try:
+            current_process()._config
+        except AttributeError:
+            current_process()._config = {'semprefix': '/mp'}
+
     def prepare(self, reporter_class,
                 request_middlewares=None,
                 response_middlewares=None,
@@ -42,6 +49,9 @@ class Cover(object):
 
         """
         meta = ReporterMeta(self.schedule)
+
+        # enable celery to create child processes
+        self._enable_celery_multiprocessing()
 
         # set event loop and executor for the reporter
         self.loop = asyncio.get_event_loop()
