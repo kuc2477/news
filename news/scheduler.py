@@ -152,7 +152,8 @@ class Scheduler(object):
 
         # add schedules
         schedules = self.backend.get_schedules()
-        (self.add_schedule(s) for s in schedules)
+        for schedule in schedules:
+            self.add(schedule)
         self._log('Starting with {} schedule(s)'.format(len(schedules)))
 
         # start scheduler within a tiny thread.
@@ -241,9 +242,9 @@ class Scheduler(object):
             schedule if isinstance(schedule, int) else schedule.id))
 
         # remove schedule from job queue and add it if it's now enabled
-        self.remove_schedule(schedule)
+        self.remove(schedule)
         if schedule.enabled:
-            self.add_schedule(schedule)
+            self.add(schedule)
 
     # ==================
     # Celery integration
