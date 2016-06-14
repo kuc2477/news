@@ -158,6 +158,7 @@ class Scheduler(object):
         # start scheduler within a tiny thread.
         def schedule_forever():
             self.running = True
+            self.pusher.run_all(delay_seconds=1)
             while self.running:
                 self._log('Flush pending covers', tag='debug')
                 self.pusher.run_pending()
