@@ -267,10 +267,6 @@ class Scheduler(object):
                 schedule = self.backend.get_schedule(args[0])
                 self.on_cover_error(schedule, exc)
 
-        # register celery callback which configures celery multiprocessing
-        # compatible.
-        self._enable_celery_multiprocessing()
-
         # make `run_cover` method into a celery task
         run_cover = self._make_run_cover()
         return self.celery.task(bind=True, base=CallbackTask)(run_cover)
