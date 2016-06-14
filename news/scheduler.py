@@ -313,6 +313,7 @@ class Scheduler(object):
         # do not push cover into task queue if already exists
         if not self.celery_task or id in self.queued:
             return
+        self._log('pushing schedule {}'.format(id), tag='warning')
         self.celery_task.apply_async((id,), task_id=str(id))
         self.queued.add(id)
 
