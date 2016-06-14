@@ -39,9 +39,9 @@ class Scheduler(object):
         success.
     :type on_cover_success: A function that takes a schedule and a list of
         result news of the cover.
-    :param on_cover_failure: Callback function that will be fired on cover
+    :param on_cover_error: Callback function that will be fired on cover
         failure.
-    :type on_cover_failre: A function that takes a schedule and an exception.
+    :type on_cover_error: A function that takes a schedule and an exception.
 
     **Example**::
 
@@ -80,7 +80,7 @@ class Scheduler(object):
     """
     def __init__(self, backend=None, celery=None, mapping=None, persister=None,
                  on_cover_start=None, on_cover_success=None,
-                 on_cover_failure=None,
+                 on_cover_error=None,
                  request_middlewares=None, response_middlewares=None,
                  report_middlewares=None):
         # backend & celery
@@ -101,7 +101,7 @@ class Scheduler(object):
         # scheduler cover callbacks
         self.on_cover_start = on_cover_start
         self.on_cover_success = on_cover_success
-        self.on_cover_failure = on_cover_failure
+        self.on_cover_error = on_cover_error
 
         # reporter / cover middlewares
         self.request_middlewares = request_middlewares
@@ -265,7 +265,7 @@ class Scheduler(object):
 
             def on_failure(task, exc, task_id, args, kwargs, einfo):
                 schedule = self.backend.get_schedule(args[0])
-                self.on_cover_failure(schedule, exc)
+                self.on_cover_error(schedule, exc)
 
         # make `run_cover` method into a celery task
         run_cover = self._make_run_cover()
