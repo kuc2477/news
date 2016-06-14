@@ -8,7 +8,6 @@ import time
 import threading
 import schedule as pusher
 from contextlib import contextmanager
-from multiprocessing import current_process
 from celery import Task, states
 from celery.signals import worker_process_init
 from .cover import Cover
@@ -253,6 +252,8 @@ class Scheduler(object):
     # ==================
 
     def _enable_celery_multiprocessing(self):
+        from multiprocessing import current_process
+
         @worker_process_init.connect
         def enable_multiprocessing(**kwargs):
             try:
