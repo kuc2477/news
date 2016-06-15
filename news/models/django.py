@@ -101,6 +101,15 @@ def create_news_abc(schedule_model):
         class Meta:
             abstract = True
             unique_together = (('schedule', 'url'),)
+
+        @classmethod
+        def create_instance(cls, url, schedule, title, content, summary,
+                            published=None, parent=None, author=None,
+                            image=None):
+            return cls(url=url, schedule=schedule, parent=parent,
+                       author=author, title=title, content=content,
+                       summary=summary, image=image, published=published)
+
     return AbstractBaseNews
 
 
